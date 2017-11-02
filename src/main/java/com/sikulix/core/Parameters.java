@@ -70,7 +70,7 @@ public class Parameters {
     String theClasses = (String) args[1];
     Object[] theDefaults = (Object[]) args[2];
     Object[] theArgs = (Object[]) args[3];
-    Parameters theParameters = new Parameters(theNames, theClasses, theDefaults, new Object[0]);
+    Parameters theParameters = new Parameters(theNames, theClasses, theDefaults, new Object[theDefaults.length]);
     return theParameters.getParameters(theArgs);
   }
 
