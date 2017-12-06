@@ -583,6 +583,7 @@ public class Element implements Comparable<Element> {
   public Element getBottomLeft() {
     return new Element(x, y + h);
   }
+  //</editor-fold>
 
   //<editor-fold desc="right">
   public Element rightAt() {
@@ -623,39 +624,43 @@ public class Element implements Comparable<Element> {
   }
   //</editor-fold>
 
+  //<editor-fold desc="above">
   public Element aboveAt() {
     return new Element(x + w / 2, y);
   }
 
-  public Element aboveAt(int xoff) {
-    return new Element(aboveAt().x, aboveAt().y - xoff);
+  public Element aboveAt(int yoff) {
+    return new Element(aboveAt().x, aboveAt().y - yoff);
   }
 
   public Element above() {
     return above(getDevice().getContainingMonitor(this).h);
   }
 
-  public Element above(int xoff) {
+  public Element above(int yoff) {
     Element monitor = getDevice().getContainingMonitor(this);
-    return monitor.intersection(new Element(x, y - xoff, w, Math.abs(xoff)));
+    return monitor.intersection(new Element(x, y - yoff, w, Math.abs(yoff)));
   }
+  //</editor-fold>
 
+  //<editor-fold desc="below">
   public Element belowAt() {
     return new Element(x + w / 2, y + h);
   }
 
-  public Element belowAt(int xoff) {
-    return new Element(belowAt().x, belowAt().y + xoff);
+  public Element belowAt(int yoff) {
+    return new Element(belowAt().x, belowAt().y + yoff);
   }
 
   public Element below() {
     return below(getDevice().getContainingMonitor(this).h);
   }
 
-  public Element below(int xoff) {
+  public Element below(int yoff) {
     Element monitor = getDevice().getContainingMonitor(this);
-    return monitor.intersection(new Element(x, y + h + xoff, w, Math.abs(xoff)));
+    return monitor.intersection(new Element(x, y + h + yoff, w, Math.abs(yoff)));
   }
+  //</editor-fold>
 
 // TODO getColor() implement more support and make it useable
 

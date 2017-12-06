@@ -206,81 +206,6 @@ public class TestAll {
   }
 
   @Test
-  public void test_030_elementConstructors() {
-    currentTest = "test_030_elementConstructors";
-    Element elem = new Element();
-    result = "Element();";
-    assert Element.eType.ELEMENT.equals(elem.getType());
-    Picture img = new Picture();
-    result += " Picture();";
-    assert Element.eType.PICTURE.equals(img.getType());
-    Target tgt = new Target();
-    result += " Target();";
-    assert Element.eType.TARGET.equals(tgt.getType());
-    tgt = new Target(img);
-    result += " Target(image);";
-    assert Element.eType.TARGET.equals(tgt.getType());
-    tgt = new Target(tgt);
-    result += " Target(target);";
-    assert Element.eType.TARGET.equals(tgt.getType());
-    Mat aMat = tgt.getContent();
-    tgt = new Target(aMat);
-    result += " Target(mat);";
-    assert Element.eType.TARGET.equals(tgt.getType());
-    tgt = new Target(img, 0.95, new Element(2, 3));
-    result += " Target(image, 0.95, new Element(2,3));";
-    assert Element.eType.TARGET.equals(tgt.getType());
-  }
-
-  @Test
-  public void test_031_loadImageFromFile() {
-    currentTest = "test_031_loadImageFromFile";
-    boolean success = Do.setBundlePath(mavenRoot, defaultImagePath);
-    result = "BundlePath: " + Do.getBundlePath();
-    Picture img = new Picture(imageNameDefault);
-    success &= img.isValid();
-    if (success) {
-      result = set("(%s) Image %s from " + img.getURL(), img.getTimeToLoad(), img.getName());
-      if (log.isGlobalLevel(SXLog.TRACE)) {
-        img.show();
-      }
-    }
-    assert success;
-  }
-
-  @Test
-  public void test_032_loadImageFromJarByClass() {
-    currentTest = "test_032_loadImageFromJarByClass";
-    boolean success = Do.setBundlePath(jarImagePathClass);
-    result = "BundlePath: " + Do.getBundlePath();
-    Picture img = new Picture(imageNameDefault);
-    success &= img.isValid();
-    if (success) {
-      result = set("(%s) Image %s from " + img.getURL(), img.getTimeToLoad(), img.getName());
-      if (log.isGlobalLevel(SXLog.TRACE)) {
-        img.show();
-      }
-    }
-    assert success;
-  }
-
-  @Test
-  public void test_033_loadImageFromHttp() {
-    currentTest = "test_033_loadImageFromHttp";
-    boolean success = Do.setBundlePath(gitImagePath);
-    result = "BundlePath: " + Do.getBundlePath();
-    Picture img = new Picture(imageNameDefault);
-    success &= img.isValid();
-    if (success) {
-      result = set("(%s) Image %s from " + img.getURL(), img.getTimeToLoad(), img.getName());
-      if (log.isGlobalLevel(SXLog.TRACE)) {
-        img.show();
-      }
-    }
-    assert success;
-  }
-
-  @Test
   public void test_040_createFinderFromImage() {
     currentTest = "test_040_createFinderFromImage";
     boolean success = true;
@@ -863,46 +788,6 @@ public class TestAll {
     returnString = Do.input("enter password", "hidden input autoclose", "preset", true, 2, loc);
     if (!SX.isTravisCI()) {
       assert SX.isNull(returnString) : "input hidden: return not null";
-    }
-  }
-
-  @Test
-  public void test_300_oldAPI_Basic() {
-    currentTest = "test_300_oldAPI_Basic";
-    if (!SX.isHeadless()) {
-      Screen.showMonitors();
-      Screen scr = new Screen();
-      assert scr.getID() == 0;
-      assert Element.equalsRectangle(scr, Do.on().getRectangle());
-      scr.hover();
-      Location center = scr.getCenter();
-      assert Do.isMouseposition(hook, center.x, center.y);
-      Element grow = center.grow(scr.w / 3, scr.h / 3);
-      grow.show(3);
-      result = "Screen basics: " + scr.toString();
-      if (Do.getDevice().getNumberOfMonitors() > 1) {
-        scr = new Screen(1);
-        scr.hover();
-        center = scr.getCenter();
-        assert Do.isMouseposition(hook, center.x, center.y);
-        grow = center.grow(scr.w / 3, scr.h / 3);
-        grow.show(3);
-        result += " with second monitor";
-      }
-    }
-  }
-
-  @Test
-  public void test_300_oldAPI_Region() {
-    currentTest = "test_300_oldAPI_Region";
-    if (!SX.isHeadless()) {
-      result = "old API: Region";
-      Region region = new Region(100, 100, 100, 100);
-      assert region.isValid() && region instanceof Region : "new Region(100, 100, 100, 100)";
-      region = Region.create(100, 100, 100, 100);
-      assert region.isValid() && region instanceof Region : "Region.create(100, 100, 100, 100)";
-      region = Region.create(-200, -200, 100, 100);
-      assert !region.isValid() && region instanceof Region : "Region.create(-200, -200, 100, 100)";
     }
   }
 

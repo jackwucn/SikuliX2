@@ -41,7 +41,7 @@ public class TestCoreContent {
     Content.clearImagePath();
   }
 
-  @Test
+  @Ignore
   public void test_000_play() {
     currentTest = new SXTest();
     currentTest = new SXTest().onlyLocal();
@@ -106,7 +106,6 @@ public class TestCoreContent {
 
   @Test
   public void test_021_asURL() {
-    currentTest = new SXTest();
     currentTest = new SXTest().onlyLocal();
     if (currentTest.shouldNotRun()) {
       return;
