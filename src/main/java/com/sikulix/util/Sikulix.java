@@ -4,6 +4,7 @@
 
 package com.sikulix.util;
 
+import com.sikulix.api.Window;
 import com.sikulix.core.Content;
 import com.sikulix.core.SX;
 import com.sikulix.core.SXLog;

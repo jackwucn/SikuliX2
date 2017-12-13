@@ -103,6 +103,7 @@ public class Tool {
 
   String bundlePath = "";
   String appName = "";
+  Window toolApp = null;
 
   int scrW = 0;
   int scrH = 0;
@@ -114,6 +115,8 @@ public class Tool {
   //</editor-fold>
 
   public Tool() {
+    //TODO self focus init
+    //toolApp = new Window();
     initBundlePath();
     intro = new JFrame();
     intro.addKeyListener(new KeyAdapter() {
@@ -125,7 +128,7 @@ public class Tool {
         if (e.getKeyChar() == VK_ESCAPE) {
           shouldQuit = true;
         } else {
-          if (!"pocabq".contains(sKey)) {
+          if (!"pocarbq".contains(sKey)) {
             log.trace("keyTyped: %s", sKey);
             return;
           }
@@ -141,14 +144,11 @@ public class Tool {
             SX.pause(0.5);
             actionCapture();
           } else if ("a".equals("" + e.getKeyChar())) {
-            intro.setVisible(false);
-            appName = Do.input("name an application to focus", "SikulixTool::SwitchApp", intro);
-            if (SX.isNotNull(appName)) {
-              new Window(appName).toFront();
-            }
-            SX.pause(2);
-            intro.setVisible(true);
-            Do.popup("click ok to continue", intro);
+            log.trace("action: focus");
+            actionFocus(intro);
+          } else if ("r".equals("" + e.getKeyChar())) {
+            log.trace("action: reset focus");
+            appName = "";
           } else if ("b".equals("" + e.getKeyChar())) {
             if (Do.popAsk("now going to background:" +
                             "\n- use ctrl-alt-2 to capture" +
@@ -904,11 +904,20 @@ public class Tool {
   }
 
   private void actionCapture() {
+    boolean shouldSelfFocus = false;
+    if (!appName.isEmpty()) {
+      actionFocus(null, appName);
+      shouldSelfFocus = true;
+    }
     base = new Element(scrID).capture();
     isImage = false;
     activeSide = ALL;
     resetBox();
     dirty = true;
+    if (shouldSelfFocus) {
+      //TODO focus self
+      //actionFocus(null, "java"); //toolApp.getAppName());
+    }
   }
 
   private boolean evaluatingSegments = false;
@@ -1072,8 +1081,8 @@ public class Tool {
     if (SX.isSet(result)) {
       bundlePath = result;
       success = true;
+      log.trace("new bundlePath: %s", result);
     }
-    log.trace("new bundlePath: %s", result);
     return success;
   }
 
@@ -1084,6 +1093,50 @@ public class Tool {
       path = fPath.getAbsolutePath();
     }
     return path;
+  }
+
+  private void actionFocus(JFrame frame) {
+    actionFocus(frame, null);
+  }
+
+  private void actionFocus(JFrame frame, String app) {
+    boolean shouldrun = false;
+    String focused = "";
+    if (SX.isNotNull(frame)) {
+      frame.setVisible(false);
+    }
+    if (SX.isNull(app)) {
+      String msg = "name an application to focus";
+      if (!appName.isEmpty()) {
+        msg = "name an application to focus\nor leave blank to focus " + appName + "\nor click Cancel to reset";
+      }
+      app = Do.input(msg, "SikulixTool::WindowFocus", intro);
+      if (SX.isNotNull(app)) {
+        shouldrun = true;
+      } else {
+        appName = "";
+      }
+    } else if (!app.isEmpty()){
+      shouldrun = true;
+    }
+    if (shouldrun) {
+      if (app.isEmpty() && !appName.isEmpty()) {
+        app = appName;
+      }
+      if (!app.isEmpty()) {
+        focused = new Window(app).toFront();
+        if (!focused.isEmpty()) {
+          appName = focused;
+        }
+      }
+    }
+    log.trace("actionFocus: %s (%s)", (!focused.isEmpty() ? "success" : "no success"), appName);
+    if (SX.isNotNull(frame)) {
+      if (!shouldrun) {
+        SX.pause(1);
+      }
+      frame.setVisible(true);
+    }
   }
 
   private void actionOpen(JFrame frame) {

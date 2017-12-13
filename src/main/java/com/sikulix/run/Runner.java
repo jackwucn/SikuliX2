@@ -26,7 +26,6 @@ public class Runner {
 
   public enum ScriptOption {WITHTRACE}
 
-  ;
   private static Map<ScriptType, String> scriptTypes = new HashMap<>();
 
   static {
@@ -34,6 +33,9 @@ public class Runner {
     scriptTypes.put(ScriptType.PYTHON, ".py");
     scriptTypes.put(ScriptType.RUBY, ".rb");
   }
+
+  static int NOTYETRUN = -99999999;
+  static int RUNWITHERROR = NOTYETRUN;
 
   static URL scriptPath = null;
   static String inJarFolderSX = "/SX_Scripts";
@@ -106,16 +108,18 @@ public class Runner {
 
   private static class FileFilterScript implements FilenameFilter {
     private String scriptName;
+
     public FileFilterScript(String scriptName) {
       this.scriptName = scriptName;
     }
+
     @Override
     public boolean accept(File dir, String fileName) {
       return fileName.startsWith(scriptName);
     }
   }
 
-  public static Object run(Object... args) {
+  public static ReturnObject run(Object... args) {
     if (args.length == 0) {
       log.error("run: no args");
       return null;
@@ -128,7 +132,7 @@ public class Runner {
       while (runBox.running) {
         SX.pause(1);
       }
-      log.trace("ending run: %s with ", args[0], runBox.getReturnObject());
+      log.trace("ending run: %s with %s", args[0], runBox.getReturnObject());
       return runBox.getReturnObject();
     }
     return null;
@@ -144,6 +148,7 @@ public class Runner {
     String scriptName = "";
     URL scriptURL = null;
     String script = "";
+    ReturnObject returnObject = null;
 
     public RunBox(Object[] args) {
       this.args = args;
@@ -283,13 +288,13 @@ public class Runner {
       valid = true;
     }
 
-    public Object getReturnObject() {
-      //TODO Runner: RunBox: getReturnObject
-      return new Integer(0);
+    public ReturnObject getReturnObject() {
+      return returnObject;
     }
 
     @Override
     public void run() {
+      returnObject = new ReturnObject(NOTYETRUN);
       if (ScriptType.JAVASCRIPT.equals(type)) {
         runJS();
       } else if (ScriptType.APPLESCRIPT.equals(type)) {
@@ -321,10 +326,10 @@ public class Runner {
       return true;
     }
 
-    private boolean runAS() {
+    private void runAS() {
       if (!SX.isMac()) {
         log.error("Applescript run: not on a Mac system");
-        return false;
+        return;
       }
       String scriptBefore = "";
       String scriptText = scriptBefore;
@@ -340,19 +345,66 @@ public class Runner {
       aFile.setExecutable(true);
       Content.writeStringToFile(scriptText, aFile);
       String retVal = Do.runcmd(new String[]{aFile.getAbsolutePath()});
-      String[] parts = retVal.split("\n");
-      int retcode = -1;
-      try {
-        retcode = Integer.parseInt(parts[0]);
-        if (retcode != 0) {
-          log.error("Applescript run: returns: %d", retcode);
-          return false;
-        }
-      } catch (Exception ex) {
-        log.error("Applescript run: returns: non-integer: %s", parts[0]);
-        return false;
+      returnObject = new ReturnObject(ScriptType.APPLESCRIPT, retVal);
+      if (returnObject.isSuccess()) {
+        log.trace("Applescript run: success");
+      } else {
+        log.trace("Applescript run: no success: %s", returnObject.getLoad());
       }
-      return true;
+    }
+  }
+
+  public static class ReturnObject {
+
+    private ReturnObject() {
+    }
+
+    public ReturnObject(boolean success) {
+      if (!success) {
+        rCode = 1;
+      }
+    }
+
+    public ReturnObject(int returnCode) {
+      rCode = returnCode;
+      if (rCode == NOTYETRUN) {
+        load = "Script not yet run";
+      }
+    }
+
+    public ReturnObject(ScriptType type, Object rObject) {
+      if (ScriptType.APPLESCRIPT.equals(type)) {
+        String[] parts = rObject.toString().split("\n");
+        rCode = RUNWITHERROR;
+        try {
+          rCode = Integer.parseInt(parts[0]);
+        } catch (Exception ex) {
+          load = rObject.toString();
+        }
+        if (rCode != RUNWITHERROR) {
+          load = rObject.toString().substring(parts[0].length()).trim();
+        }
+      }
+    }
+
+    private int rCode = 0;
+
+    public boolean isSuccess() {
+      return rCode == 0;
+    }
+
+    private Object load = null;
+
+    public boolean hasLoad() {
+      return SX.isNotNull(load);
+    }
+
+    public void setLoad(Object load) {
+      this.load = load;
+    }
+
+    public Object getLoad() {
+      return load;
     }
   }
 }

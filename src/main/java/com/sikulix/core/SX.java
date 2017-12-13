@@ -735,8 +735,7 @@ public class SX {
    */
   public static String getSXTEMP() {
     if (isNotSet(TEMP)) {
-      //TODO .list() NPE!
-      for (String aFile : Content.asFile(SYSTEMP).list()) {
+      for (String aFile : Content.asFile(getSXSYSTEMP()).list()) {
         if ((aFile.startsWith("Sikulix") && (new File(aFile).isFile()))
                 || (aFile.startsWith("jffi") && aFile.endsWith(".tmp"))) {
           Content.deleteFileOrFolder(new File(getSXSYSTEMP(), aFile));
