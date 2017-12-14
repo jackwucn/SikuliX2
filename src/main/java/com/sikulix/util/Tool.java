@@ -220,6 +220,9 @@ public class Tool {
         String val = options[i + 1];
         val = val.isEmpty() ? "no value set" : val;
         log.trace("prepareInfo: %s = %s", key, val);
+        if (val.contains("\\")) {
+          val = val.replaceAll("\\\\", "/");
+        }
         content = content.replaceAll(String.format("`\\[%s\\]`", key), val);
       }
     }
