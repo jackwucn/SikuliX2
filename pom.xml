@@ -151,6 +151,13 @@
             <version>v1.0.1</version>
         </dependency>
         <dependency>
+            <!--BSD 2-clause "Simplified" License-->
+            <!--https://github.com/vsch/flexmark-java-->
+            <groupId>com.vladsch.flexmark</groupId>
+            <artifactId>flexmark-all</artifactId>
+            <version>0.28.18</version>
+        </dependency>
+        <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <!--Apache License 2.0-->
             <!--https://logging.apache.org/log4j/2.x/-->

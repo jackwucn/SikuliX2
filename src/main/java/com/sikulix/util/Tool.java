@@ -9,6 +9,10 @@ import com.sikulix.core.*;
 import com.sikulix.devices.hotkey.HotkeyCallback;
 import com.sikulix.devices.hotkey.HotkeyEvent;
 import com.sikulix.devices.hotkey.HotkeyManager;
+import com.vladsch.flexmark.ast.Node;
+import com.vladsch.flexmark.html.HtmlRenderer;
+import com.vladsch.flexmark.parser.Parser;
+import com.vladsch.flexmark.util.options.MutableDataSet;
 import org.opencv.core.*;
 import org.opencv.imgproc.Imgproc;
 
@@ -128,7 +132,7 @@ public class Tool {
         if (e.getKeyChar() == VK_ESCAPE) {
           shouldQuit = true;
         } else {
-          if (!"pocarbq".contains(sKey)) {
+          if (!"pocarbihq".contains(sKey)) {
             log.trace("keyTyped: %s", sKey);
             return;
           }
@@ -146,9 +150,6 @@ public class Tool {
           } else if ("a".equals("" + e.getKeyChar())) {
             log.trace("action: focus");
             actionFocus(intro);
-          } else if ("r".equals("" + e.getKeyChar())) {
-            log.trace("action: reset focus");
-            appName = "";
           } else if ("b".equals("" + e.getKeyChar())) {
             if (Do.popAsk("now going to background:" +
                             "\n- use ctrl-alt-2 to capture" +
@@ -156,6 +157,18 @@ public class Tool {
                     "SikulixTool::ToBackground", intro)) {
               actionToBackground();
             }
+          } else if ("h".equals("" + e.getKeyChar())) {
+            log.trace("action: get help");
+            showInfo("toolIntroHelp.md", intro);
+          } else if ("i".equals("" + e.getKeyChar())) {
+            log.trace("action: get status");
+            showInfo(prepareInfo("toolIntroStatus", "bundle", bundlePath, "app", appName), intro);
+          } else if ("r".equals("" + e.getKeyChar())) {
+            log.trace("action: reset tool");
+            bundlePath = "";
+            SX.setOption("Tool.bundlePath", "");
+            initBundlePath();
+            appName = "";
           } else if ("q".equals("" + e.getKeyChar())) {
             shouldQuit = true;
           }
@@ -175,24 +188,8 @@ public class Tool {
     Container introPane = intro.getContentPane();
     introPane.setLayout(new BoxLayout(introPane, BoxLayout.Y_AXIS));
     introPane.setBackground(Color.white);
-    String aText = "<html>" +
-            "<h1>&nbsp;&nbsp;&nbsp;&nbsp;SikuliX Tool</h1>" +
-            "<hr><br>" +
-            "&nbsp;type a key for an action:" +
-            "<br><hr><br>" +
-            "&nbsp;&nbsp;p - set bundle path" +
-            "<br>" +
-            "&nbsp;&nbsp;o - open an image file" +
-            "<br>" +
-            "&nbsp;&nbsp;c - capture screen image" +
-            "<br>" +
-            "&nbsp;&nbsp;a - focus an application" +
-            "<br>" +
-            "&nbsp;&nbsp;b - tool to background" +
-            "<br><br><hr><br>" +
-            "&nbsp;ESC or q - to quit the tool" +
-            "<br>";
-    JLabel introText = getNewLabel(320, 300, aText);
+    String aText = Content.extractResourceToString("/gui", "toolIntro.html");
+    JLabel introText = getNewLabel(320, 350, aText);
     introText.setFont(new Font(Font.MONOSPACED, Font.BOLD, 16));
     introText.setBorder(BorderFactory.createLineBorder(Color.magenta, 2));
     introPane.add(introText);
@@ -202,6 +199,97 @@ public class Tool {
     intro.setLocation(centered.x, centered.y);
     initBox();
     intro.setVisible(true);
+  }
+
+  private String prepareInfo(String name, String... options) {
+    String content = "";
+    if (SX.isSet(name)) {
+      if (!name.endsWith(".md")) {
+        name += ".md";
+      }
+      String prefix = "/gui";
+      content = Content.extractResourceToString(prefix, name);
+      if (SX.isNotSet(content)) {
+        log.error("prepareInfo: no resource: %s/%s", prefix, name);
+        content = "";
+      }
+    }
+    if (!content.isEmpty() && options.length > 1) {
+      for (int i = 0; i < options.length; i = i + 2) {
+        String key = options[i];
+        String val = options[i + 1];
+        val = val.isEmpty() ? "no value set" : val;
+        log.trace("prepareInfo: %s = %s", key, val);
+        content = content.replaceAll(String.format("`\\[%s\\]`", key), val);
+      }
+    }
+    return "#" + content;
+  }
+
+  private void showInfo(String name, JFrame parent) {
+    if (SX.isNotSet(name)) {
+      return;
+    }
+    boolean isMarkUp = false;
+    String aText = "";
+    if (!name.startsWith("#")) {
+      if (name.endsWith(".md")) {
+        isMarkUp = true;
+      } else if (!name.endsWith(".html")) {
+        name += ".html";
+      }
+      String prefix = "/gui";
+      aText = Content.extractResourceToString(prefix, name);
+      if (SX.isNotSet(aText)) {
+        log.error("showInfo: no resource: %s/%s", prefix, name);
+        return;
+      }
+    } else {
+      isMarkUp = true;
+      aText = name.substring(1);
+      if (aText.isEmpty()) {
+        return;
+      }
+    }
+    if (isMarkUp) {
+      MutableDataSet options = new MutableDataSet();
+      Parser parser = Parser.builder(options).build();
+      options.set(HtmlRenderer.SOFT_BREAK, "<br>\n");
+      HtmlRenderer renderer = HtmlRenderer.builder(options).build();
+      Node document = parser.parse(aText);
+      aText = ("<html>" + renderer.render(document)).replaceAll("/<br>\\n", "<br>") + "<br>"
+              + "<hr>type ESC to close";
+    }
+    JFrame frame = new JFrame();
+    frame.addKeyListener(new KeyAdapter() {
+      @Override
+      public void keyTyped(KeyEvent e) {
+        if (e.getKeyChar() == VK_ESCAPE) {
+          frame.dispose();
+          if (SX.isNotNull(parent)) {
+            parent.setVisible(true);
+          }
+        }
+      }
+    });
+    frame.setUndecorated(true);
+    frame.setAlwaysOnTop(true);
+    Container introPane = frame.getContentPane();
+    introPane.setLayout(new BoxLayout(introPane, BoxLayout.Y_AXIS));
+    introPane.setBackground(Color.white);
+    JLabel text = new JLabel(aText);
+    text.setFont(new Font(Font.DIALOG, Font.PLAIN, 14));
+    text.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(Color.magenta, 2),
+            BorderFactory.createEmptyBorder(0, 10, 10, 10)));
+    introPane.add(text);
+    frame.pack();
+    Dimension size = frame.getPreferredSize();
+    Element centered = new Element(size).getCentered(Do.onMain());
+    frame.setLocation(centered.x, centered.y);
+    if (SX.isNotNull(parent)) {
+      parent.setVisible(false);
+    }
+    frame.setVisible(true);
   }
 
   public Tool(boolean internalUse) {
@@ -214,15 +302,10 @@ public class Tool {
     if (bundlePath.isEmpty()) {
       bundlePath = SX.getOption("Tool.bundlePath");
       if (bundlePath.isEmpty()) {
-        String userwork = SX.getSXUSERWORK();
-        if (new File(userwork, "pom.xml").exists()) {
-          bundlePath = new File(userwork, "src/main/resources/Images").getAbsolutePath();
-        } else {
-          bundlePath = Content.asFolder(SX.getSXSTORE(), "Images").getAbsolutePath();
-        }
-        log.trace("%s", userwork);
+        bundlePath = Content.asFolder(SX.getSXSTORE(), "Images").getAbsolutePath();
       }
     }
+    log.trace("initBundlePath: %s", bundlePath);
   }
 
   private boolean internal = false;
@@ -1088,6 +1171,9 @@ public class Tool {
 
   private String selectPath(String title, JFrame frame) {
     String path = null;
+    if (bundlePath.isEmpty()) {
+
+    }
     File fPath = FileChooser.folder(frame, title);
     if (SX.isNotNull(fPath)) {
       path = fPath.getAbsolutePath();
@@ -1116,7 +1202,7 @@ public class Tool {
       } else {
         appName = "";
       }
-    } else if (!app.isEmpty()){
+    } else if (!app.isEmpty()) {
       shouldrun = true;
     }
     if (shouldrun) {
