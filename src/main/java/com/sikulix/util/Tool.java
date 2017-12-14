@@ -189,12 +189,14 @@ public class Tool {
     introPane.setLayout(new BoxLayout(introPane, BoxLayout.Y_AXIS));
     introPane.setBackground(Color.white);
     String aText = Content.extractResourceToString("/gui", "toolIntro.html");
-    JLabel introText = getNewLabel(320, 350, aText);
+    JLabel introText = new JLabel(aText);
     introText.setFont(new Font(Font.MONOSPACED, Font.BOLD, 16));
-    introText.setBorder(BorderFactory.createLineBorder(Color.magenta, 2));
+    introText.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(Color.magenta, 2),
+            BorderFactory.createEmptyBorder(0, 10, 10, 10)));
     introPane.add(introText);
     intro.pack();
-    Dimension introSize = intro.getMinimumSize();
+    Dimension introSize = intro.getPreferredSize();
     Element centered = new Element(introSize).getCentered(Do.onMain());
     intro.setLocation(centered.x, centered.y);
     initBox();
@@ -282,7 +284,8 @@ public class Tool {
     introPane.setBackground(Color.white);
     JLabel text = new JLabel(aText);
     text.setFont(new Font(Font.DIALOG, Font.PLAIN, 14));
-    text.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(Color.magenta, 2),
+    text.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(Color.magenta, 2),
             BorderFactory.createEmptyBorder(0, 10, 10, 10)));
     introPane.add(text);
     frame.pack();
