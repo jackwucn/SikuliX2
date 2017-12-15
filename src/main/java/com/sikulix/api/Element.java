@@ -1296,10 +1296,13 @@ public class Element implements Comparable<Element> {
         log.trace("save: %s", url);
         String imgFileName = Content.asImageFilename(url.getPath());
         Mat imgContent = getContent();
-        if (Imgcodecs.imwrite(imgFileName, imgContent)) {
+        boolean imwrite = Imgcodecs.imwrite(imgFileName, imgContent);
+        if (imwrite) {
           urlImg = url;
           setName(name);
           return imgFileName;
+        } else {
+          log.error("save: Imgcodecs.imwrite no success: (%s) %s", imgContent, imgFileName);
         }
       } else {
         //TODO save: http and jar

@@ -1309,6 +1309,7 @@ public class Tool {
         bundlePath = savePath;
       }
       dirty = false;
+      imageToSave = null;
       updateStatus();
     }
   }
