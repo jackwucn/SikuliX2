@@ -351,28 +351,6 @@ public class Tool {
     resetBox();
   }
 
-  private JLabel getNewLabel(final int width, final int height, String text) {
-    JLabel jLabel = new JLabel(text) {
-      @Override
-      public Dimension getPreferredSize() {
-        return new Dimension(width, height);
-      }
-
-      @Override
-      public Dimension getMinimumSize() {
-        return new Dimension(width, height);
-      }
-
-      @Override
-      public Dimension getMaximumSize() {
-        return new Dimension(width, height);
-      }
-    };
-    jLabel.setVerticalAlignment(SwingConstants.CENTER);
-    jLabel.setHorizontalAlignment(SwingConstants.CENTER);
-    return jLabel;
-  }
-
   private void initBox() {
     box = new JFrame();
     box.setUndecorated(true);
@@ -1323,7 +1301,9 @@ public class Tool {
         return;
       }
     }
-    if (SX.isSet(imageToSave.save(imageToSave.getName(), savePath))) {
+    String imageName = imageToSave.getName();
+    String imageSaved = imageToSave.save(imageName, savePath);
+    if (SX.isSet(imageSaved)) {
       if (!bundlePath.equals(savePath) && Do.popAsk(savePath +
               "\nUse this folder as bundlepath?", "SikuliX Tool::BundlePath", box)) {
         bundlePath = savePath;
