@@ -27,14 +27,21 @@ public class Window extends Element {
     return application;
   }
 
+  private String str(String... args) {
+    String result = "";
+    for (String arg : args) {
+      result += arg.replaceAll("'", "\"") + "\n";
+    }
+    return result;
+  }
+
   public Window() {
     if (SX.isMac()) {
-      String script = "";
-      script += "\ntell application \"System Events\"";
-      script += "\nset activeApp to name of first application process whose frontmost is true";
-      script += "\nactiveApp";
-      script += "\nend tell";
-      script += "\n";
+      String script = str(
+      "tell application 'System Events'",
+             "set activeApp to name of first application process whose frontmost is true",
+             "activeApp",
+             "end tell");
       Runner.ReturnObject returnObject = Runner.run(Runner.ScriptType.APPLESCRIPT, script);
       if (returnObject.isSuccess()) {
         application = (String) returnObject.getLoad();
@@ -48,13 +55,13 @@ public class Window extends Element {
 
   public String toFront() {
     if (SX.isMac()) {
-      String script = "";
-      script = String.format("tell app \"%s\" to activate", application);
-      script += "\ntell application \"System Events\"";
-      script += "\nset activeApp to name of first application process whose frontmost is true";
-      script += "\nactiveApp";
-      script += "\nend tell";
-      script += "\n";
+      String script = str(
+      "tell app '%s' to activate",
+             "tell application 'System Events'",
+             "set activeApp to name of first application process whose frontmost is true",
+             "activeApp",
+             "end tell");
+      script = String.format(script, application);
       Runner.ReturnObject returnObject = Runner.run(Runner.ScriptType.APPLESCRIPT, script);
       if (returnObject.isSuccess()) {
         return (String) returnObject.getLoad();
