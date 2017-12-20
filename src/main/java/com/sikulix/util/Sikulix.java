@@ -66,6 +66,7 @@ public class Sikulix {
 
     if (options.contains("tool")) {
       new Tool();
+      return;
     }
 
     if (options.contains("play")) {

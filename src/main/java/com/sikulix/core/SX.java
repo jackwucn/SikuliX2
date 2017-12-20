@@ -6,6 +6,7 @@ package com.sikulix.core;
 
 //import com.sikulix.scripting.JythonHelper;
 
+import com.sikulix.api.Window;
 import com.sikulix.devices.local.LocalDevice;
 import org.apache.commons.cli.*;
 import org.apache.commons.configuration2.PropertiesConfiguration;
@@ -1627,5 +1628,35 @@ public class SX {
     } catch (InterruptedException ex) {
     }
   }
+
+  public static String str(Object... args) {
+    String result = "";
+    int nparms = -1;
+    Object[] parms = null;
+    for (Object arg : args) {
+      if (nparms < 0) {
+        if (arg instanceof String) {
+          if (!"#".equals(((String) arg))) {
+            result += ((String) arg).replaceAll("'", "\"") + "\n";
+            nparms -= 1;
+          } else {
+            parms = new Object[args.length + nparms];
+            nparms = 0;
+          }
+        }
+      } else {
+        parms[nparms++] = arg;
+      }
+    }
+    if (nparms > 0) {
+      try {
+        result = String.format(result, parms);
+      } catch (Exception ex) {
+        log.error("str: %s [[%s]]", ex.getMessage(), result);
+      }
+    }
+    return result;
+  }
+
   //</editor-fold>
 }

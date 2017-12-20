@@ -27,17 +27,9 @@ public class Window extends Element {
     return application;
   }
 
-  private String str(String... args) {
-    String result = "";
-    for (String arg : args) {
-      result += arg.replaceAll("'", "\"") + "\n";
-    }
-    return result;
-  }
-
   public Window() {
     if (SX.isMac()) {
-      String script = str(
+      String script = SX.str(
       "tell application 'System Events'",
              "set activeApp to name of first application process whose frontmost is true",
              "activeApp",
@@ -55,13 +47,12 @@ public class Window extends Element {
 
   public String toFront() {
     if (SX.isMac()) {
-      String script = str(
+      String script = SX.str(
       "tell app '%s' to activate",
              "tell application 'System Events'",
              "set activeApp to name of first application process whose frontmost is true",
              "activeApp",
-             "end tell");
-      script = String.format(script, application);
+             "end tell", "#", application);
       Runner.ReturnObject returnObject = Runner.run(Runner.ScriptType.APPLESCRIPT, script);
       if (returnObject.isSuccess()) {
         return (String) returnObject.getLoad();

@@ -5,6 +5,7 @@
 package com.sikulix.util;
 
 import com.sikulix.api.*;
+import com.sikulix.api.Window;
 import com.sikulix.core.*;
 import com.sikulix.devices.hotkey.HotkeyCallback;
 import com.sikulix.devices.hotkey.HotkeyEvent;
@@ -14,18 +15,13 @@ import com.vladsch.flexmark.html.HtmlRenderer;
 import com.vladsch.flexmark.parser.Parser;
 import com.vladsch.flexmark.util.options.MutableDataSet;
 import org.opencv.core.*;
+import org.opencv.core.Point;
 import org.opencv.imgproc.Imgproc;
 
 import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.border.CompoundBorder;
-import java.awt.BasicStroke;
-import java.awt.Color;
-import java.awt.Container;
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
+import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -256,17 +252,72 @@ public class Tool {
         return;
       }
     }
+    String header = "";
+    Element onMain = Do.onMain();
+    int fHeight = (int) (onMain.h * 0.8) ;
+    int fWidth = 600;
     if (isMarkUp) {
       MutableDataSet options = new MutableDataSet();
       Parser parser = Parser.builder(options).build();
       options.set(HtmlRenderer.SOFT_BREAK, "<br>\n");
       HtmlRenderer renderer = HtmlRenderer.builder(options).build();
       Node document = parser.parse(aText);
-      aText = ("<html>" + renderer.render(document)).replaceAll("/<br>\\n", "<br>") + "<br>"
+      int count = 4;
+      int idx = 0;
+      int max = 0;
+      int maxmax = 90;
+      int last = 0;
+      while ((idx = aText.indexOf("\n", idx)) > -1) {
+        int line = idx - last;
+        if (line > maxmax) {
+          count += ((line + 90) / 90) - 1;
+          max = maxmax;
+        } else if (line > max) {
+          max = line;
+        }
+        idx++;
+        count++;
+        last = idx;
+      }
+      fHeight = Math.min(fHeight, count * 22);
+      fWidth = Math.max(fWidth, max * 10);
+      fWidth = Math.min(fWidth, 800);
+
+      header = "<html><body style=\"font-family: %s; font-size:large;\"";
+      aText = (renderer.render(document)).replaceAll("/<br>\\n", "<br>") + "<br>"
               + "<hr>type ESC to close";
     }
     JFrame frame = new JFrame();
-    frame.addKeyListener(new KeyAdapter() {
+    frame.setUndecorated(true);
+    frame.setAlwaysOnTop(true);
+
+//    Container introPane = frame.getContentPane();
+//    introPane.setLayout(new BoxLayout(introPane, BoxLayout.Y_AXIS));
+//    introPane.setBackground(Color.white);
+//    JLabel text = new JLabel(aText);
+//    text.setFont(new Font(Font.DIALOG, Font.PLAIN, 14));
+//    text.setBorder(BorderFactory.createCompoundBorder(
+//            BorderFactory.createLineBorder(Color.magenta, 2),
+//            BorderFactory.createEmptyBorder(0, 10, 10, 10)));
+//    introPane.add(text);
+
+    JTextPane jtp = new JTextPane();
+    jtp.setContentType("text/html");
+    jtp.setFont(new Font(Font.DIALOG, Font.PLAIN, 14));
+    if (!header.isEmpty()) {
+      aText = String.format(header, jtp.getFont().getFamily()) + aText;
+    }
+    jtp.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(Color.magenta, 2),
+            BorderFactory.createEmptyBorder(0, 10, 10, 10)));
+    jtp.setText(aText);
+    jtp.setEditable(false);
+    jtp.setCaretPosition(0);
+
+    JScrollPane jsp = new JScrollPane(jtp);
+    jsp.setPreferredSize(new Dimension(fWidth, fHeight));
+
+    jtp.addKeyListener(new KeyAdapter() {
       @Override
       public void keyTyped(KeyEvent e) {
         if (e.getKeyChar() == VK_ESCAPE) {
@@ -277,18 +328,12 @@ public class Tool {
         }
       }
     });
-    frame.setUndecorated(true);
-    frame.setAlwaysOnTop(true);
-    Container introPane = frame.getContentPane();
-    introPane.setLayout(new BoxLayout(introPane, BoxLayout.Y_AXIS));
-    introPane.setBackground(Color.white);
-    JLabel text = new JLabel(aText);
-    text.setFont(new Font(Font.DIALOG, Font.PLAIN, 14));
-    text.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(Color.magenta, 2),
-            BorderFactory.createEmptyBorder(0, 10, 10, 10)));
-    introPane.add(text);
+
+    frame.setLayout(new BorderLayout());
+    frame.add(jsp, BorderLayout.CENTER);
+
     frame.pack();
+
     Dimension size = frame.getPreferredSize();
     Element centered = new Element(size).getCentered(Do.onMain());
     frame.setLocation(centered.x, centered.y);
@@ -400,6 +445,7 @@ public class Tool {
             eventState(MASKDRAWN, 0, 0);
           } else {
             resizeToFrame();
+            dirty = true;
           }
         }
         lastDrag = null;
@@ -683,7 +729,7 @@ public class Tool {
   //<editor-fold desc="key typed">
   private void myKeyTyped(KeyEvent e) {
     boolean shouldQuit = false;
-    String allowed = " +-acerposftmnihqxz";
+    String allowed = " +-facrpostmnihqz"; // off e x
     if (e.CHAR_UNDEFINED != e.getKeyChar()) {
       if (e.getKeyChar() == VK_ESCAPE) {
         log.trace("action: quit request");
@@ -710,54 +756,70 @@ public class Tool {
               box.pack();
             }
           } else if ("x".equals("" + e.getKeyChar())) {
+          // X Masking (off)
             if (masking) {
               actionMaskingStop();
             } else {
               actionMasking();
             }
           } else if ("+".equals("" + e.getKeyChar())) {
+            // + ZoomIn
             actionZoomIn();
             log.trace("action: zoom-in to %s", rect);
           } else if ("-".equals("" + e.getKeyChar())) {
+            // - ZoomOut
             actionZoomOut();
             log.trace("action: zoom-out to %s", rect);
           } else if ("r".equals("" + e.getKeyChar())) {
+            // r Reset (hidden)
             log.trace("action: reset");
             actionReset();
           } else if ("p".equals("" + e.getKeyChar())) {
+            // p new bundlepath
             log.trace("action: bundlePath");
             actionBundlePath(box);
           } else if ("o".equals("" + e.getKeyChar())) {
+            // o open a picture file
             log.trace("action: open");
             actionOpen(box);
-          } else if ("c".equals("" + e.getKeyChar())) {
-            log.trace("action: capture");
-            actionCapture();
           } else if ("s".equals("" + e.getKeyChar())) {
+            // s save a picture file
             log.trace("action: save");
             actionSave();
+          } else if ("c".equals("" + e.getKeyChar())) {
+            // c new capture
+            log.trace("action: capture");
+            actionCapture();
           } else if ("f".equals("" + e.getKeyChar())) {
+            // f find on screen
             log.trace("action: find: %s", rect);
             actionFind();
           } else if ("a".equals("" + e.getKeyChar())) {
+            // a findAll on screen
             log.trace("action: findAll: %s", rect);
             actionFindAll();
           } else if ("t".equals("" + e.getKeyChar())) {
+            // t set target
             log.trace("action: set target");
             actionTarget();
           } else if ("m".equals("" + e.getKeyChar())) {
+            // m set similarity
             log.trace("action: set similarity");
             actionSimilar();
           } else if ("n".equals("" + e.getKeyChar())) {
+            // n set name
             log.trace("action: change name");
             actionName();
           } else if ("i".equals("" + e.getKeyChar())) {
+            // i get info
             log.trace("action: show info");
             actionInfo();
           } else if ("h".equals("" + e.getKeyChar())) {
+            // h show help
             log.trace("action: show help");
             actionHelp();
           } else if ("z".equals("" + e.getKeyChar())) {
+            // z revert last action
             log.trace("action: revert");
             actionRevert();
           }
@@ -803,9 +865,14 @@ public class Tool {
             }
             dirty = false;
           }
-          box.setVisible(false);
           if (!inBackground) {
-            intro.setVisible(true);
+            if (SX.isNull(shot)) {
+              box.setVisible(false);
+              intro.setVisible(true);
+            } else {
+              resetBox();
+              shot = null;
+            }
           } else {
             if (!Do.popAsk("still want to run in background?" +
                             "\n- use ctrl-alt-2 to capture" +

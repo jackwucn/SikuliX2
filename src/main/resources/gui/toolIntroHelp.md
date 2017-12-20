@@ -4,16 +4,24 @@ SikuliX Tool Help Information
 ---
 /
 **p - set bundle path**
-You can select a folder, where your captured images will be stored as `.png` imagefiles.
+You can select a folder, where your captured images will be stored as `.png` imagefiles. You can select a folder, where your images will be stored as `.png` imagefiles. You can select a folder, where your captured images will be stored as `.png` imagefiles.
 /
 **o - open an image file**
-additional info
+You can select a folder, where your captured images will be stored as `.png` imagefiles. You can select a folder, where your images will be stored as `.png` imagefiles. You can select a folder, where your captured images will be stored as `.png` imagefiles.
 /
 **c - capture screen image**
-additional info
+You can select a folder, where your captured images will be stored as `.png` imagefiles. You can select a folder, where your images will be stored as `.png` imagefiles. You can select a folder, where your captured images will be stored as `.png` imagefiles.
 /
 **a - focus an application**
-additional info
+You can select a folder, where your captured images will be stored as `.png` imagefiles. You can select a folder, where your images will be stored as `.png` imagefiles. You can select a folder, where your captured images will be stored as `.png` imagefiles.
+/
+You can select a folder, where your captured images will be stored as `.png` imagefiles. You can select a folder, where your images will be stored as `.png` imagefiles. You can select a folder, where your captured images will be stored as `.png` imagefiles.
+/
+You can select a folder, where your captured images will be stored as `.png` imagefiles. You can select a folder, where your images will be stored as `.png` imagefiles. You can select a folder, where your captured images will be stored as `.png` imagefiles.
 /
 **b - tool to background**
-additional info
+You can select a folder, where your captured images will be stored as `.png` imagefiles. You can select a folder, where your images will be stored as `.png` imagefiles. You can select a folder, where your captured images will be stored as `.png` imagefiles.
+/
+You can select a folder, where your captured images will be stored as `.png` imagefiles. You can select a folder, where your images will be stored as `.png` imagefiles. You can select a folder, where your captured images will be stored as `.png` imagefiles.
+/
+You can select a folder, where your captured images will be stored as `.png` imagefiles. You can select a folder, where your images will be stored as `.png` imagefiles. You can select a folder, where your captured images will be stored as `.png` imagefiles.
