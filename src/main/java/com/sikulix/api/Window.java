@@ -8,8 +8,10 @@ import com.sikulix.core.SX;
 import com.sikulix.core.SXLog;
 import com.sikulix.run.Runner;
 
-import java.awt.*;
+import java.awt.Desktop;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Window extends Element {
 
@@ -43,6 +45,25 @@ public class Window extends Element {
 
   public Window(String application) {
     this.application = application;
+  }
+
+  public static List<String> getApps() {
+    List<String> apps = new ArrayList<>();
+    Runner.ReturnObject returnObject = null;
+    if (SX.isMac()) {
+      String script = SX.str(
+              "tell app '%s' to activate",
+                "tell application \"Finder\"",
+                "set listOfProcesses to (get the name of every process whose visible is true)",
+                "end tell",
+                "listOfProcesses");
+      returnObject = Runner.run(Runner.ScriptType.APPLESCRIPT, script);
+      if (!returnObject.isSuccess()) {
+        return apps;
+      }
+    }
+    apps.add((String) returnObject.getLoad());
+    return apps;
   }
 
   public String toFront() {

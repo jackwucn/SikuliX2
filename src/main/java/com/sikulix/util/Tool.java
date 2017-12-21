@@ -1246,6 +1246,8 @@ public class Tool {
       String msg = "name an application to focus";
       if (!appName.isEmpty()) {
         msg = "name an application to focus\nor leave blank to focus " + appName + "\nor click Cancel to reset";
+      } else {
+        List<String> apps = Window.getApps();
       }
       app = Do.input(msg, "SikulixTool::WindowFocus", intro);
       if (SX.isNotNull(app)) {
