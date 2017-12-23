@@ -7,8 +7,8 @@
  */
 package com.sikulix.guide;
 
-import org.sikuli.script.Image;
-import org.sikuli.script.Region;
+import com.sikulix.api.Element;
+import com.sikulix.api.Picture;
 
 import java.awt.Graphics;
 import java.awt.Graphics2D;
@@ -22,7 +22,7 @@ public class SxImage extends Visual {
 
   public SxImage(String filename) {
     super();
-    init(Image.create(filename).get());
+    init(Picture.create(filename).get());
   }
 
   public SxImage(BufferedImage image) {
@@ -37,7 +37,7 @@ public class SxImage extends Visual {
 
   @Override
   public void updateComponent() {
-    setActualBounds(getTarget().getRect());
+    setActualBounds(getTarget().getRectangle());
   }
 
   @Override
@@ -46,7 +46,7 @@ public class SxImage extends Visual {
     if (scale == 0) {
       int x = (int) (getTarget().getCenter().x - image.getWidth()/2);
       int y = (int) (getTarget().getCenter().y - image.getHeight()/2);
-      setTarget(Region.create(x, y, image.getWidth(), image.getHeight()));
+      setTarget(new Element(x, y, image.getWidth(), image.getHeight()));
     } else {
       w = (int) (scale * image.getWidth());
       h = (int) (scale * image.getHeight());

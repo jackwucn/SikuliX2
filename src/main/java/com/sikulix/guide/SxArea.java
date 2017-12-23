@@ -7,8 +7,8 @@
  */
 package com.sikulix.guide;
 
-import org.sikuli.script.Region;
-import org.sikuli.script.Screen;
+import com.sikulix.api.Do;
+import com.sikulix.api.Element;
 
 import java.awt.*;
 import java.awt.event.ComponentEvent;
@@ -18,7 +18,7 @@ import java.util.ArrayList;
 public class SxArea extends Visual
 implements ComponentListener{
 
-   ArrayList<Region> regions = new ArrayList<Region>();
+   ArrayList<Element> regions = new ArrayList<>();
 
    ArrayList<Visual> landmarks = new ArrayList<Visual>();
 
@@ -47,7 +47,7 @@ implements ComponentListener{
    void updateBounds(){
 
       Rectangle rect = null;
-      Screen s = new Screen();
+      Element screen = Do.on();
 
       for (Visual comp : landmarks){
 
@@ -78,10 +78,10 @@ implements ComponentListener{
             setActualSize(rect.getSize());
          } else if (mode == VERTICAL){
             setActualLocation(rect.x,0);
-            setActualSize(rect.width, s.h);
+            setActualSize(rect.width, screen.h);
          } else if (mode == HORIZONTAL){
             setActualLocation(0, rect.y);
-            setActualSize(s.w, rect.height);
+            setActualSize(screen.w, rect.height);
          }
       }
 
@@ -94,16 +94,16 @@ implements ComponentListener{
       comp.addComponentListener(this);
    }
 
-   public void addRegion(Region region){
+   public void addRegion(Element region){
 
       if (regions.isEmpty()){
 
-         setActualBounds(region.getRect());
+         setActualBounds(region.getRectangle());
 
       }else{
 
          Rectangle bounds = getBounds();
-         bounds.add(region.getRect());
+         bounds.add(region.getRectangle());
          setActualBounds(bounds);
 
       }

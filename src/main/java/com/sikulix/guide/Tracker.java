@@ -4,12 +4,11 @@
 
 package com.sikulix.guide;
 
+import com.sikulix.api.Do;
+import com.sikulix.api.Element;
+import com.sikulix.api.Target;
 import com.sikulix.core.SX;
 import com.sikulix.core.SXLog;
-import org.sikuli.script.Match;
-import org.sikuli.script.Pattern;
-import org.sikuli.script.Region;
-import org.sikuli.script.Screen;
 
 import java.awt.Point;
 import java.awt.Rectangle;
@@ -25,11 +24,11 @@ public class Tracker extends Thread {
   private static SXLog log = SX.getSXLog("SX.GUIDE.TRACKER");
 
   Guide guide;
-  Pattern pattern;
-  Region match;
-  Screen screen;
+  Target pattern;
+  Element match;
+  Element screen;
   String image_filename;
-  Pattern centerPattern;
+  Target centerPattern;
   boolean initialFound = false;
   ArrayList<Visual> components = new ArrayList<Visual>();
   ArrayList<Point> offsets = new ArrayList<Point>();
@@ -37,17 +36,17 @@ public class Tracker extends Thread {
   TrackerListener listener;
   boolean running;
 
-  public Tracker(Pattern pattern) {
+  public Tracker(Target pattern) {
     init(pattern, null);
   }
 
-  public Tracker(Guide guide, Pattern pattern, Region match) {
+  public Tracker(Guide guide, Target pattern, Element match) {
     init(pattern, match);
     this.guide = guide;
   }
 
-  private void init (Pattern pattern, Region match) {
-    screen = new Screen();
+  private void init (Target pattern, Element match) {
+    screen = Do.on();
     BufferedImage image;
     BufferedImage center;
     this.pattern = pattern;
@@ -55,7 +54,7 @@ public class Tracker extends Thread {
     int w = image.getWidth();
     int h = image.getHeight();
     center = image.getSubimage(w / 4, h / 4, w / 2, h / 2);
-    centerPattern = new Pattern(center);
+    centerPattern = new Target(center);
     this.match = match;
   }
 
@@ -75,8 +74,9 @@ public class Tracker extends Thread {
     match = null;
     // Looking for the target for the first time
     log.trace("Looking for the target for the first time");
-    while (running && (match == null)) {
-      match = screen.exists(pattern, 0.5);
+    boolean hasMatch = false;
+    while (running && !hasMatch) {
+      hasMatch = screen.exists(pattern, 0.5);
     }
     // this means the tracker has been stopped before the pattern is found
     if (match == null) {
@@ -104,7 +104,8 @@ public class Tracker extends Thread {
 
     //</editor-fold>
 
-    Rectangle bounds = match.getRect();
+    match = screen.getLastMatch();
+    Rectangle bounds = match.getRectangle();
     anchor.found(bounds);
 
     while (running) {
@@ -120,8 +121,9 @@ public class Tracker extends Thread {
       // however, it would mean it takes at least 1.0 sec to realize
       // the pattern has disappeared and the referencing annotations should
       // be hidden
-      Match newMatch = screen.exists(pattern, 1.0);
-      if (newMatch == null) {
+      hasMatch = screen.exists(pattern, 1.0);
+      Element newMatch = null;
+      if (!hasMatch) {
         log.trace("Pattern is not found on the screen");
         //anchor.setOpacity(0.0f);
         //not_found_counter += 1;
@@ -131,6 +133,7 @@ public class Tracker extends Thread {
         // not_found_counter = 0;
         //}
       } else {
+        newMatch = screen.getLastMatch();
         log.trace("Pattern is found in a new location: %s", newMatch);
         // make it visible
         anchor.addFadeinAnimation();
@@ -168,7 +171,7 @@ public class Tracker extends Thread {
     running = false;
   }
 
-  public boolean isAlreadyTracking(Pattern pattern, Region match) {
+  public boolean isAlreadyTracking(Target pattern, Element match) {
     //TODO isAlreadyTracking
     try {
       boolean sameMatch = this.match == match;
@@ -199,7 +202,7 @@ public class Tracker extends Thread {
       sleep(1000);
     } catch (InterruptedException e) {
     }
-    Region center = new Region(match);
+    Element center = new Element(match);
     //<editor-fold defaultstate="collapsed" desc="TODO Pattern with BufferedImage">
     /* center.x += center.w/4-2;
      * center.y += center.h/4-2;
@@ -207,11 +210,10 @@ public class Tracker extends Thread {
      * center.h = center.h/2+4;
      */
     //</editor-fold>
-    Match m = center.exists(centerPattern, 0);
-    if (m == null) {
+    if (!center.exists(centerPattern, 0)) {
       log.trace("Pattern is not seen in the same location.");
+      return false;
     }
-    return m != null;
-    // Debug.log("[Tracker] Pattern is still in the same location" + m);
+    return true;
   }
 }

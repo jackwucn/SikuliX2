@@ -7,13 +7,13 @@
  */
 package com.sikulix.guide;
 
-import org.sikuli.script.Region;
+import com.sikulix.api.Element;
 
 import java.awt.*;
 
 public class SxRectangle extends Visual {
 
-  public SxRectangle(Region region) {
+  public SxRectangle(Element region) {
     super();
     init(region);
   }
@@ -28,18 +28,18 @@ public class SxRectangle extends Visual {
     init(null);
   }
 
-  private void init(Region region) {
+  private void init(Element region) {
     if (region != null) {
       targetRegion = region;
     } else {
-      targetRegion = Region.create(0, 0, 2*stroke, 2*stroke);
+      targetRegion = Element.create(0, 0, 2*stroke, 2*stroke);
     }
     setColor(Color.RED);
   }
 
   @Override
   public void updateComponent() {
-    setActualBounds(targetRegion.getRect());
+    setActualBounds(targetRegion.getRectangle());
     setForeground(colorFront);
     super.setLocationRelative(Layout.OVER);
   }

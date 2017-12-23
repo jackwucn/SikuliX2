@@ -4,16 +4,15 @@
 
 package com.sikulix.guide;
 
+import com.sikulix.api.Do;
+import com.sikulix.api.Element;
+import com.sikulix.api.Target;
 import com.sikulix.core.SX;
 import com.sikulix.core.SXLog;
 import com.sikulix.util.EventObserver;
 import com.sikulix.util.EventSubject;
 import com.sikulix.util.Overlay;
 import com.sikulix.guide.Transition.TransitionListener;
-import org.sikuli.script.Location;
-import org.sikuli.script.Pattern;
-import org.sikuli.script.Region;
-import org.sikuli.script.Screen;
 
 import javax.swing.*;
 import java.awt.*;
@@ -35,7 +34,7 @@ public class Guide extends Overlay implements EventObserver {
   final float DIMMING_OPACITY = 0.5f;
 
   Robot robot;
-  Region _region;
+  Element _region;
   JPanel content = null;
   Transition transition;
   ArrayList<Transition> transitions = new ArrayList<Transition>();
@@ -50,19 +49,19 @@ public class Guide extends Overlay implements EventObserver {
   public Guide() {
     super(new Color(0.1f, 0f, 0f, 0.1f), null);
     super.addObserver(this);
-    init(new Screen());
+    init(Do.on());
   }
 
   /**
    * create a new guide overlay on given region
    */
-  public Guide(Region region) {
+  public Guide(Element region) {
     super(new Color(0.1f, 0f, 0f, 0.1f), null);
     super.addObserver(this);
     init(region);
   }
 
-  private void init(Region region) {
+  private void init(Element region) {
     try {
       robot = new Robot();
     } catch (AWTException e1) {
@@ -70,7 +69,7 @@ public class Guide extends Overlay implements EventObserver {
     }
     content = getJPanel();
     _region = region;
-    Rectangle rect = _region.getRect();
+    Rectangle rect = _region.getRectangle();
     content.setPreferredSize(rect.getSize());
     add(content);
     setBounds(rect);
@@ -256,7 +255,7 @@ public class Guide extends Overlay implements EventObserver {
     DEFAULT_TIMEOUT = timeout_in_seconds;
   }
 
-  public Region getRegion() {
+  public Element getRegion() {
     return _region;
   }
 
@@ -297,7 +296,7 @@ public class Guide extends Overlay implements EventObserver {
     return false;
   }
 
-  public void updateSpotlights(ArrayList<Region> regions) {
+  public void updateSpotlights(ArrayList<Element> regions) {
     removeSpotlights();
 
     if (regions.isEmpty()) {
@@ -310,7 +309,7 @@ public class Guide extends Overlay implements EventObserver {
       // if there are spotlights added, darken the background
       setBackground(new Color(0f, 0f, 0f, DIMMING_OPACITY));
       content.setBackground(new Color(0f, 0f, 0f, DIMMING_OPACITY));
-      for (Region r : regions) {
+      for (Element r : regions) {
         SxSpotlight spotlight = new SxSpotlight(r);
         spotlight.setShape(SxSpotlight.CIRCLE);
         //addSpotlight(r,SxSpotlight.CIRCLE);
@@ -339,9 +338,9 @@ public class Guide extends Overlay implements EventObserver {
     }
   }
 
-  public Visual addBeam(Region r) {
-    beam = new SxBeam(this, r);
-    SxAnchor anchor = new SxAnchor(r);
+  public Visual addBeam(Element region) {
+    beam = new SxBeam(this, region);
+    SxAnchor anchor = new SxAnchor(region);
     addTransition(beam);
     return anchor;
   }
@@ -419,7 +418,7 @@ public class Guide extends Overlay implements EventObserver {
   }
 
   //<editor-fold defaultstate="collapsed" desc="global tracking support - not used currently">
-  public void addTracker(Pattern pattern, SxAnchor anchor) {
+  public void addTracker(Target pattern, SxAnchor anchor) {
     Tracker tracker = null;
 
     //      // find a tracker already assigned to this pattern
@@ -444,27 +443,27 @@ public class Guide extends Overlay implements EventObserver {
     }
   }
 
-  public void addTracker(Pattern pattern, Region r, Visual c) {
+  public void addTracker(Target pattern, Element region, Visual c) {
     Tracker tracker = null;
 
     // find a tracker already assigned to this pattern
     for (Tracker t : trackers) {
-      if (t.isAlreadyTracking(pattern, r)) {
+      if (t.isAlreadyTracking(pattern, region)) {
         tracker = t;
         break;
       }
     }
 
     if (tracker == null) {
-      tracker = new Tracker(this, pattern, r);
+      tracker = new Tracker(this, pattern, region);
       trackers.add(tracker);
     }
 
     tracker.setAnchor(c);
   }
 
-  public void addTracker(Pattern pattern, Region r, ArrayList<Visual> components) {
-    Tracker tracker = new Tracker(this, pattern, r);
+  public void addTracker(Target pattern, Element region, ArrayList<Visual> components) {
+    Tracker tracker = new Tracker(this, pattern, region);
     for (Visual c : components) {
       tracker.setAnchor(c);
     }
@@ -767,9 +766,9 @@ public class Guide extends Overlay implements EventObserver {
 
   public Visual arrow(Object from, Object to) {
     Visual gc = null;
-    if (from instanceof Region) {
-      gc = new SxArrow(((Region) from).getCenter().getPoint(), ((Region) to).getCenter().getPoint());
-    } else if (from instanceof Point || from instanceof Location) {
+    if (from instanceof Element) {
+      gc = new SxArrow(((Element) from).getCenter().getPoint(), ((Element) to).getCenter().getPoint());
+    } else if (from instanceof Point || from instanceof Element) {
       gc = new SxArrow((Point) from, (Point) to);
     } else if (from instanceof Visual) {
       gc = new SxArrow((Visual) from, (Visual) to);

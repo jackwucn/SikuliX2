@@ -7,7 +7,7 @@
  */
 package com.sikulix.guide;
 
-import org.sikuli.script.Region;
+import com.sikulix.api.Element;
 
 import javax.swing.*;
 import java.awt.*;
@@ -70,7 +70,7 @@ public class SxFlag extends Visual {
    }
 
    @Override
-   public Visual setLocationRelativeToRegion(Region region, Layout side) {
+   public Visual setLocationRelativeToRegion(Element region, Layout side) {
       if (side == Layout.TOP){
          setDirection(DIRECTION_SOUTH);
       } else if (side == Layout.BOTTOM){

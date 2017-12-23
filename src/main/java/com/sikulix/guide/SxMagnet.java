@@ -5,11 +5,10 @@
 package com.sikulix.guide;
 
 import com.sikulix.api.Do;
+import com.sikulix.api.Element;
+import com.sikulix.api.Target;
 import com.sikulix.guide.SxAnchor.AnchorListener;
 import com.sikulix.guide.Visual.Layout;
-import org.sikuli.script.Location;
-import org.sikuli.script.Pattern;
-import org.sikuli.script.Region;
 
 import java.awt.Dimension;
 import java.awt.Point;
@@ -99,7 +98,7 @@ public class SxMagnet
   void attractTarget(SxAnchor a, Point targetLocation) {
 
     try {
-      Pattern pattern = a.getPattern();
+      Target pattern = a.getPattern();
       SxImage img = new SxImage(pattern.get());
 
       SxClickable clickable = new SxClickable();
@@ -146,12 +145,12 @@ public class SxMagnet
     double theta = 0;
     double dtheta = 2.0f * Math.PI / (double) targets.size();
 
-    Location mouseLocation = new Location(Do.at());
+    Element mouseLocation = new Element(Do.at());
     int x = mouseLocation.x;
     int y = mouseLocation.y;
     int radius = 50;
 
-    Region r = new Region(mouseLocation.x - radius, mouseLocation.y - radius, radius * 2, radius * 2);
+    Element r = new Element(mouseLocation.x - radius, mouseLocation.y - radius, radius * 2, radius * 2);
     SxCircle c = new SxCircle(r);
     guide.addToFront(c);
 
@@ -178,7 +177,7 @@ public class SxMagnet
   }
   int anchoredCount = 0;
 
-  public void addTarget(final Pattern pattern) {
+  public void addTarget(final Target pattern) {
 
     final SxAnchor a = new SxAnchor(pattern);
     guide.addToFront(a);

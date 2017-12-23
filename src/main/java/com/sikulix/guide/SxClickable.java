@@ -7,7 +7,7 @@
  */
 package com.sikulix.guide;
 
-import org.sikuli.script.Region;
+import com.sikulix.api.Element;
 
 import java.awt.*;
 
@@ -16,15 +16,15 @@ public class SxClickable extends Visual {
   Color normalColor = new Color(1.0f, 1.0f, 0, 0.1f);
   Color mouseOverColor = new Color(1.0f, 0, 0, 0.1f);
   String name;
-  Region region;
+  Element region;
   boolean borderVisible = true;
   boolean mouseOverVisible = false;
   boolean mouseOver;
 
-  public SxClickable(Region region) {
+  public SxClickable(Element region) {
     this.region = region;
     if (region != null) {
-      this.setActualBounds(region.getRect());
+      this.setActualBounds(region.getRectangle());
       this.setActualLocation(region.x, region.y);
     }
   }

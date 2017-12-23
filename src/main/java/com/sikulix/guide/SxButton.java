@@ -7,7 +7,7 @@
  */
 package com.sikulix.guide;
 
-import org.sikuli.script.Region;
+import com.sikulix.api.Element;
 
 import javax.swing.*;
 import java.awt.*;
@@ -19,7 +19,7 @@ public class SxButton extends SxClickable {
   JLabel label = null;
 
   public SxButton(String name) {
-    super(new Region(0, 0, 0, 0));
+    super(new Element(0, 0, 0, 0));
     init(name);
   }
 

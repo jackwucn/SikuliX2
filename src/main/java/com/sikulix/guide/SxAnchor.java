@@ -7,18 +7,18 @@
  */
 package com.sikulix.guide;
 
-import org.sikuli.script.Pattern;
-import org.sikuli.script.Region;
+import com.sikulix.api.Element;
+import com.sikulix.api.Target;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 
 public class SxAnchor extends Visual {
-  Region region;
+  Element region;
   ArrayList<AnchorListener> listeners = new ArrayList<AnchorListener>();
   private boolean animateAnchoring = false;
-  Pattern pattern = null;
+  Target pattern = null;
   Tracker tracker = null;
 
   public SxAnchor() {
@@ -26,22 +26,22 @@ public class SxAnchor extends Visual {
     setForeground(Color.black);
   }
 
-  public SxAnchor(Pattern pattern) {
+  public SxAnchor(Target pattern) {
     super();
     this.pattern = pattern;
     setTracker(pattern);
   }
 
-  public SxAnchor(Region region) {
+  public SxAnchor(Element region) {
     super();
     if (region != null) {
       this.region = region;
-      setActualBounds(region.getRect());
+      setActualBounds(region.getRectangle());
     }
     setForeground(Color.black);
   }
 
-  public Pattern getPattern() {
+  public Target getPattern() {
     return pattern;
   }
 
@@ -96,7 +96,7 @@ public class SxAnchor extends Visual {
     startAnimation();
   }
 
-  public void setTracker(Pattern pattern) {
+  public void setTracker(Target pattern) {
     setOpacity(0f);
     tracker = new Tracker(pattern);
     BufferedImage img;

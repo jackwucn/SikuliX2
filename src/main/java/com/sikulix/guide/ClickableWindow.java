@@ -4,9 +4,9 @@
 
 package com.sikulix.guide;
 
+import com.sikulix.api.Element;
 import com.sikulix.guide.Visual.Layout;
 import com.sikulix.util.Overlay;
-import org.sikuli.script.Region;
 
 import javax.swing.*;
 import java.awt.Color;
@@ -74,7 +74,7 @@ public class ClickableWindow extends Overlay
     jp.add(c1);
   }
 
-  public void addClickableRegion(Region region, String name) {
+  public void addClickableRegion(Element region, String name) {
     SxClickable c = new SxClickable(region);
     c.setName(name);
     addClickable(c);

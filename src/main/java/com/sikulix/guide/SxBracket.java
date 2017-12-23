@@ -7,7 +7,7 @@
  */
 package com.sikulix.guide;
 
-import org.sikuli.script.Region;
+import com.sikulix.api.Element;
 
 import javax.swing.*;
 import java.awt.*;
@@ -50,7 +50,7 @@ public class SxBracket extends Visual {
    }
 
    @Override
-   public Visual setLocationRelativeToRegion(Region region, Layout side) {
+   public Visual setLocationRelativeToRegion(Element region, Layout side) {
       if (side == Layout.TOP){
          setActualSize(region.w,thickness);
          setDirection(DIRECTION_SOUTH);

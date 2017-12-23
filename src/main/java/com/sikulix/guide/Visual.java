@@ -7,8 +7,8 @@
  */
 package com.sikulix.guide;
 
-import org.sikuli.script.Pattern;
-import org.sikuli.script.Region;
+import com.sikulix.api.Element;
+import com.sikulix.api.Target;
 
 import javax.swing.*;
 import java.awt.*;
@@ -19,8 +19,7 @@ import java.util.ArrayList;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-public class Visual extends JComponent
-        implements Cloneable {
+public class Visual extends JComponent implements Cloneable {
 
   public enum Layout {
     TOP,
@@ -40,16 +39,16 @@ public class Visual extends JComponent
   public int PADDING_Y = 4;
 
   //<editor-fold defaultstate="collapsed" desc="Setters/Getters">
-  Region targetRegion = null;
+  Element targetRegion = null;
   Visual targetComponent = null;
-  Pattern targetPattern = null;
+  Target targetPattern = null;
   Guide currentGuide = null;
 
   public void setGuide(Guide g) {
     currentGuide = g;
   }
 
-  public Region getTarget() {
+  public Element getTarget() {
     if (targetRegion != null) {
       return targetRegion;
     }
@@ -316,8 +315,8 @@ public class Visual extends JComponent
     return actualBounds;
   }
 
-  public Region getRegion() {
-    return Region.create(getBounds());
+  public Element getRegion() {
+    return new Element(getBounds());
   }
 
   public void setActualBounds(Rectangle actualBounds) {
@@ -920,7 +919,7 @@ public class Visual extends JComponent
     @Override
     void update() {
       setOffset(offsetx, offsety);
-      Region region = new Region(leader.getBounds());
+      Element region = new Element(leader.getBounds());
       setLocationRelativeToRegion(region, Layout.ORIGIN);
       super.update();
     }
@@ -938,7 +937,7 @@ public class Visual extends JComponent
 
     @Override
     void update() {
-      Region region = new Region(getTargetComponent().getBounds());
+      Element region = new Element(getTargetComponent().getBounds());
       setHorizontalAlignmentWithRegion(region, x);
       setVerticalAlignmentWithRegion(region, y);
       super.update();
@@ -948,14 +947,14 @@ public class Visual extends JComponent
 
   //<editor-fold defaultstate="collapsed" desc="Position">
   public <RCPS> Visual setTarget(RCPS target) {
-    if (target instanceof Region) {
-      targetRegion = (Region) target;
+    if (target instanceof Element) {
+      targetRegion = (Element) target;
     } else if (target instanceof Visual) {
       targetComponent = (Visual) target;
-    } else if (target instanceof Pattern) {
-      targetPattern = (Pattern) target;
+    } else if (target instanceof Target) {
+      targetPattern = (Target) target;
     } else if (target instanceof String) {
-      targetPattern = new Pattern((String) target);
+      targetPattern = new Target((String) target);
     }
     if (targetPattern != null) {
       targetComponent = new SxAnchor(targetPattern);
@@ -1018,8 +1017,7 @@ public class Visual extends JComponent
     }
   }
 
-  public Visual setLocationRelativeToRegion(Region region, Layout side) {
-    Region orgReg = new Region(region);
+  public Visual setLocationRelativeToRegion(Element region, Layout side) {
     if (margin != null) {
       region.x -= margin.left;
       region.y -= margin.top;
@@ -1049,21 +1047,21 @@ public class Visual extends JComponent
     } else if (side == Layout.INSIDE) {
       setActualLocation(region.x + region.w / 2 - width / 2, region.y + region.h / 2 - height / 2);
     } else if (side == Layout.OVER) {
-      setActualBounds(region.getRect());
+      setActualBounds(region.getRectangle());
     } else if (side == Layout.ORIGIN) {
       setActualLocation(region.x, region.y);
     }
     return this;
   }
 
-  public void setHorizontalAlignmentWithRegion(Region region, float f) {
+  public void setHorizontalAlignmentWithRegion(Element region, float f) {
     int x0 = region.x;
     int x1 = region.x + region.w - getActualWidth();
     int x = (int) (x0 + (x1 - x0) * f);
     setActualLocation(x, getActualLocation().y);
   }
 
-  public void setVerticalAlignmentWithRegion(Region region, float f) {
+  public void setVerticalAlignmentWithRegion(Element region, float f) {
     int y0 = region.y;
     int y1 = region.y + region.h - getActualHeight();
     int y = (int) (y0 + (y1 - y0) * f);

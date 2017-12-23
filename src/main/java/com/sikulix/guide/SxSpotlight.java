@@ -7,7 +7,7 @@
  */
 package com.sikulix.guide;
 
-import org.sikuli.script.Region;
+import com.sikulix.api.Element;
 
 import java.awt.*;
 import java.awt.geom.Ellipse2D;
@@ -21,18 +21,18 @@ public class SxSpotlight extends Visual {
    Color border_color = Color.black;
    int shape = RECTANGLE;
 
-   Region region;
+   Element region;
 
    public SxSpotlight(){
       setShape(RECTANGLE);
    }
 
-   public SxSpotlight(Region region){
+   public SxSpotlight(Element region){
       super();
       this.region = region;
 
       if (region != null)
-         setActualBounds(region.getRect());
+         setActualBounds(region.getRectangle());
 
       setShape(RECTANGLE);
    }

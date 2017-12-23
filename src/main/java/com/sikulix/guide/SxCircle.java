@@ -7,14 +7,14 @@
  */
 package com.sikulix.guide;
 
-import org.sikuli.script.Region;
+import com.sikulix.api.Element;
 
 import java.awt.*;
 import java.awt.geom.Ellipse2D;
 
 public class SxCircle extends Visual {
 
-  public SxCircle(Region region) {
+  public SxCircle(Element region) {
     super();
     init(region);
   }
@@ -29,18 +29,18 @@ public class SxCircle extends Visual {
     init(null);
   }
 
-  private void init(Region region) {
+  private void init(Element region) {
     if (region != null) {
       targetRegion = region;
     } else {
-      targetRegion = Region.create(0, 0, 2*stroke, 2*stroke);
+      targetRegion = new Element(0, 0, 2*stroke, 2*stroke);
     }
     setColor(Color.RED);
   }
 
   @Override
   public void updateComponent() {
-    setActualBounds(getTarget().getRect());
+    setActualBounds(getTarget().getRectangle());
     setForeground(colorFront);
     super.setLocationRelative(Layout.OVER);
   }

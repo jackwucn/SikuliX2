@@ -8,7 +8,7 @@
 package com.sikulix.guide;
 
 import com.sikulix.api.Do;
-import org.sikuli.script.Location;
+import com.sikulix.api.Element;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
@@ -22,7 +22,7 @@ public class GlobalMouseMotionTracker implements ActionListener {
    // this keeps track of how many times the cursor stays stationary
    int idle_count;
 
-   Location lastLocation = null;
+   Element lastLocation = null;
 
    static GlobalMouseMotionTracker _instance = null;
    static public GlobalMouseMotionTracker getInstance(){
@@ -57,7 +57,7 @@ public class GlobalMouseMotionTracker implements ActionListener {
    @Override
    public void actionPerformed(ActionEvent arg) {
 
-      Location newLocation = new Location(Do.at());
+      Element newLocation = new Element(Do.at());
       //Debug.info("Mouse loction: " + newLocation);
 
       if (lastLocation != null){

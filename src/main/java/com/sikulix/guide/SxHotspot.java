@@ -7,7 +7,7 @@
  */
 package com.sikulix.guide;
 
-import org.sikuli.script.Region;
+import com.sikulix.api.Element;
 
 import javax.swing.*;
 import java.awt.*;
@@ -22,7 +22,7 @@ public class SxHotspot extends SxClickable {
   JLabel symbol;
   SxCircle circle;
 
-  public SxHotspot(Region region, Visual text, Guide g) {
+  public SxHotspot(Element region, Visual text, Guide g) {
     super(region);
     guide = g;
     spotlight = new SxSpotlight(region);
@@ -49,7 +49,7 @@ public class SxHotspot extends SxClickable {
     // draw a circle around the question mark
     Rectangle cc = new Rectangle(symbol.getBounds());
     cc.grow(7, 0);
-    circle = new SxCircle(new Region(cc));
+    circle = new SxCircle(new Element(cc));
     circle.setForeground(Color.white);
     circle.setShadow(5, 2);
 

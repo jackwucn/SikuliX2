@@ -4,7 +4,7 @@
 
 package com.sikulix.guide;
 
-import org.sikuli.script.Region;
+import com.sikulix.api.Element;
 import com.sikulix.util.EventObserver;
 import com.sikulix.util.EventSubject;
 import com.sikulix.util.Overlay;
@@ -21,7 +21,7 @@ public class SxBeam extends Overlay
 
   Guide guide;
 
-  public SxBeam(Guide guide, Region target) {
+  public SxBeam(Guide guide, Element target) {
     super(new Color(1f, 0f, 0f, 0.7f), null);
     super.addObserver(this);
     this.guide = guide;
@@ -37,13 +37,13 @@ public class SxBeam extends Overlay
   }
   public Point current = null;
   public Point to = null;
-  Region target;
+  Element target;
 
   @Override
   public void update(EventSubject es) {
     Graphics2D g = ((Overlay) es).getJPanelGraphics();
     g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-    drawRayPolygon(g, current, target.getRect());
+    drawRayPolygon(g, current, target.getRectangle());
   }
   /*
    public void paint(Graphics g){
@@ -206,7 +206,7 @@ public class SxBeam extends Overlay
     mouseTracker.addListener(this);
     mouseTracker.start();
 
-    setBounds(guide.getRegion().getRect());
+    setBounds(guide.getRegion().getRectangle());
     setVisible(true);
     toFront();
 
@@ -264,7 +264,7 @@ public class SxBeam extends Overlay
     current = new Point(x, y);
     repaint();
 
-    if (target.getRect().contains(current)) {
+    if (target.getRectangle().contains(current)) {
       setVisible(false);
       dispose();
       listener.transitionOccurred(this);

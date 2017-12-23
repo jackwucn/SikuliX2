@@ -7,7 +7,7 @@
  */
 package com.sikulix.guide;
 
-import org.sikuli.script.Region;
+import com.sikulix.api.Element;
 
 import java.awt.*;
 import java.awt.geom.AffineTransform;
@@ -64,7 +64,7 @@ public class SxCallout extends Visual {
   }
 
   @Override
-  public Visual setLocationRelativeToRegion(Region region, Layout side) {
+  public Visual setLocationRelativeToRegion(Element region, Layout side) {
     if (side != layout) {
       layout = side;
       updateComponent();
