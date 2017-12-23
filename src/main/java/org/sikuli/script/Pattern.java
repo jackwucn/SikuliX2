@@ -8,11 +8,17 @@ import com.sikulix.api.Target;
 import com.sikulix.core.SX;
 import com.sikulix.core.SXLog;
 
+import java.awt.image.BufferedImage;
+
 public class Pattern extends Target {
   private static SXLog log = SX.getSXLog("API.PATTERN");
 
   public Pattern(String name) {
     super(name);
+  }
+
+  public Pattern(BufferedImage bimg) {
+    super(bimg);
   }
 
   @Override
