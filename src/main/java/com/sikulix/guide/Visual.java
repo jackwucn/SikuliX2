@@ -961,7 +961,6 @@ public class Visual extends JComponent implements Cloneable {
       currentGuide.addToFront(targetComponent);
       setLayout(layout);
     }
-    updateComponent();
     return this;
   }
 

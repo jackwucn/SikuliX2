@@ -173,4 +173,8 @@ public class HookDevice extends IDevice {
   public Picture capture(Object... args) {
     return null;
   }
+
+  public Picture userCapture(Object... args) {
+    return null;
+  }
 }

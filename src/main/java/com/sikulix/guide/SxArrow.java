@@ -44,7 +44,6 @@ public class SxArrow extends Visual implements ComponentListener {
   private void init() {
     colorFront = Color.RED;
     style = STRAIGHT;
-    updateComponent();
   }
 
   @Override
@@ -129,7 +128,6 @@ public class SxArrow extends Visual implements ComponentListener {
 
   public void setDestination(Point destination) {
     this.destination = destination;
-    updateComponent();
   }
 
   public Point getDestination() {
@@ -138,7 +136,6 @@ public class SxArrow extends Visual implements ComponentListener {
 
   public void setSource(Point source) {
     this.source = source;
-    updateComponent();
   }
 
   public Point getSource() {
@@ -156,7 +153,7 @@ public class SxArrow extends Visual implements ComponentListener {
 
   @Override
   public void componentMoved(ComponentEvent arg0) {
-    updateComponent();
+    //updateComponent();
   }
 
   @Override
@@ -165,7 +162,7 @@ public class SxArrow extends Visual implements ComponentListener {
 
   @Override
   public void componentShown(ComponentEvent arg0) {
-    updateComponent();
+    //updateComponent();
     updateVisibility();
   }
 }

@@ -58,14 +58,12 @@ public class SxFlag extends Visual {
    @Override
    public Visual setText(String text){
       this.text = text;
-      updateComponent();
       return this;
    }
 
    @Override
    public Visual setFont(String fontName, int fsize) {
      font = new Font(fontName, Font.BOLD, fsize>0 ? fsize : fontSize);
-     updateComponent();
      return this;
    }
 

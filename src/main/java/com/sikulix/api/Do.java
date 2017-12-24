@@ -1042,6 +1042,10 @@ public class Do {
     return elem.capture();
   }
 
+  public static Picture userCapture(Object... args) {
+    return getDevice().userCapture(args);
+  }
+
   public static boolean use(IDevice device) {
     device.start();
     if (device.isValid()) {
@@ -1084,13 +1088,13 @@ public class Do {
       return mousePos.x == x && mousePos.y == y;
     }
   }
-  //</editor-fold>
 
-  //<editor-fold desc="actions like find, wait, click">
   public static Element at() {
     return getDevice().at();
   }
+  //</editor-fold>
 
+  //<editor-fold desc="actions like find, wait, click">
   public static Element click(Object... args) {
     log.trace("click: start");
     Element target = findForClick(Finder.CLICK, args);

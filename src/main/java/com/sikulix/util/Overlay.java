@@ -34,11 +34,11 @@ public class Overlay extends JFrame implements EventSubject {
     init(col, o);
   }
 
-  private void init(Color col, EventObserver o) {
+  private void init(Color col, EventObserver observer) {
     setUndecorated(true);
     setAlwaysOnTop(true);
     if (col != null) {
-      _obs = o;
+      _obs = observer;
       _win = this;
       try {
         setBackground(col);
@@ -51,10 +51,6 @@ public class Overlay extends JFrame implements EventSubject {
           if (g instanceof Graphics2D) {
             Graphics2D g2d = (Graphics2D) g;
             _currG2D = g2d;
-            if (SX.getSXJAVAVERSIONNUMBER() < 7) {
-              g2d.setColor(_col);
-              g2d.fillRect(0, 0, getWidth(), getHeight());
-            }
             if (_obs != null) {
               _obs.update(_win);
             }

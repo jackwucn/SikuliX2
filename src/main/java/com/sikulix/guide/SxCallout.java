@@ -67,7 +67,6 @@ public class SxCallout extends Visual {
   public Visual setLocationRelativeToRegion(Element region, Layout side) {
     if (side != layout) {
       layout = side;
-      updateComponent();
     }
     targetRegion = region;
     return super.setLocationRelativeToRegion(targetRegion, side);

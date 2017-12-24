@@ -326,4 +326,9 @@ public class VNCDevice extends IDevice implements Closeable {
     }
     return picture2;
   }
+
+  @Override
+  public Picture userCapture(Object... args) {
+    return null;
+  }
 }

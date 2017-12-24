@@ -4,6 +4,7 @@
 
 package com.sikulix.util;
 
+import com.sikulix.api.Do;
 import com.sikulix.api.Window;
 import com.sikulix.core.Content;
 import com.sikulix.core.SX;
@@ -11,7 +12,11 @@ import com.sikulix.core.SXLog;
 import com.sikulix.devices.IDevice;
 import com.sikulix.devices.hook.HookDevice;
 import com.sikulix.devices.vnc.VNCDevice;
+import com.sikulix.guide.Guide;
+import com.sikulix.guide.Visual;
+import org.sikuli.script.Screen;
 
+import java.awt.Color;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -71,6 +76,18 @@ public class Sikulix {
 
     if (options.contains("play")) {
 //********** play start
+//      Do.popup("playing");
+//      Guide guide = new Guide();
+//
+//      Visual vis = guide.text("HALLO")
+//              .setTextColor(Color.RED)
+//              .setFontSize(72)
+//              .setTarget(Do.on().getCenter().grow(100))
+//              .setLayout(Visual.Layout.OVER);
+//
+//      guide.showNow(2);
+
+//      Do.userCapture();
 //********** play end
     }
   }

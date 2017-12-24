@@ -102,4 +102,6 @@ public abstract class IDevice {
   public abstract void wheel(Action action, int steps);
 
   public abstract Picture capture(Object... args);
+
+  public abstract Picture userCapture(Object... args);
 }

@@ -161,4 +161,9 @@ public class AndroidDevice extends IDevice{
   public Picture capture(Object... args) {
     return null;
   }
+
+  @Override
+  public Picture userCapture(Object... args) {
+    return null;
+  }
 }
