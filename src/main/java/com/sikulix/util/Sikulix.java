@@ -66,8 +66,6 @@ public class Sikulix {
 
     if (options.contains("play")) {
 //********** play start
-      List<String> apps = Window.getApps();
-      int size = apps.size();
 //********** play end
     }
   }
