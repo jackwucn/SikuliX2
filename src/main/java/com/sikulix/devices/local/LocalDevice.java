@@ -9,6 +9,7 @@ import com.sikulix.api.Event;
 import com.sikulix.core.*;
 import com.sikulix.devices.IDevice;
 import com.sikulix.devices.hook.HookDevice;
+import com.sikulix.util.Capture;
 import com.sikulix.util.animation.Animator;
 import com.sikulix.util.animation.AnimatorOutQuarticEase;
 import com.sikulix.util.animation.AnimatorTimeBased;
@@ -56,11 +57,11 @@ public class LocalDevice extends IDevice {
   }
 
   HookDevice hook = null;
-  
+
   private Object synchObject = new Object();
   private boolean locked = false;
 
-//  private Element owner = new Element();
+  //  private Element owner = new Element();
   private LocalRobot robot = null;
 
   private final int LEFT = InputEvent.BUTTON1_MASK;
@@ -371,7 +372,7 @@ public class LocalDevice extends IDevice {
     }
     int x = dest.x;
     int y = dest.y;
-    log.trace("smoothMove (%.1f): (%d, %d) to (%d, %d)", (0.0 + ms)/1000, src.x, src.y, x, y);
+    log.trace("smoothMove (%.1f): (%d, %d) to (%d, %d)", (0.0 + ms) / 1000, src.x, src.y, x, y);
     if (ms == 0) {
       robot.waitForIdle();
       robot.mouseMove(x, y);
@@ -506,8 +507,8 @@ public class LocalDevice extends IDevice {
   //<editor-fold desc="monitors, capture, show">
   private GraphicsEnvironment genv = null;
   private GraphicsDevice[] gdevs;
-  private Rectangle[] monitorBounds = null;
-  private Rectangle rAllMonitors;
+  private Rectangle[] monitors = null;
+  private Rectangle allMonitors;
   private int mainMonitor = -1;
   private int nMonitors = 0;
 
@@ -524,15 +525,15 @@ public class LocalDevice extends IDevice {
       if (nMonitors == 0) {
         log.terminate(1, "getMonitors: GraphicsEnvironment has no ScreenDevices");
       }
-      monitorBounds = new Rectangle[nMonitors];
-      rAllMonitors = null;
+      monitors = new Rectangle[nMonitors];
+      allMonitors = null;
       Rectangle currentBounds;
       for (int i = 0; i < nMonitors; i++) {
         currentBounds = new Rectangle(gdevs[i].getDefaultConfiguration().getBounds());
-        if (null != rAllMonitors) {
-          rAllMonitors = rAllMonitors.union(currentBounds);
+        if (null != allMonitors) {
+          allMonitors = allMonitors.union(currentBounds);
         } else {
-          rAllMonitors = currentBounds;
+          allMonitors = currentBounds;
         }
         if (currentBounds.contains(new Point())) {
           if (mainMonitor < 0) {
@@ -544,10 +545,10 @@ public class LocalDevice extends IDevice {
         }
         log.trace("getMonitors: Monitor %d: (%d, %d) %d x %d", i,
                 currentBounds.x, currentBounds.y, currentBounds.width, currentBounds.height);
-        monitorBounds[i] = currentBounds;
+        monitors[i] = currentBounds;
       }
       if (mainMonitor < 0) {
-        log.trace("getMonitors: No ScreenDevice has (0,0) --- using 0 as primary: %s", monitorBounds[0]);
+        log.trace("getMonitors: No ScreenDevice has (0,0) --- using 0 as primary: %s", monitors[0]);
         mainMonitor = 0;
       }
     } else {
@@ -567,9 +568,9 @@ public class LocalDevice extends IDevice {
       return new Rectangle();
     }
     if (ids.length == 1) {
-      return new Rectangle(monitorBounds[(ids[0] < 0 || ids[0] >= nMonitors) ? mainMonitor : ids[0]]);
+      return new Rectangle(monitors[(ids[0] < 0 || ids[0] >= nMonitors) ? mainMonitor : ids[0]]);
     }
-    return monitorBounds[mainMonitor];
+    return monitors[mainMonitor];
   }
 
   @Override
@@ -587,12 +588,12 @@ public class LocalDevice extends IDevice {
 
   @Override
   public Rectangle getAllMonitors() {
-    return rAllMonitors;
+    return allMonitors;
   }
 
   @Override
   public Rectangle[] getMonitors() {
-    return monitorBounds;
+    return monitors;
   }
 
   @Override
@@ -609,7 +610,7 @@ public class LocalDevice extends IDevice {
 
   @Override
   public Element getContainingMonitor(Element element) {
-    return new Element(monitorBounds[getContainingMonitorID(element)]);
+    return new Element(monitors[getContainingMonitorID(element)]);
   }
 
   public Screen getContainingScreen(Element element) {
@@ -619,6 +620,7 @@ public class LocalDevice extends IDevice {
   public GraphicsDevice getGraphicsDevice(int id) {
     return gdevs[id];
   }
+
   //TODO implement more support for Retina (HiDpi)
   public static boolean isRetina(int id) {
     LocalDevice localDevice = (LocalDevice) new LocalDevice().start();
@@ -633,6 +635,85 @@ public class LocalDevice extends IDevice {
 
 
   //TODO implement capture, show coordination
+
+  String promptMsg = "SikuliX2 CAPTURE";
+  boolean waitPrompt = false;
+  Capture[] prompts = null;
+  int monitorCount = 0;
+
+  boolean ignorePrimaryAtCapture = false;
+  int waitForScreenshot = 300;
+
+  Picture capturedImage = null;
+
+  public Picture userCapture(Object... args) {
+    final String[] message = new String[]{"SikuliX2 Capture"};
+    for (Object arg : args) {
+      if (arg instanceof String) {
+        message[0] = (String) arg;
+      }
+    }
+    waitPrompt = true;
+    monitorCount = getNumberOfMonitors();
+    prompts = new Capture[monitorCount];
+    Thread th = new Thread() {
+      @Override
+      public void run() {
+        String msg = message[0].isEmpty() ? promptMsg : message[0];
+        for (int mID = 0; mID < prompts.length; mID++) {
+          if (ignorePrimaryAtCapture && mID == 0) {
+            continue;
+          }
+          prompts[mID] = new Capture();
+          prompts[mID].prompt(msg);
+        }
+      }
+    };
+    th.start();
+    boolean isComplete = false;
+    capturedImage = null;
+    int count = 0;
+    while (!isComplete) {
+      SX.pause(0.1f);
+      if (count++ > waitForScreenshot) {
+        break;
+      }
+      for (int mID = 0; mID < monitorCount; mID++) {
+        Capture capture = prompts[mID];
+        if (capture == null) {
+          continue;
+        }
+        if (capture.isComplete()) {
+          closePrompt(mID);
+          capturedImage = capture.getSelection();
+          capture.close();
+          prompts[mID] = null;
+          isComplete = true;
+        }
+      }
+    }
+//    resetActiveCapturePrompt();
+    return capturedImage;
+  }
+
+  public void closePrompts() {
+    for (Capture prompt : prompts) {
+      if (SX.isNull(prompt)) {
+        continue;
+      }
+      prompt.close();
+    }
+  }
+
+  public void closePrompt(int monotorID) {
+    for (int mID = 0; mID < monitorCount; mID++) {
+      if (monotorID == mID || SX.isNull(prompts[mID])) {
+        continue;
+      }
+      prompts[mID].close();
+      prompts[mID] = null;
+    }
+  }
 
   public Picture capture(Object... args) {
     Element what = Do.on();

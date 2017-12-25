@@ -151,4 +151,9 @@ public class ServerDevice extends IDevice {
   public Picture capture(Object... args) {
     return null;
   }
+
+  @Override
+  public Picture userCapture(Object... args) {
+    return null;
+  }
 }

@@ -116,6 +116,12 @@ public class Element implements Comparable<Element> {
   //</editor-fold>
 
   //<editor-fold desc="***** construction, info">
+  public boolean isLocal() {
+    //TODO local / nonLocal screen
+    //getDevice().???
+    return true;
+  }
+
   public String getName() {
     if (SX.isNotSet(name)) {
       if (isPoint()) {

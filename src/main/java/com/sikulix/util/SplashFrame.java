@@ -77,6 +77,7 @@ public class SplashFrame extends JFrame {
   public SplashFrame(String[] args) {
     init(args);
   }
+
   private void init(String[] args) {
     setResizable(false);
     setUndecorated(true);
