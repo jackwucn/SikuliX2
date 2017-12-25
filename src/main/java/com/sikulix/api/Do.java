@@ -84,8 +84,7 @@ public class Do {
       if (point instanceof Point) {
         x = ((Point) point).x;
         y = ((Point) point).y;
-      }
-      if (point instanceof Frame) {
+      } else if (point instanceof Frame) {
         return (JFrame) point;
       } else {
         x = ((Element) point).getCenter().x;

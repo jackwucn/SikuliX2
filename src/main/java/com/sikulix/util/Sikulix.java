@@ -64,14 +64,12 @@ public class Sikulix {
       return;
     }
 
-    if (options.contains("tool")) {
-      new Tool();
-      return;
-    }
-
     if (options.contains("play")) {
 //********** play start
+      List<String> apps = Window.getApps();
+      int size = apps.size();
 //********** play end
     }
   }
+
 }

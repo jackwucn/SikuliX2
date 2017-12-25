@@ -11,6 +11,7 @@ import com.sikulix.run.Runner;
 import java.awt.Desktop;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class Window extends Element {
@@ -52,8 +53,7 @@ public class Window extends Element {
     Runner.ReturnObject returnObject = null;
     if (SX.isMac()) {
       String script = SX.str(
-              "tell app '%s' to activate",
-                "tell application \"Finder\"",
+              "tell application \"Finder\"",
                 "set listOfProcesses to (get the name of every process whose visible is true)",
                 "end tell",
                 "listOfProcesses");
@@ -62,7 +62,8 @@ public class Window extends Element {
         return apps;
       }
     }
-    apps.add((String) returnObject.getLoad());
+    String load = (String) returnObject.getLoad();
+    apps.addAll(Arrays.asList(load.replaceAll(", ", ",").split("\\,")));
     return apps;
   }
 
