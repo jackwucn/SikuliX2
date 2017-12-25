@@ -5,6 +5,7 @@
 package com.sikulix.util;
 
 import com.sikulix.api.Do;
+import com.sikulix.api.Picture;
 import com.sikulix.api.Window;
 import com.sikulix.core.Content;
 import com.sikulix.core.SX;
@@ -23,6 +24,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import static com.sikulix.core.SX.show;
 
 public class Sikulix {
 
@@ -69,11 +72,6 @@ public class Sikulix {
       return;
     }
 
-    if (options.contains("tool")) {
-      new Tool();
-      return;
-    }
-
     if (options.contains("play")) {
 //********** play start
 //      Do.popup("playing");
@@ -87,7 +85,10 @@ public class Sikulix {
 //
 //      guide.showNow(2);
 
-//      Do.userCapture();
+//      Picture img = Do.userCapture();
+//      if (SX.isNotNull(img)) {
+//        img.show();
+//      }
 //********** play end
     }
   }
