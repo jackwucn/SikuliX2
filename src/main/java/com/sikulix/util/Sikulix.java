@@ -4,15 +4,13 @@
 
 package com.sikulix.util;
 
-import com.sikulix.api.Window;
+import com.sikulix.api.Do;
 import com.sikulix.core.Content;
 import com.sikulix.core.SX;
 import com.sikulix.core.SXLog;
-import com.sikulix.devices.IDevice;
-import com.sikulix.devices.hook.HookDevice;
-import com.sikulix.devices.vnc.VNCDevice;
+import com.sikulix.run.Runner;
 
-import java.net.URL;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -56,18 +54,45 @@ public class Sikulix {
     }
     log.trace("main: start: %s", sargs);
 
-    if (options.get(0).contains("methods")) {
-      Map<String, String> methods = SX.listPublicMethods(Content.class);
-      for (String method : methods.keySet().stream().sorted().collect(Collectors.toList())) {
-        log.p("%-40s %s", method, methods.get(method));
+    if (options.size() > 0) {
+      if (options.get(0).contains("methods")) {
+        Map<String, String> methods = SX.listPublicMethods(Content.class);
+        for (String method : methods.keySet().stream().sorted().collect(Collectors.toList())) {
+          log.p("%-40s %s", method, methods.get(method));
+        }
+        return;
       }
-      return;
-    }
 
-    if (options.contains("play")) {
+      if (options.contains("play")) {
 //********** play start
 //********** play end
+        return;
+      }
     }
+
+    String version = SX.getSXVERSIONSHOW();
+    File lastSession = new File(SX.getSXSTORE(), "LastAPIJavaScript.js");
+    String runSomeJS = "";
+    if (lastSession.exists()) {
+      runSomeJS = Content.readFileToString(lastSession);
+    }
+    runSomeJS = Do.inputText("enter some JavaScript (know what you do - may silently die ;-)"
+                    + "\nexample: run(\"git*\") will run the JavaScript showcase from GitHub"
+                    + "\nWhat you enter now will be shown the next time.",
+            "API::JavaScriptRunner " + version, 10, 60, runSomeJS);
+    if (runSomeJS == null || runSomeJS.isEmpty()) {
+      Do.popup("Nothing to do!", version);
+    } else {
+      while (SX.isSet(runSomeJS)) {
+        Content.writeStringToFile(runSomeJS, lastSession);
+        Runner.run(Runner.ScriptType.JAVASCRIPT, runSomeJS);
+        runSomeJS = Do.inputText("Edit the JavaScript and/or press OK to run it (again)\n"
+                        + "Press Cancel to terminate",
+                "API::JavaScriptRunner " + version, 10, 60, runSomeJS);
+      }
+    }
+    System.exit(0);
+
   }
 
 }

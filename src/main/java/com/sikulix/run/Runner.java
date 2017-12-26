@@ -320,9 +320,11 @@ public class Runner {
         engine.eval(scriptText);
       } catch (ScriptException e) {
         log.trace("%s: error: %s", ScriptType.JAVASCRIPT, e.getMessage());
+        returnObject = new ReturnObject(false);
         return false;
       }
       log.trace("%s: ending run", ScriptType.JAVASCRIPT);
+      returnObject = new ReturnObject(true);
       return true;
     }
 
@@ -405,6 +407,11 @@ public class Runner {
 
     public Object getLoad() {
       return load;
+    }
+
+    @Override
+    public String toString() {
+      return String.format("(%d) %s", rCode, load);
     }
   }
 }
