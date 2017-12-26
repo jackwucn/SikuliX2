@@ -97,6 +97,8 @@ public class SX {
     if (null == sxInstance) {
       sxInstance = "SX INIT DONE";
 
+      getSXJAVAVERSION();
+
       //<editor-fold desc="*** shutdown hook">
       Runtime.getRuntime().addShutdownHook(new Thread() {
         @Override
@@ -672,14 +674,23 @@ public class SX {
         terminate(1, "Java arch not 64-Bit or not detected: JavaSystemProperty::os.arch = %s", vSysArch);
       }
       try {
-        javaVersion = Integer.parseInt(vJava.substring(2, 3));
+        String[] parts = vJava.split("\\.");
+        if ("1".equals(parts[0])) {
+          javaVersion = Integer.parseInt(vJava.substring(2, 3));
+        } else {
+          javaVersion = Integer.parseInt(parts[0]);
+        }
         JAVAVERSION = String.format("Java %s vm %s class %s arch %s", vJava, vVM, vClass, vSysArch);
       } catch (Exception ex) {
         terminate(1, "Java version not detected: JavaSystemProperty::java.runtime.version = %s", vJava);
       }
-      if (javaVersion < 7 || javaVersion > 8) {
-        terminate(1, "Java version must be 7 or 8");
+      if (javaVersion < 8) {
+        terminate(1, "Java version must 8+");
       }
+      if (javaVersion > 8) {
+        log.error("Java version 9 - use at your own risk");
+      }
+      JAVAVERSIONNUMBER = javaVersion;
     }
     return JAVAVERSION;
   }
@@ -693,7 +704,7 @@ public class SX {
    */
   public static int getSXJAVAVERSIONNUMBER() {
     if (isNotSet(JAVAVERSIONNUMBER)) {
-      JAVAVERSIONNUMBER = Integer.parseInt(getSXJAVAVERSION().substring(5, 6));
+      getSXJAVAVERSION();
     }
     return JAVAVERSIONNUMBER;
   }
@@ -701,7 +712,11 @@ public class SX {
   static Integer JAVAVERSIONNUMBER = null;
 
   public static boolean isJava8() {
-    return getSXJAVAVERSIONNUMBER() > 7;
+    return getSXJAVAVERSIONNUMBER() == 8;
+  }
+
+  public static boolean isJava9() {
+    return getSXJAVAVERSIONNUMBER() > 8;
   }
 
   public static boolean isJava7() {

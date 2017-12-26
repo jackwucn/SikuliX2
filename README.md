@@ -1,7 +1,9 @@
 SikuliX Version 2 - Java API
 ============
 
-**Version 2.0.0 under developement** [![Join the chat at https://gitter.im/RaiMan/SikuliX2](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/RaiMan/SikuliX2?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Build Status](https://travis-ci.org/RaiMan/SikuliX2.svg?branch=master)](https://travis-ci.org/RaiMan/SikuliX2)
+**Version 2.0.0 under developement** 
+
+[![Join the chat at https://gitter.im/RaiMan/SikuliX2](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/RaiMan/SikuliX2?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Build Status](https://travis-ci.org/RaiMan/SikuliX2.svg?branch=master)](https://travis-ci.org/RaiMan/SikuliX2)
 
 **[Download](http://sikulix.com) latest ready to use version 1.1.1** [or get the Sources](https://github.com/RaiMan/SikuliX-2014)
 
@@ -20,7 +22,11 @@ Travis CI (Ubuntu 12.04-64, Java 8, xvfb)
 
 <hr>
 
-**BE AWARE** For use with Java aware scripting and Java programming you might need additional stuff and steps at your own resposibility. Currently you might also fork the project and make your tests in the project context. Issues and pull requests are only accepted here on Github.
+**BE AWARE** 
+
+**Java 9** not yet supported - use at your own risk.
+
+For use with Java aware scripting and Java programming you might need additional stuff and steps at your own resposibility. Currently you might also fork the project and make your tests in the project context. Issues and pull requests are only accepted here on Github.
 
 <hr>
 

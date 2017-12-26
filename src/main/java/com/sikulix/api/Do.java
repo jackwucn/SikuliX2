@@ -1046,7 +1046,6 @@ public class Do {
   }
 
   public static boolean use(IDevice device) {
-    device.start();
     if (device.isValid()) {
       Element element = new Element(device.getMonitor());
       element.setDevice(device);

@@ -25,20 +25,34 @@ public class LocalDevice extends IDevice {
 
   private static SXLog log = SX.getSXLog("SX.LocalDevice");
 
+  private static LocalDevice localDevice = null;
+
   //<editor-fold desc="*** houskeeping ***">
+  public LocalDevice() {
+    if (SX.isSetSXLOCALDEVICE()) {
+      log.trace("already started");
+    }
+  }
+
   @Override
   public IDevice start(Object... args) {
-    if (0 < initMonitors()) {
-      try {
-        robot = new LocalRobot();
-      } catch (AWTException e) {
-        log.terminate(1, "LocalRobot: %s", e.getMessage());
-      }
+    if (SX.isSetSXLOCALDEVICE()) {
+      log.trace("already started");
+      return SX.getSXLOCALDEVICE();
     } else {
-      log.terminate(1, "No monitors - might be headless %s");
-    }
-    if (SX.isOption("SX.withHook", false)) {
-      hook = (HookDevice) new HookDevice().start();
+      log.trace("starting");
+      if (0 < initMonitors()) {
+        try {
+          robot = new LocalRobot();
+        } catch (AWTException e) {
+          log.terminate(1, "LocalRobot: %s", e.getMessage());
+        }
+      } else {
+        log.terminate(1, "No monitors - might be headless %s");
+      }
+      if (SX.isOption("SX.withHook", false)) {
+        hook = (HookDevice) new HookDevice().start();
+      }
     }
     return this;
   }

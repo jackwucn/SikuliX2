@@ -179,8 +179,13 @@ public class Content {
   }
 
   public static List<URL> listClasspath() {
-    URLClassLoader sysLoader = (URLClassLoader) ClassLoader.getSystemClassLoader();
-    return Arrays.asList(sysLoader.getURLs());
+    if (!SX.isJava9()) {
+      URLClassLoader sysLoader = (URLClassLoader) ClassLoader.getSystemClassLoader();
+      return Arrays.asList(sysLoader.getURLs());
+    } else {
+      log.error("listClasspath: Java 9: not supported");
+      return new ArrayList<>();
+    }
   }
 
   public static void dumpClasspath() {
@@ -218,6 +223,10 @@ public class Content {
   }
 
   public static boolean addClasspath(String jarOrFolder) {
+    if (SX.isJava9()) {
+      log.error("addClasspath: Java 9: not supported");
+      return false;
+    }
     URL uJarOrFolder = Content.asURL(jarOrFolder);
     if (!new File(jarOrFolder).exists()) {
       log.error("addToClasspath: does not exist - not added:\n%s", jarOrFolder);
@@ -2475,28 +2484,21 @@ public class Content {
 
   //<editor-fold desc="040*** extension">
   private static String sikulixMavenGroup = "com/sikulix";
-  private static String sikulixVersion = "2.0.0";
   private static String pMavenRelease = "https://repo1.maven.org/maven2/";
   private static String pMavenSnapshot = "https://oss.sonatype.org/content/groups/public/";
 
   private static URL getMavenJarURL(String givenItem) {
-    String mPath;
+    String mPath = "";
     String mJar = "";
-    String[] parts = givenItem.split(":");
-    String item = parts[0];
-    String version = sikulixVersion;
-    if (SX.isNotSet(item)) {
+    if (SX.isNotSet(givenItem)) {
       return null;
     }
-    if (parts.length > 1 && SX.isSet(parts[1])) {
-      version = parts[1];
-    }
-    boolean isSnapshot = parts.length > 2;
-    mPath = pMavenRelease + String.format("%s/%s/%s/", sikulixMavenGroup, item, version);
-    mJar = String.format("%s-%s.jar", item, version);
+    String version = SX.getSXVERSION();
+    boolean isSnapshot = version.endsWith("-SNAPSHOT");
+    mPath = String.format("%s/%s/%s/", sikulixMavenGroup, givenItem, version);
+    mJar = String.format("%s-%s.jar", givenItem, version);
     if (isSnapshot) {
-      String mavenSnapshotPrefix = String.format("%s/%s/%s-SNAPSHOT/", sikulixMavenGroup, item, version);
-      mPath = pMavenSnapshot + mavenSnapshotPrefix;
+      mPath = pMavenSnapshot + mPath;
       String metadata = Content.downloadURLtoString(mPath + "maven-metadata.xml");
       String timeStamp = "";
       String buildNumber = "";
@@ -2511,13 +2513,15 @@ public class Content {
         }
       }
       if (!timeStamp.isEmpty() && !buildNumber.isEmpty()) {
-        mJar = String.format("%s-%s-%s-%s.jar", item, version, timeStamp, buildNumber);
+        mJar = String.format("%s-%s-%s-%s.jar", givenItem, version, timeStamp, buildNumber);
         log.trace("getMavenJar: %s", mJar);
       } else {
         log.error("Maven download: could not get timestamp nor buildnumber for %s from:"
             + "\n%s\nwith content:\n%s", givenItem, mPath, metadata);
         return null;
       }
+    } else {
+      mPath = pMavenRelease + mPath;
     }
     return asURL(mPath, mJar);
   }
@@ -2528,9 +2532,8 @@ public class Content {
       String sxextension = SX.getOption("sxextension." + extension);
       if (SX.isSet(sxextension)) {
         String[] parts = sxextension.split(",");
-        if (parts.length == 4) {
-          return addExtensionFromMaven(String.format("%s:%s:%s",
-              parts[0].trim(), parts[1].trim(), parts[2].trim()), parts[3].trim());
+        if (parts.length == 2) {
+          return addExtensionFromMaven(parts[0].trim(), parts[1].trim());
         }
       }
     }
