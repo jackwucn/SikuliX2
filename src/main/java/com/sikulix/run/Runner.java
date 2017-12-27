@@ -305,7 +305,9 @@ public class Runner {
 
     private boolean runJS() {
       ScriptEngine engine = new ScriptEngineManager().getEngineByName("nashorn");
-      String scriptBefore = "var Do = Java.type('com.sikulix.api.Do');\n";
+      String scriptBefore =
+              "var Do = Java.type('com.sikulix.api.Do');\n" +
+              "var SX = Java.type('com.sikulix.core.SX');\n";
       if (log.isLevel(SXLog.TRACE)) {
         scriptBefore += "print('Hello from JavaScript: SikuliX support loaded');\n";
       }
@@ -316,15 +318,16 @@ public class Runner {
         log.p(script);
         log.p("---------- end of script");
       }
+      Object returned = null;
       try {
-        engine.eval(scriptText);
+        returned = engine.eval(scriptText);
       } catch (ScriptException e) {
         log.trace("%s: error: %s", ScriptType.JAVASCRIPT, e.getMessage());
         returnObject = new ReturnObject(false);
         return false;
       }
       log.trace("%s: ending run", ScriptType.JAVASCRIPT);
-      returnObject = new ReturnObject(true);
+      returnObject = new ReturnObject(ScriptType.JAVASCRIPT, returned);
       return true;
     }
 
@@ -386,6 +389,8 @@ public class Runner {
         if (rCode != RUNWITHERROR) {
           load = rObject.toString().substring(parts[0].length()).trim();
         }
+      } else if (ScriptType.JAVASCRIPT.equals(type)) {
+        load = rObject;
       }
     }
 

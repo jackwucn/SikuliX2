@@ -313,6 +313,7 @@ public class Do {
         return returnValue;
       }
     }
+
     RunInput popRun = new RunInput(popType, args);
     if (popRun.isTimed()) {
       new Thread(popRun).start();
@@ -938,8 +939,6 @@ public class Do {
   //</editor-fold>
 
   //<editor-fold desc="Device related">
-  private static Element allMonitorsAsElement = null;
-
   /**
    * show the current monitor setup
    */
@@ -980,6 +979,8 @@ public class Do {
       return screensAsElements.get(0);
     }
   }
+
+  private static Element allMonitorsAsElement = null;
 
   public static Element all() {
     if (SX.isNull(allMonitorsAsElement)) {

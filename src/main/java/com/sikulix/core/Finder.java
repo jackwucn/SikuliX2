@@ -90,7 +90,8 @@ public class Finder {
     long begin_t = 0;
     Core.MinMaxLocResult mMinMax = null;
     FindResult findResult = null;
-    if (FindType.ONE.equals(findType) && !isCheckLastSeen && SX.isOption("CheckLastSeen") && target.getLastSeen().isValid()) {
+    if (FindType.ONE.equals(findType) && !isCheckLastSeen && SX.isOption("CheckLastSeen")
+            && target.getLastSeen().isValid()) {
       begin_t = new Date().getTime();
       Finder lastSeenFinder = new Finder(target.getLastSeen());
       lastSeenFinder.isCheckLastSeen = true;

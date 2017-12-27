@@ -1685,7 +1685,11 @@ public class Element implements Comparable<Element> {
   private Element findForClick(String type, Object... args) {
     Element target;
     if (args.length == 0) {
-      target = this;
+      if (isTarget()) {
+        target = Finder.runFind(type, this, Do.on());
+      } else {
+        target = this;
+      }
     } else if (args.length == 1) {
       target = Finder.runFind(type, args[0], this);
     } else {
