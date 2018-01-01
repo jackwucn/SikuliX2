@@ -8,6 +8,7 @@ import com.sikulix.api.Do;
 import com.sikulix.core.Content;
 import com.sikulix.core.SX;
 import com.sikulix.core.SXLog;
+import com.sikulix.editor.Editor;
 import com.sikulix.run.Runner;
 
 import java.io.File;
@@ -61,9 +62,7 @@ public class Sikulix {
           log.p("%-40s %s", method, methods.get(method));
         }
         return;
-      }
-
-      if (options.contains("play")) {
+      } else if (options.contains("play")) {
 //********** play start
 //********** play end
         return;
