@@ -90,31 +90,24 @@ public class PopUpMenus {
       add(createMenuItem("Vanish", this));
     }
 
-    private void addCommandTemplate(String command) {
-      if (theScript.cellAt(row, col).isLineEmpty()) {
-        theScript.cellAt(row, col).setLine(theScript.getCommandTemplate(command));
-        tableChanged();
-      }
-    }
-
     public void find(ActionEvent ae) {
-      addCommandTemplate("#find");
+      theScript.addCommandTemplate("#find", row, col);
     }
 
     public void vanish(ActionEvent ae) {
-      addCommandTemplate("#vanish");
+      theScript.addCommandTemplate("#vanish", row, col);
     }
 
     public void findAll(ActionEvent ae) {
-      addCommandTemplate("#findAll");
+      theScript.addCommandTemplate("#findAll", row, col);
     }
 
     public void findBest(ActionEvent ae) {
-      addCommandTemplate("#findBest");
+      theScript.addCommandTemplate("#findBest", row, col);
     }
 
     public void findAny(ActionEvent ae) {
-      addCommandTemplate("#findAny");
+      theScript.addCommandTemplate("#findAny", row, col);
     }
   }
 
@@ -236,13 +229,13 @@ public class PopUpMenus {
 
     public void show(ActionEvent ae) {
       if (col > 0) {
-        theScript.cellAt(row, col).capture();
+        theScript.cellAt(row, col).show();
       }
     }
 
     public void find(ActionEvent ae) {
       if (col > 0) {
-        theScript.cellAt(row, col).capture();
+        theScript.cellAt(row, col).find();
       }
     }
 

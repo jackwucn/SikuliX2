@@ -14,6 +14,7 @@ import javax.swing.event.TableModelListener;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.JTableHeader;
 import java.awt.*;
+import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -123,11 +124,24 @@ public class Script extends JPanel implements TableModelListener, ListSelectionL
       asImage().getImage();
     }
 
-    protected void show() {
+    protected Element getCellClick() {
       Point windowLocation = window.getLocation();
       Rectangle cell = table.getCellRect(row, col, false);
       windowLocation.x += cell.x + 10;
       windowLocation.y += cell.y + 70;
+      return new Element(windowLocation);
+    }
+
+    protected void select() {
+      new Thread(new Runnable() {
+        @Override
+        public void run() {
+          Do.on().click(getCellClick());
+        }
+      }).start();
+    }
+
+    protected void show() {
       asImage();
       if (isValid()) {
         loadPicture();
@@ -136,7 +150,7 @@ public class Script extends JPanel implements TableModelListener, ListSelectionL
             @Override
             public void run() {
               picture.show(1);
-              Do.on().click(new Element(windowLocation));
+              Do.on().click(getCellClick());
             }
           }).start();
         } else {
@@ -401,27 +415,36 @@ public class Script extends JPanel implements TableModelListener, ListSelectionL
         fireTableDataChanged();
         return;
       }
-      String given = (String) value;
+      String given = ((String) value).trim();
       if (col == 0) {
         return;
       }
       if (col == 1) {
-        if (given.startsWith("#")) {
-          String cmd = given.trim();
-          int ix = cmd.indexOf(" ");
-          if (ix > -1) {
-            cmd = cmd.substring(0, ix);
-          }
-          String fromShort = commandShort.get(cmd);
-          if (SX.isNotNull(fromShort)) {
-            given = fromShort;
-          } else if (!commandShort.containsValue(cmd)) {
-            given = given + "?";
-          }
+        if (!given.startsWith("#")) {
+          given = "#" + given;
+        }
+        String cmd = given.trim();
+        int ix = cmd.indexOf(" ");
+        if (ix > -1) {
+          cmd = cmd.substring(0, ix);
+        }
+        String fromShort = commandShort.get(cmd);
+        if (SX.isNotNull(fromShort)) {
+          given = fromShort;
+        } else if (SX.isNull(commandTemplates.get(given))) {
+          given = given + "?";
         }
       }
-      cellAt(row, col).set(given);
-      fireTableCellUpdated(row, col);
+      boolean cellOnly = true;
+      if (!given.endsWith("?")) {
+        cellOnly = !addCommandTemplate(given, row, col);
+      }
+      if (cellOnly) {
+        cellAt(row, col).set(given);
+        fireTableCellUpdated(row, col);
+      } else {
+        cellAt(row, col).select();
+      }
     }
   }
 
@@ -446,15 +469,36 @@ public class Script extends JPanel implements TableModelListener, ListSelectionL
       commandShort.put("#fy", "#findAny");
       commandShort.put("#v", "#vanish");
       commandShort.put("#w", "#wait");
+      commandShort.put("#l", "#loop");
+      commandShort.put("#lf", "#loopfor");
+      commandShort.put("#lw", "#loopwith");
+      commandShort.put("#i", "#if");
+      commandShort.put("#in", "#ifnot");
+      commandShort.put("#e", "#else");
+      commandShort.put("#ei", "#elif");
+      commandShort.put("#p", "#print");
+      commandShort.put("#pf", "#printf");
 
-      commandTemplates.put("#find", new String[]{"", "@?", ""});
-      commandTemplates.put("#vanish", new String[]{"", "@?", ""});
-      commandTemplates.put("#findAll", new String[]{"", "@?", ""});
-      commandTemplates.put("#findBest", new String[]{"", "@[?", ""});
-      commandTemplates.put("#findAny", new String[]{"", "@[?", ""});
-      commandTemplates.put("#click", new String[]{"", "@?", ""});
-      commandTemplates.put("#clickRight", new String[]{"", "@?", ""});
-      commandTemplates.put("#clickDouble", new String[]{"", "@?", ""});
+      commandTemplates.put("#find", new String[]{"", "@?", "result"});
+      commandTemplates.put("#wait", new String[]{"", "@?", "result"});
+      commandTemplates.put("#vanish", new String[]{"", "@?", "result"});
+      commandTemplates.put("#findAll", new String[]{"", "@?", "result"});
+      commandTemplates.put("#findBest", new String[]{"", "@[?", "result"});
+      commandTemplates.put("#findAny", new String[]{"", "@[?", "result"});
+      commandTemplates.put("#click", new String[]{"", "@?", "result"});
+      commandTemplates.put("#clickRight", new String[]{"", "@?", "result"});
+      commandTemplates.put("#clickDouble", new String[]{"", "@?", "result"});
+      commandTemplates.put("#if", new String[]{"", "condition", "block"});
+      commandTemplates.put("#ifnot", new String[]{"", "condition", "block"});
+      commandTemplates.put("#else", new String[]{"", "block"});
+      commandTemplates.put("#elif", new String[]{"", "condition", "block"});
+      commandTemplates.put("#loop", new String[]{"", "condition", "block"});
+      commandTemplates.put("#loopwith", new String[]{"", "listvariable", "block"});
+      commandTemplates.put("#loopfor", new String[]{"", "count step from", "block"});
+      commandTemplates.put("#print", new String[]{""});
+      commandTemplates.put("#printf", new String[]{"", "template", "variable..."});
+      commandTemplates.put("#log", new String[]{"", "template", "variable..."});
+      commandTemplates.put("#pop", new String[]{"", "message", "result"});
     }
 
     @Override
@@ -489,6 +533,69 @@ public class Script extends JPanel implements TableModelListener, ListSelectionL
         if (col == 1 && keyCode == KeyEvent.VK_SPACE && cellAt(row, col).isEmpty()) {
           Rectangle cellRect = table.getCellRect(row, col, false);
           PopUpMenus.Command.pop(table, cellRect.x, cellRect.y);
+          return false;
+        } else if (col > 1 && keyCode == KeyEvent.VK_SPACE) {
+          Element cellClick = cellAt(row, col).getCellClick();
+          new Thread(new Runnable() {
+            @Override
+            public void run() {
+              String cellSaved = cellAt(row, col).get();
+              Boolean[] shouldTerminate = new Boolean[]{false, false};
+              JFrame frame = new JFrame("EditCell");
+              JTextArea textArea = new JTextArea();
+              textArea.addKeyListener(new KeyAdapter() {
+                @Override
+                public void keyReleased(KeyEvent keyEvent) {
+                  if (keyEvent.getKeyCode() == KeyEvent.VK_ESCAPE) {
+                    frame.setVisible(false);
+                    shouldTerminate[0] = true;
+                    return;
+                  } else if (keyEvent.getKeyCode() == KeyEvent.VK_F1) {
+                    frame.setVisible(false);
+                    return;
+                  } else if (keyEvent.getKeyCode() == KeyEvent.VK_F2) {
+                    frame.setVisible(false);
+                    shouldTerminate[0] = true;
+                    shouldTerminate[1] = true;
+                    return;
+                  }
+                  super.keyReleased(keyEvent);
+                }
+              });
+              JScrollPane scrollPane = new JScrollPane(textArea);
+              JPanel panel = new JPanel();
+              panel.add(scrollPane);
+              frame.setUndecorated(true);
+              frame.setAlwaysOnTop(true);
+              frame.add(panel);
+              while (!shouldTerminate[0]) {
+                String cellText = cellAt(row, col).get();
+                String[] lines = cellText.split("\\n");
+                int textW = 10;
+                for (String line : lines) {
+                  if (line.length() > textW) {
+                    textW = line.length();
+                  }
+                }
+                textW = (int) (textW * 0.7);
+                textArea.setRows(Math.max(3, lines.length + 1));
+                textArea.setColumns(textW);
+                textArea.setText(cellText);
+                textArea.setEditable(true);
+                //textArea.setMaximumSize(new Dimension(w, 2 * h));
+                frame.pack();
+                frame.setLocation(cellClick.x, cellClick.y);
+                frame.setVisible(true);
+                //SX.pause(1);
+                while (frame.isVisible()) SX.pause(0.3);
+                table.setValueAt(textArea.getText(), row, col);
+              }
+              if (!shouldTerminate[1]) {
+                table.setValueAt(cellSaved, row, col);
+              }
+              Do.on().click(cellClick);
+            }
+          }).start();
           return false;
         } else if (keyCode == KeyEvent.VK_BACK_SPACE && cellAt(row, col).isEmpty()) {
           getModel().setValueAt(savedCell, row, col);
@@ -666,13 +773,24 @@ public class Script extends JPanel implements TableModelListener, ListSelectionL
 
   Map<String, String[]> commandTemplates = new HashMap<>();
 
+  protected boolean addCommandTemplate(String command, int row, int col) {
+    if (cellAt(row, col).isLineEmpty()) {
+      cellAt(row, col).setLine(getCommandTemplate(command));
+      PopUpMenus.tableChanged();
+      return true;
+    }
+    return false;
+  }
+
   String[] getCommandTemplate(String command) {
     String[] commandLine = commandTemplates.get(command);
     if (SX.isNull(commandLine)) {
       commandLine = new String[]{"#error!"};
     } else {
       commandLine[0] = command;
-      commandLine[commandLine.length - 1] = "=result" + resultsCounter++;
+      if ("result".equals(commandLine[commandLine.length - 1])) {
+        commandLine[commandLine.length - 1] = "=result" + resultsCounter++;
+      }
     }
     return commandLine;
   }
