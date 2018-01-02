@@ -17,7 +17,6 @@ import java.util.Map;
 public class PopUpMenu extends JPopupMenu {
 
   protected static final SXLog log = SX.getSXLog("SX.POPUPMENU");
-  private static int logLevel = SXLog.TRACE;
 
   public Point pos = new Point();
   public int row = -1;
@@ -28,21 +27,24 @@ public class PopUpMenu extends JPopupMenu {
   private int menuCount = 0;
   private Map<String, Integer> menus = new HashMap<String, Integer>();
 
-  protected void init(JTable table, Component comp, int x, int y) {
+  protected void init(JTable table, Component comp, int x, int y, boolean shouldTrace) {
     this.table =table;
     this.comp = comp;
     pos = new Point(x, y);
-    init1();
+    init1(shouldTrace);
   }
 
-  protected void init(PopUpMenu menu) {
+  protected void init(PopUpMenu menu, boolean shouldTrace) {
     this.table =menu.table;
     this.comp =menu.comp;
     pos = menu.pos;
-    init1();
+    init1(shouldTrace);
   }
 
-  private void init1() {
+  private void init1(boolean shouldTrace) {
+    if (shouldTrace) {
+      log.on(SXLog.TRACE);
+    }
     this.row = table.rowAtPoint(pos);
     this.col = table.columnAtPoint(pos);
   }

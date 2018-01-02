@@ -1719,6 +1719,15 @@ public class Element implements Comparable<Element> {
     return target.getDevice().click(target);
   }
 
+  //TODO mouse move speed as parameter
+  public Element clickFast(Object... args) {
+    String moveDelay = SX.getOption("Settings.MoveMouseDelay");
+    SX.setOption("Settings.MoveMouseDelay", "0");
+    Element fastTarget = click(args);
+    SX.setOption("Settings.MoveMouseDelay", moveDelay);
+    return fastTarget;
+  }
+
   /**
    * Move the mouse to this element's target and double click left
    *

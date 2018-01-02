@@ -22,7 +22,7 @@ public class PopUpMenus {
   static JTable theTable = null;
 
   static void tableChanged() {
-    theTable.getModel().setValueAt(null, -1, -1);
+    theScript.tableHasChanged();
   }
 
   static List<Script.Cell> savedLine = new ArrayList<>();
@@ -35,7 +35,7 @@ public class PopUpMenus {
       if (SX.isNull(menu)) {
         menu = new Command();
       }
-      menu.init(theTable, comp, x, y);
+      menu.init(theTable, comp, x, y, theScript.shouldTrace);
       menu.show(comp, x, y);
       return menu;
     }
@@ -47,6 +47,9 @@ public class PopUpMenus {
       add(createMenuItem("Mouse...", this));
       add(createMenuItem("Keyboard...", this));
       add(createMenuItem("Window...", this));
+      createMenuSeperator();
+      add(createMenuItem("Blocks...", this));
+
     }
 
     public void global(ActionEvent ae) {
@@ -68,6 +71,10 @@ public class PopUpMenus {
     public void window(ActionEvent ae) {
       DefaultSub.pop(this);
     }
+
+    public void blocks(ActionEvent ae) {
+      Blocks.pop(this);
+    }
   }
 
   public static class Finding extends PopUpMenu {
@@ -78,7 +85,7 @@ public class PopUpMenus {
       if (SX.isNull(menu)) {
         menu = new Finding();
       }
-      menu.init(parentMenu);
+      menu.init(parentMenu, theScript.shouldTrace);
       menu.show(parentMenu.table, parentMenu.pos.x, parentMenu.pos.y);
     }
 
@@ -111,6 +118,50 @@ public class PopUpMenus {
     }
   }
 
+  public static class Blocks extends PopUpMenu {
+
+    private static Blocks menu = null;
+
+    public static void pop(PopUpMenu parentMenu) {
+      if (SX.isNull(menu)) {
+        menu = new Blocks();
+      }
+      menu.init(parentMenu, theScript.shouldTrace);
+      menu.show(parentMenu.table, parentMenu.pos.x, parentMenu.pos.y);
+    }
+
+    private Blocks() {
+      add(createMenuItem("If", this));
+      add(createMenuItem("IfNot", this));
+      add(createMenuItem("Elif", this));
+      add(createMenuItem("ElIfNot", this));
+      add(createMenuItem("Loop", this));
+      add(createMenuItem("LoopFor", this));
+      add(createMenuItem("LoopWith", this));
+      add(createMenuItem("Loop", this));
+    }
+
+    public void find(ActionEvent ae) {
+      theScript.addCommandTemplate("#find", row, col);
+    }
+
+    public void vanish(ActionEvent ae) {
+      theScript.addCommandTemplate("#vanish", row, col);
+    }
+
+    public void findAll(ActionEvent ae) {
+      theScript.addCommandTemplate("#findAll", row, col);
+    }
+
+    public void findBest(ActionEvent ae) {
+      theScript.addCommandTemplate("#findBest", row, col);
+    }
+
+    public void findAny(ActionEvent ae) {
+      theScript.addCommandTemplate("#findAny", row, col);
+    }
+  }
+
   public static class Action extends PopUpMenu {
 
     private static Action menu = null;
@@ -119,7 +170,7 @@ public class PopUpMenus {
       if (SX.isNull(menu)) {
         menu = new Action();
       }
-      menu.init(theTable, comp, x, y);
+      menu.init(theTable, comp, x, y, theScript.shouldTrace);
       menu.show(comp, x, y);
       return menu;
     }
@@ -128,7 +179,10 @@ public class PopUpMenus {
     private Action() {
       add(createMenuItem("Global...", this));
       createMenuSeperator();
-      add(createMenuItem("NewLine", this));
+      add(createMenuItem("Indent >", this));
+      add(createMenuItem("Dedent <", this));
+      createMenuSeperator();
+      add(createMenuItem("NewLine +", this));
       add(createMenuItem("DeleteLine", this));
       add(createMenuItem("EmptyLine", this));
       add(createMenuItem("CopyLine", this));
@@ -139,6 +193,14 @@ public class PopUpMenus {
 
     public void global(ActionEvent ae) {
       Global.pop(this);
+    }
+
+    public void indent(ActionEvent ae) {
+      theScript.indent(row, col);
+    }
+
+    public void dedent(ActionEvent ae) {
+      theScript.dedent(row, col);
     }
 
     public void newLine(ActionEvent ae) {
@@ -187,7 +249,7 @@ public class PopUpMenus {
       if (SX.isNull(menu)) {
         menu = new Global();
       }
-      menu.init(parentMenu);
+      menu.init(parentMenu, theScript.shouldTrace);
       menu.show(parentMenu.table, parentMenu.pos.x, parentMenu.pos.y);
     }
 
@@ -249,7 +311,7 @@ public class PopUpMenus {
       if (SX.isNull(menu)) {
         menu = new Default();
       }
-      menu.init(theTable, comp, x, y);
+      menu.init(theTable, comp, x, y, theScript.shouldTrace);
       menu.show(comp, x, y);
     }
 
@@ -270,7 +332,7 @@ public class PopUpMenus {
       if (SX.isNull(menu)) {
         menu = new DefaultSub();
       }
-      menu.init(parentMenu);
+      menu.init(parentMenu, theScript.shouldTrace);
       menu.show(parentMenu.table, parentMenu.pos.x, parentMenu.pos.y);
     }
 

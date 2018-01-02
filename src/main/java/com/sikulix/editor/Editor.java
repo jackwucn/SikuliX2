@@ -3,11 +3,11 @@ package com.sikulix.editor;
 import javax.swing.*;
 
 public class Editor {
-  private static void createAndShowGUI() {
+  private static void createAndShowGUI(String[] args) {
     JFrame frame = new JFrame("SikuliX - ScriptEditor");
     frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-    Script script = new Script(frame);
+    Script script = new Script(frame, args);
     script.setOpaque(true);
     frame.setContentPane(script);
 
@@ -19,7 +19,7 @@ public class Editor {
   public static void main(String[] args) {
     SwingUtilities.invokeLater(new Runnable() {
       public void run() {
-        createAndShowGUI();
+        createAndShowGUI(args);
       }
     });
   }

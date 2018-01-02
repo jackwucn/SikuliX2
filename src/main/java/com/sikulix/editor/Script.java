@@ -5,6 +5,7 @@ import com.sikulix.api.Element;
 import com.sikulix.api.Picture;
 import com.sikulix.core.SX;
 import com.sikulix.core.SXLog;
+import oracle.jvm.hotspot.jfr.JFR;
 
 import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;
@@ -25,7 +26,6 @@ import java.util.List;
 public class Script extends JPanel implements TableModelListener, ListSelectionListener {
 
   protected static final SXLog log = SX.getSXLog("SX.SCRIPTEDITOR");
-  private static int logLevel = SXLog.TRACE;
 
   private Font customFont = new Font("Helvetica Bold", Font.PLAIN, 18);
   public Rectangle rectTable = null;
@@ -51,6 +51,7 @@ public class Script extends JPanel implements TableModelListener, ListSelectionL
     private CellType cellType = CellType.TEXT;
     private int row = -1;
     private int col = -1;
+    private int indentLevel = 0;
 
     protected Cell() {
       value = "";
@@ -62,6 +63,49 @@ public class Script extends JPanel implements TableModelListener, ListSelectionL
 
     protected Cell(String value, int col) {
       this.value = value.trim();
+    }
+
+    protected String getIndentMarker() {
+      String indent = "";
+      if (indentLevel == 1) {
+        indent = ">";
+      } else if (indentLevel == 2) {
+        indent = ">>";
+      } else if (indentLevel > 2) {
+        indent = ">>!";
+      }
+      return indent;
+    }
+
+    protected void setIndent(int level) {
+      if (level > -1) {
+        indentLevel = level;
+      }
+    }
+
+    protected int getIndent() {
+      return indentLevel;
+    }
+
+    void doIndent() {
+      indentLevel++;
+    }
+
+    void doDedent() {
+      indentLevel = Math.max(0, --indentLevel);
+      if (isBlock() && indentLevel == 0) {
+        indentLevel = 1;
+      }
+    }
+
+    private boolean block = false;
+
+    void setBlock() {
+      block = true;
+    }
+
+    boolean isBlock() {
+      return block;
     }
 
     protected Cell asCommand(int row, int col) {
@@ -125,18 +169,14 @@ public class Script extends JPanel implements TableModelListener, ListSelectionL
     }
 
     protected Element getCellClick() {
-      Point windowLocation = window.getLocation();
-      Rectangle cell = table.getCellRect(row, col, false);
-      windowLocation.x += cell.x + 10;
-      windowLocation.y += cell.y + 70;
-      return new Element(windowLocation);
+      return Script.getCellClick(row, col + 1, window, table);
     }
 
     protected void select() {
       new Thread(new Runnable() {
         @Override
         public void run() {
-          Do.on().click(getCellClick());
+          Do.on().clickFast(getCellClick());
         }
       }).start();
     }
@@ -150,7 +190,7 @@ public class Script extends JPanel implements TableModelListener, ListSelectionL
             @Override
             public void run() {
               picture.show(1);
-              Do.on().click(getCellClick());
+              Do.on().clickFast(getCellClick());
             }
           }).start();
         } else {
@@ -271,9 +311,16 @@ public class Script extends JPanel implements TableModelListener, ListSelectionL
     }
   }
 
-  public Script(JFrame frame) {
+  boolean shouldTrace = false;
+
+  public Script(JFrame frame, String[] args) {
     super(new GridLayout(1, 0));
-    log.on(logLevel);
+
+    if ("trace".equals(args[0])) {
+      log.on(SXLog.TRACE);
+      shouldTrace = true;
+    }
+
     this.window = frame;
 
     loadScript();
@@ -389,7 +436,7 @@ public class Script extends JPanel implements TableModelListener, ListSelectionL
 
     public Object getValueAt(int row, int col) {
       if (col == 0) {
-        return String.format("%6d", row + 1);
+        return String.format("%6d %s", row + 1, cellAt(row, 2).getIndentMarker());
       }
       if (row > data.size() - 1) {
         return "";
@@ -424,26 +471,28 @@ public class Script extends JPanel implements TableModelListener, ListSelectionL
           given = "#" + given;
         }
         String cmd = given.trim();
+        String parm = "";
         int ix = cmd.indexOf(" ");
         if (ix > -1) {
+          parm = cmd.substring(ix);
           cmd = cmd.substring(0, ix);
         }
         String fromShort = commandShort.get(cmd);
         if (SX.isNotNull(fromShort)) {
-          given = fromShort;
-        } else if (SX.isNull(commandTemplates.get(given))) {
+          cmd = fromShort;
+        } else if (SX.isNull(commandTemplates.get(cmd))) {
           given = given + "?";
         }
-      }
-      boolean cellOnly = true;
-      if (!given.endsWith("?")) {
-        cellOnly = !addCommandTemplate(given, row, col);
-      }
-      if (cellOnly) {
+        if (!given.endsWith("?")) {
+          addCommandTemplate(cmd, row, col);
+        } else {
+          cmd = given;
+          parm = "";
+        }
+        cellAt(row, col).select();
+      } else {
         cellAt(row, col).set(given);
         fireTableCellUpdated(row, col);
-      } else {
-        cellAt(row, col).select();
       }
     }
   }
@@ -462,7 +511,7 @@ public class Script extends JPanel implements TableModelListener, ListSelectionL
       commandShort.put("#", "");
       commandShort.put("#c", "#click");
       commandShort.put("#cr", "#clickRight");
-      commandShort.put("#c2", "#clickDouble");
+      commandShort.put("#cd", "#clickDouble");
       commandShort.put("#f", "#find");
       commandShort.put("#fa", "#findAll");
       commandShort.put("#fb", "#findBest");
@@ -470,12 +519,13 @@ public class Script extends JPanel implements TableModelListener, ListSelectionL
       commandShort.put("#v", "#vanish");
       commandShort.put("#w", "#wait");
       commandShort.put("#l", "#loop");
-      commandShort.put("#lf", "#loopfor");
-      commandShort.put("#lw", "#loopwith");
+      commandShort.put("#lf", "#loopFor");
+      commandShort.put("#lw", "#loopWith");
       commandShort.put("#i", "#if");
-      commandShort.put("#in", "#ifnot");
+      commandShort.put("#in", "#ifNot");
       commandShort.put("#e", "#else");
       commandShort.put("#ei", "#elif");
+      commandShort.put("#ein", "#elifNot");
       commandShort.put("#p", "#print");
       commandShort.put("#pf", "#printf");
 
@@ -489,12 +539,13 @@ public class Script extends JPanel implements TableModelListener, ListSelectionL
       commandTemplates.put("#clickRight", new String[]{"", "@?", "result"});
       commandTemplates.put("#clickDouble", new String[]{"", "@?", "result"});
       commandTemplates.put("#if", new String[]{"", "condition", "block"});
-      commandTemplates.put("#ifnot", new String[]{"", "condition", "block"});
+      commandTemplates.put("#ifNot", new String[]{"", "condition", "block"});
       commandTemplates.put("#else", new String[]{"", "block"});
       commandTemplates.put("#elif", new String[]{"", "condition", "block"});
+      commandTemplates.put("#elifNot", new String[]{"", "condition", "block"});
       commandTemplates.put("#loop", new String[]{"", "condition", "block"});
-      commandTemplates.put("#loopwith", new String[]{"", "listvariable", "block"});
-      commandTemplates.put("#loopfor", new String[]{"", "count step from", "block"});
+      commandTemplates.put("#loopWith", new String[]{"", "listvariable", "block"});
+      commandTemplates.put("#loopFor", new String[]{"", "count step from", "block"});
       commandTemplates.put("#print", new String[]{""});
       commandTemplates.put("#printf", new String[]{"", "template", "variable..."});
       commandTemplates.put("#log", new String[]{"", "template", "variable..."});
@@ -510,25 +561,35 @@ public class Script extends JPanel implements TableModelListener, ListSelectionL
         if (keyCode == 0 || keyCode == KeyEvent.VK_ESCAPE || keyCode == KeyEvent.VK_META) {
           return false;
         }
-        if (col == 0 && keyCode == KeyEvent.VK_PLUS) {
-          data.add(row + 1, new ArrayList<>());
-          PopUpMenus.tableChanged();
-          table.setRowSelectionInterval(row + 1, row + 1);
-          table.setColumnSelectionInterval(col + 1, col + 1);
-          new Thread(new Runnable() {
-            @Override
-            public void run() {
-              Do.write("#ESC.");
-            }
-          }).start();
-          return false;
-        }
-        if (col == 0 && keyCode == KeyEvent.VK_BACK_SPACE) {
-          PopUpMenus.savedLine = cellAt(row, col + 1).setLine();
-          PopUpMenus.tableChanged();
-          table.setRowSelectionInterval(row, row);
-          table.setColumnSelectionInterval(col, col);
-          return false;
+        if (col == 0) {
+          if (keyCode == KeyEvent.VK_PLUS) {
+            data.add(row + 1, new ArrayList<>());
+            tableHasChanged();
+            table.setRowSelectionInterval(row + 1, row + 1);
+            table.setColumnSelectionInterval(col + 1, col + 1);
+            new Thread(new Runnable() {
+              @Override
+              public void run() {
+                Do.write("#ESC.");
+              }
+            }).start();
+            return false;
+          }
+          if (keyCode == KeyEvent.VK_BACK_SPACE) {
+            PopUpMenus.savedLine = cellAt(row, col + 1).setLine();
+            tableHasChanged();
+            table.setRowSelectionInterval(row, row);
+            table.setColumnSelectionInterval(col, col);
+            return false;
+          }
+          if (keyCode == KeyEvent.VK_GREATER) {
+            indent(row, col);
+            return false;
+          }
+          if (keyCode == KeyEvent.VK_LESS) {
+            dedent(row, col);
+            return false;
+          }
         }
         if (col == 1 && keyCode == KeyEvent.VK_SPACE && cellAt(row, col).isEmpty()) {
           Rectangle cellRect = table.getCellRect(row, col, false);
@@ -587,13 +648,15 @@ public class Script extends JPanel implements TableModelListener, ListSelectionL
                 frame.setLocation(cellClick.x, cellClick.y);
                 frame.setVisible(true);
                 //SX.pause(1);
-                while (frame.isVisible()) SX.pause(0.3);
+                while (frame.isVisible()) {
+                  SX.pause(0.3);
+                }
                 table.setValueAt(textArea.getText(), row, col);
               }
               if (!shouldTerminate[1]) {
                 table.setValueAt(cellSaved, row, col);
               }
-              Do.on().click(cellClick);
+              Do.on().clickFast(cellClick);
             }
           }).start();
           return false;
@@ -649,6 +712,9 @@ public class Script extends JPanel implements TableModelListener, ListSelectionL
 
   protected Cell cellAt(int row, int col) {
     int lineCol = col - 1;
+    if (row < 0) {
+      row = 0;
+    }
     if (row > data.size() - 1) {
       data.add(new ArrayList<>());
     }
@@ -659,6 +725,14 @@ public class Script extends JPanel implements TableModelListener, ListSelectionL
       }
     }
     return data.get(row).get(lineCol).set(row, col);
+  }
+
+  protected static Element getCellClick(int row, int col, JFrame window, JTable table) {
+    Point windowLocation = window.getLocation();
+    Rectangle cell = table.getCellRect(row, col, false);
+    windowLocation.x += cell.x + 10;
+    windowLocation.y += cell.y + 70;
+    return new Element(windowLocation);
   }
 
   private class MyMouseAdapter extends MouseAdapter {
@@ -706,9 +780,38 @@ public class Script extends JPanel implements TableModelListener, ListSelectionL
     }
   }
 
+  protected void tableHasChanged() {
+    getTable().getModel().setValueAt(null, -1, -1);
+  }
+
+  //TODO must focus with a click???
+  protected void tableHasChanged(int row, int col) {
+    Element cellClick = getCellClick(row, 0, window, table);
+    getTable().getModel().setValueAt(null, -1, -1);
+    new Thread(new Runnable() {
+      @Override
+      public void run() {
+        Do.on().clickFast(cellClick);
+        Do.on().clickFast(cellClick);
+      }
+    }).start();
+  }
+
   private void setSelection(int row, int col) {
     table.setRowSelectionInterval(row, row);
     table.setColumnSelectionInterval(col, col);
+  }
+
+  void indent(int row, int col) {
+    log.trace("action: indent");
+    cellAt(row, 2).doIndent();
+    tableHasChanged(row, 0);
+  }
+
+  void dedent(int row, int col) {
+    log.trace("action: dedent");
+    cellAt(row, 2).doDedent();
+    tableHasChanged(row, 0);
   }
 
   private File fScript = new File(SX.getSXSTORE(), "scripteditor/script.txt");
@@ -775,21 +878,35 @@ public class Script extends JPanel implements TableModelListener, ListSelectionL
 
   protected boolean addCommandTemplate(String command, int row, int col) {
     if (cellAt(row, col).isLineEmpty()) {
-      cellAt(row, col).setLine(getCommandTemplate(command));
-      PopUpMenus.tableChanged();
+      String[] template = getCommandTemplate(command);
+      boolean shouldIndent = false;
+      if (template[0].startsWith(">")) {
+        shouldIndent = true;
+        template[0] = template[0].substring(1);
+      }
+      cellAt(row, col).setLine(template);
+      if (shouldIndent) {
+        cellAt(row, 2).setIndent(cellAt(row - 1, 2).getIndent() + 1);
+        cellAt(row, 2).setBlock();
+      } else if (cellAt(row - 1, 2).getIndent() > 0) {
+        cellAt(row, 2).setIndent(cellAt(row - 1, 2).getIndent());
+      }
+      tableHasChanged();
       return true;
     }
     return false;
   }
 
   String[] getCommandTemplate(String command) {
-    String[] commandLine = commandTemplates.get(command);
+    String[] commandLine = commandTemplates.get(command).clone();
     if (SX.isNull(commandLine)) {
       commandLine = new String[]{"#error!"};
     } else {
-      commandLine[0] = command;
+      commandLine[0] = commandLine[0] + command;
       if ("result".equals(commandLine[commandLine.length - 1])) {
-        commandLine[commandLine.length - 1] = "=result" + resultsCounter++;
+        commandLine[commandLine.length - 1] = "=R" + resultsCounter++;
+      } else if ("block".equals(commandLine[commandLine.length - 1])) {
+        commandLine[0] = ">" + command;
       }
     }
     return commandLine;
