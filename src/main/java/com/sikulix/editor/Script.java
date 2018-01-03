@@ -5,7 +5,9 @@ import com.sikulix.api.Element;
 import com.sikulix.api.Picture;
 import com.sikulix.core.SX;
 import com.sikulix.core.SXLog;
-import oracle.jvm.hotspot.jfr.JFR;
+import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
+import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
+import org.fife.ui.rtextarea.RTextScrollPane;
 
 import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;
@@ -595,68 +597,31 @@ public class Script extends JPanel implements TableModelListener, ListSelectionL
           Rectangle cellRect = table.getCellRect(row, col, false);
           PopUpMenus.Command.pop(table, cellRect.x, cellRect.y);
           return false;
-        } else if (col > 1 && keyCode == KeyEvent.VK_SPACE) {
-          Element cellClick = cellAt(row, col).getCellClick();
+        } else if (keyCode == KeyEvent.VK_SPACE) {
+          log.trace("EditBox: should open");
+          Cell cell = cellAt(row, Math.max(1, col));
+          Map<String, Object> editorContent = new HashMap<>();
           new Thread(new Runnable() {
             @Override
             public void run() {
-              String cellSaved = cellAt(row, col).get();
-              Boolean[] shouldTerminate = new Boolean[]{false, false};
               JFrame frame = new JFrame("EditCell");
-              JTextArea textArea = new JTextArea();
-              textArea.addKeyListener(new KeyAdapter() {
-                @Override
-                public void keyReleased(KeyEvent keyEvent) {
-                  if (keyEvent.getKeyCode() == KeyEvent.VK_ESCAPE) {
-                    frame.setVisible(false);
-                    shouldTerminate[0] = true;
-                    return;
-                  } else if (keyEvent.getKeyCode() == KeyEvent.VK_F1) {
-                    frame.setVisible(false);
-                    return;
-                  } else if (keyEvent.getKeyCode() == KeyEvent.VK_F2) {
-                    frame.setVisible(false);
-                    shouldTerminate[0] = true;
-                    shouldTerminate[1] = true;
-                    return;
-                  }
-                  super.keyReleased(keyEvent);
-                }
-              });
-              JScrollPane scrollPane = new JScrollPane(textArea);
-              JPanel panel = new JPanel();
-              panel.add(scrollPane);
-              frame.setUndecorated(true);
-              frame.setAlwaysOnTop(true);
-              frame.add(panel);
-              while (!shouldTerminate[0]) {
-                String cellText = cellAt(row, col).get();
-                String[] lines = cellText.split("\\n");
-                int textW = 10;
-                for (String line : lines) {
-                  if (line.length() > textW) {
-                    textW = line.length();
-                  }
-                }
-                textW = (int) (textW * 0.7);
-                textArea.setRows(Math.max(3, lines.length + 1));
-                textArea.setColumns(textW);
-                textArea.setText(cellText);
-                textArea.setEditable(true);
-                //textArea.setMaximumSize(new Dimension(w, 2 * h));
-                frame.pack();
-                frame.setLocation(cellClick.x, cellClick.y);
-                frame.setVisible(true);
-                //SX.pause(1);
-                while (frame.isVisible()) {
-                  SX.pause(0.3);
-                }
-                table.setValueAt(textArea.getText(), row, col);
+              JPanel cp = new JPanel(new BorderLayout());
+              RSyntaxTextArea textArea = new RSyntaxTextArea(20, 60);
+              textArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JAVASCRIPT);
+              textArea.setCodeFoldingEnabled(true);
+              textArea.setText(cell.get());
+              RTextScrollPane sp = new RTextScrollPane(textArea);
+              cp.add(sp);
+              frame.setContentPane(cp);
+              frame.pack();
+              frame.setLocationRelativeTo(null);
+              frame.setDefaultCloseOperation(WindowConstants.HIDE_ON_CLOSE);
+              frame.setVisible(true);
+              while(frame.isVisible()) {
+                SX.pause(0.3);
               }
-              if (!shouldTerminate[1]) {
-                table.setValueAt(cellSaved, row, col);
-              }
-              Do.on().clickFast(cellClick);
+              cell.set(textArea.getText());
+              frame.dispose();
             }
           }).start();
           return false;
@@ -703,7 +668,9 @@ public class Script extends JPanel implements TableModelListener, ListSelectionL
         }
         log.trace("keycode: %d %s", keyCode, KeyEvent.getKeyText(keyCode));
       }
-      if (col > 0) {
+      if (col > 0)
+
+      {
         return super.editCellAt(row, col, e);
       }
       return false;
@@ -778,6 +745,7 @@ public class Script extends JPanel implements TableModelListener, ListSelectionL
         return;
       }
     }
+
   }
 
   protected void tableHasChanged() {
