@@ -59,7 +59,12 @@ public class PopUpMenu extends JPopupMenu {
   }
 
   public JMenuItem createMenuItem(String name, Object ref) {
-    return createMenuItem(new JMenuItem(name), new MenuAction(name, ref));
+    int index = name.indexOf("!");
+    String showName = name;
+    if (index > -1) {
+      showName = name.substring(0, index);
+    }
+    return createMenuItem(new JMenuItem(showName), new MenuAction(name, ref));
   }
 
   public void createMenuSeperator() {
@@ -100,6 +105,11 @@ public class PopUpMenu extends JPopupMenu {
         int index = function.indexOf(" ");
         if (index > -1) {
           function = function.substring(0, index);
+        }
+        index = function.indexOf("!");
+        if (index > -1) {
+          name = function.substring(0, index);
+          function = function.substring(index + 1);
         }
         paramsWithEvent[0] = Class.forName("java.awt.event.ActionEvent");
         actClass = ref;

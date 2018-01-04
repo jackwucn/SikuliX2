@@ -18,14 +18,14 @@ public class PopUpMenus {
   }
 
   static Script theScript = null;
-  static List<List<Script.Cell>> data = null;
-  static JTable theTable = null;
+  static List<List<ScriptCell>> data = null;
+  static ScriptTable theTable = null;
 
   static void tableChanged() {
-    theScript.tableHasChanged();
+    theTable.tableHasChanged();
   }
 
-  static List<Script.Cell> savedLine = new ArrayList<>();
+  static List<ScriptCell> savedLine = new ArrayList<>();
 
   public static class Command extends PopUpMenu {
 
@@ -131,34 +131,46 @@ public class PopUpMenus {
     }
 
     private Blocks() {
-      add(createMenuItem("If", this));
+      add(createMenuItem("If!is", this));
       add(createMenuItem("IfNot", this));
+      add(createMenuItem("Else!otherwise", this));
       add(createMenuItem("Elif", this));
-      add(createMenuItem("ElIfNot", this));
+      add(createMenuItem("ElifNot", this));
       add(createMenuItem("Loop", this));
       add(createMenuItem("LoopFor", this));
       add(createMenuItem("LoopWith", this));
-      add(createMenuItem("Loop", this));
     }
 
-    public void find(ActionEvent ae) {
-      theScript.addCommandTemplate("#find", row, col);
+    public void is(ActionEvent ae) {
+      theScript.addCommandTemplate("#if", row, col);
     }
 
-    public void vanish(ActionEvent ae) {
-      theScript.addCommandTemplate("#vanish", row, col);
+    public void ifNot(ActionEvent ae) {
+      theScript.addCommandTemplate("#ifNot", row, col);
     }
 
-    public void findAll(ActionEvent ae) {
-      theScript.addCommandTemplate("#findAll", row, col);
+    public void otherwise(ActionEvent ae) {
+      theScript.addCommandTemplate("#else", row, col);
     }
 
-    public void findBest(ActionEvent ae) {
-      theScript.addCommandTemplate("#findBest", row, col);
+    public void elif(ActionEvent ae) {
+      theScript.addCommandTemplate("#elif", row, col);
     }
 
-    public void findAny(ActionEvent ae) {
-      theScript.addCommandTemplate("#findAny", row, col);
+    public void elifNot(ActionEvent ae) {
+      theScript.addCommandTemplate("#elifNot", row, col);
+    }
+
+    public void loop(ActionEvent ae) {
+      theScript.addCommandTemplate("#loop", row, col);
+    }
+
+    public void loopFor(ActionEvent ae) {
+      theScript.addCommandTemplate("#loopFor", row, col);
+    }
+
+    public void loopWith(ActionEvent ae) {
+      theScript.addCommandTemplate("#loopWith", row, col);
     }
   }
 
