@@ -55,7 +55,7 @@ public class Script implements TableModelListener, ListSelectionListener {
 
   public Script(String[] args) {
     
-    if ("trace".equals(args[0])) {
+    if (args.length > 0 && "trace".equals(args[0])) {
       log.on(SXLog.TRACE);
       shouldTrace = true;
     }
