@@ -380,6 +380,7 @@ public class Script implements TableModelListener, ListSelectionListener {
         rowIndex++;
         continue;
       }
+      //TODO debug it
       ScriptCell command = line.get(0);
       command.resetIndent();
       command.setIndent(currentIndent);
