@@ -4,6 +4,8 @@
 
 package com.sikulix.editor;
 
+import com.sikulix.core.SX;
+
 import javax.swing.table.AbstractTableModel;
 import java.util.ArrayList;
 import java.util.List;
@@ -65,9 +67,17 @@ class ScriptTableModel extends AbstractTableModel {
       fireTableDataChanged();
       return;
     }
+    if (SX.isNull(value)) {
+      script.checkContent(row);
+      fireTableDataChanged();
+      script.getTable().setSelection(row, 2);
+      return;
+    }
     String given = ((String) value).trim();
     if (col == 0) {
       return;
     }
+    script.cellAt(row, col).set(value.toString());
+    fireTableCellUpdated(row, col);
   }
 }

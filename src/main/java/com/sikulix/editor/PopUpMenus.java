@@ -49,7 +49,8 @@ public class PopUpMenus {
       add(createMenuItem("Window...", this));
       createMenuSeperator();
       add(createMenuItem("Blocks...", this));
-
+      add(createMenuItem("Scripts...", this));
+      add(createMenuItem("Testing...", this));
     }
 
     public void global(ActionEvent ae) {
@@ -75,6 +76,14 @@ public class PopUpMenus {
     public void blocks(ActionEvent ae) {
       Blocks.pop(this);
     }
+
+    public void scripts(ActionEvent ae) {
+      DefaultSub.pop(this);
+    }
+
+    public void testing(ActionEvent ae) {
+      DefaultSub.pop(this);
+    }
   }
 
   public static class Finding extends PopUpMenu {
@@ -91,6 +100,7 @@ public class PopUpMenus {
 
     private Finding() {
       add(createMenuItem("Find", this));
+      add(createMenuItem("Wait", this));
       add(createMenuItem("FindAll", this));
       add(createMenuItem("FindBest", this));
       add(createMenuItem("FindAny", this));
@@ -99,6 +109,10 @@ public class PopUpMenus {
 
     public void find(ActionEvent ae) {
       theScript.addCommandTemplate("#find", row, col);
+    }
+
+    public void wait(ActionEvent ae) {
+      theScript.addCommandTemplate("#wait", row, col);
     }
 
     public void vanish(ActionEvent ae) {

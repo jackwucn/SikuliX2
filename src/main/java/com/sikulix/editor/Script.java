@@ -54,7 +54,7 @@ public class Script implements TableModelListener, ListSelectionListener {
   boolean shouldTrace = false;
 
   public Script(String[] args) {
-    
+
     if ("trace".equals(args[0])) {
       log.on(SXLog.TRACE);
       shouldTrace = true;
@@ -229,6 +229,10 @@ public class Script implements TableModelListener, ListSelectionListener {
     return data.get(row).get(lineCol).set(row, col);
   }
 
+  protected ScriptCell lineAt(int row) {
+    return cellAt(row, 0);
+  }
+
   protected static Element getCellClick(int row, int col, JFrame window, JTable table) {
     Point windowLocation = window.getLocation();
     Rectangle cell = table.getCellRect(row, col, false);
@@ -321,107 +325,98 @@ public class Script implements TableModelListener, ListSelectionListener {
   Map<String, String> images = new HashMap<>();
 
   protected boolean addCommandTemplate(String command, int row, int col) {
+    boolean hasError = false;
+    ScriptCell.BlockType blockType = null;
     if (cellAt(row, col).isLineEmpty()) {
-      String[] template = getCommandTemplate(command);
-      boolean shouldIndent = false;
-      boolean shouldDedent = false;
-      if (template[0].startsWith(">")) {
-        shouldIndent = true;
-        template[0] = template[0].substring(1);
-      } else if (template[0].startsWith("<")) {
-        shouldDedent = true;
-        template[0] = template[0].substring(1);
+      if (commandTemplates.size() == 0) {
+        initTemplates();
       }
-      cellAt(row, col).setLine(template);
-      if (cellAt(row - 1, 2).getIndent() > 0) {
-        cellAt(row, 2).setIndent(cellAt(row - 1, 2).getIndent());
+      command = command.trim();
+      String[] commandLine = commandTemplates.get(command).clone();
+      if (SX.isNull(commandLine)) {
+        hasError = true;
+      } else {
+        commandLine[0] = commandLine[0] + command;
+        int lineLast = commandLine.length - 1;
+        String lineEnd = commandLine[lineLast];
+        String block = "{block}";
+        if ("result".equals(lineEnd)) {
+          commandLine[lineLast] = "$R" + resultsCounter++;
+        } else if (lineEnd.startsWith(block)) {
+          String suffix = lineEnd.replace(block, "");
+          if (lineEnd.length() > block.length()) {
+            if ("if".equals(suffix)) {
+              blockType = ScriptCell.BlockType.IF;
+            } else if ("el".equals(suffix)) {
+              blockType = ScriptCell.BlockType.ELSE;
+            } else if ("ei".equals(suffix)) {
+              blockType = ScriptCell.BlockType.ELIF;
+            } else {
+              log.error("addCommandTemplate: invalid {block} suffix: %s", suffix);
+              hasError = true;
+            }
+          } else {
+            blockType = ScriptCell.BlockType.SINGLE;
+          }
+          commandLine[lineLast] = block;
+        }
       }
-      if (shouldIndent) {
-        cellAt(row, 2).setIndent(cellAt(row - 1, 2).getIndent() + 1);
-        cellAt(row, 2).setBlock();
+      if (hasError) {
+        commandLine = new String[]{"#error!", commandLine[0]};
       }
-      if (shouldDedent) {
-        cellAt(row, 2).setIndent(Math.max(1, cellAt(row - 1, 2).getIndent() - 1));
-        cellAt(row, 2).setBlock();
-      }
-      table.tableHasChanged();
+      cellAt(row, col).setLine(blockType, commandLine);
+      table.tableHasChanged(row, col);
       return true;
     }
     return false;
   }
 
-  private String[] getCommandTemplate(String command) {
-    if (commandTemplates.size() == 0) {
-      initTemplates();
-    }
-    String[] commandLine = commandTemplates.get(command).clone();
-    if (SX.isNull(commandLine)) {
-      commandLine = new String[]{"#error!"};
-    } else {
-      commandLine[0] = commandLine[0] + command;
-      if ("result".equals(commandLine[commandLine.length - 1])) {
-        commandLine[commandLine.length - 1] = "$R" + resultsCounter++;
-      } else if (commandLine[commandLine.length - 1].startsWith("{block}")) {
-        if (commandLine[commandLine.length - 1].endsWith("-")) {
-          commandLine[0] = "<" + command;
-          commandLine[commandLine.length - 1] = commandLine[commandLine.length - 1].replace("-", "");
-        } else {
-          commandLine[0] = ">" + command;
+  protected void checkContent(int row) {
+    int currentIndent = 0;
+    int currentIfIndent = 0;
+    for (List<ScriptCell> line : data) {
+      ScriptCell command = line.get(0);
+      command.resetIndent();
+      if (command.isBlock()) {
+        if (command.isBlockType(ScriptCell.BlockType.SINGLE)) {
+
         }
       }
     }
-    return commandLine;
-  }
 
-  Map<String, String> commandShort = new HashMap<>();
+  }
 
   Map<String, String[]> commandTemplates = new HashMap<>();
 
   private void initTemplates() {
-    commandShort.put("#", "");
-    commandShort.put("#c", "#click");
-    commandShort.put("#cr", "#clickRight");
-    commandShort.put("#cd", "#clickDouble");
-    commandShort.put("#f", "#find");
-    commandShort.put("#fa", "#findAll");
-    commandShort.put("#fb", "#findBest");
-    commandShort.put("#fy", "#findAny");
-    commandShort.put("#v", "#vanish");
-    commandShort.put("#w", "#wait");
-    commandShort.put("#l", "#loop");
-    commandShort.put("#lf", "#loopFor");
-    commandShort.put("#lw", "#loopWith");
-    commandShort.put("#i", "#if");
-    commandShort.put("#in", "#ifNot");
-    commandShort.put("#e", "#else");
-    commandShort.put("#ei", "#elif");
-    commandShort.put("#ein", "#elifNot");
-    commandShort.put("#p", "#print");
-    commandShort.put("#pf", "#printf");
-
     commandTemplates.put("#find", new String[]{"", "@?", "result"});
-    commandTemplates.put("#wait", new String[]{"", "@?", "result"});
-    commandTemplates.put("#vanish", new String[]{"", "@?", "result"});
+    commandTemplates.put("#wait", new String[]{"", "wait-time", "@?", "result"});
+    commandTemplates.put("#vanish", new String[]{"", "wait-time", "@?", "result"});
     commandTemplates.put("#findAll", new String[]{"", "@?", "result"});
     commandTemplates.put("#findBest", new String[]{"", "@[?", "result"});
     commandTemplates.put("#findAny", new String[]{"", "@[?", "result"});
     commandTemplates.put("#click", new String[]{"", "@?", "result"});
     commandTemplates.put("#clickRight", new String[]{"", "@?", "result"});
     commandTemplates.put("#clickDouble", new String[]{"", "@?", "result"});
-    
-    commandTemplates.put("#if", new String[]{"", "{condition}", "{block}"});
-    commandTemplates.put("#ifNot", new String[]{"", "{condition}", "{block}"});
-    commandTemplates.put("#else", new String[]{"", "{block}-"});
-    commandTemplates.put("#elif", new String[]{"", "{condition}", "{block}-"});
-    commandTemplates.put("#elifNot", new String[]{"", "{condition}", "{block}-"});
+    commandTemplates.put("#hover", new String[]{"", "@?", "result"});
+
+    commandTemplates.put("#if", new String[]{"", "{condition}", "{block}if"});
+    commandTemplates.put("#ifNot", new String[]{"", "{condition}", "{block}if"});
+    commandTemplates.put("#else", new String[]{"", "{block}el"});
+    commandTemplates.put("#elif", new String[]{"", "{condition}", "{block}ei"});
+
+    commandTemplates.put("#elifNot", new String[]{"", "{condition}", "{block}ei"});
     commandTemplates.put("#loop", new String[]{"", "{condition}", "{block}"});
     commandTemplates.put("#loopWith", new String[]{"", "listvariable", "{block}"});
     commandTemplates.put("#loopFor", new String[]{"", "count step from", "{block}"});
-    
+
     commandTemplates.put("#print", new String[]{""});
     commandTemplates.put("#printf", new String[]{"", "template", "variable..."});
     commandTemplates.put("#log", new String[]{"", "template", "variable..."});
     commandTemplates.put("#pop", new String[]{"", "message", "result"});
+
+    commandTemplates.put("#codeblock", new String[]{"", "{block}", "result"});
+    commandTemplates.put("#function", new String[]{"", "$?", "{block}", "parameter..."});
   }
 
   protected void editBox(int row, int col) {

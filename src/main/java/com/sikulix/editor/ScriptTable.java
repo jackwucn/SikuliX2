@@ -123,4 +123,8 @@ class ScriptTable extends JTable {
   protected void tableHasChanged() {
     getModel().setValueAt(null, -1, -1);
   }
+
+  protected void tableHasChanged(int row, int col) {
+    getModel().setValueAt(null, row, col);
+  }
 }

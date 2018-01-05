@@ -16,6 +16,7 @@ import java.util.List;
 class ScriptCell {
 
   enum CellType {COMMAND, IMAGE, SCRIPT, VARIABLE, LIST, MAP, IMAGELIST, IMAGEMAP, TEXT}
+  enum BlockType {SINGLE, IF, ELSE, ELIF}
 
   private Script script;
   private String value = "";
@@ -23,6 +24,7 @@ class ScriptCell {
   private int row = -1;
   private int col = -1;
   private int indentLevel = 0;
+  private int indentIfLevel = 0;
 
   protected ScriptCell(Script script) {
     this.script = script;
@@ -40,20 +42,25 @@ class ScriptCell {
   }
 
   protected String getIndentMarker() {
-    String indent = "";
-    if (indentLevel == 1) {
-      indent = ">";
-    } else if (indentLevel == 2) {
-      indent = ">>";
-    } else if (indentLevel > 2) {
-      indent = ">>!";
+    if (indentLevel > 0) {
+      return String.format(">%d", indentLevel);
     }
-    return indent;
+    return "";
+  }
+
+  protected void resetIndent() {
+    indentLevel = indentIfLevel = 0;
   }
 
   protected void setIndent(int level) {
     if (level > -1) {
       indentLevel = level;
+    }
+  }
+
+  protected void setIfIndent(int level) {
+    if (level > -1) {
+      indentIfLevel = level;
     }
   }
 
@@ -73,13 +80,19 @@ class ScriptCell {
   }
 
   private boolean block = false;
+  private BlockType bType = null;
 
-  void setBlock() {
+  void setBlock(BlockType bType) {
     block = true;
+    this.bType = bType;
   }
 
   boolean isBlock() {
     return block;
+  }
+
+  boolean isBlockType(BlockType bType) {
+    return this.bType.equals(bType);
   }
 
   protected ScriptCell asCommand(int row, int col) {
@@ -280,6 +293,14 @@ class ScriptCell {
       for (String item : items) {
         script.cellAt(row, col++).set(item);
       }
+    }
+    return oldLine;
+  }
+
+  protected List<ScriptCell> setLine(BlockType bType, String... items) {
+    List<ScriptCell> oldLine = setLine(items);
+    if (SX.isNotNull(bType)) {
+      setBlock(bType);
     }
     return oldLine;
   }
