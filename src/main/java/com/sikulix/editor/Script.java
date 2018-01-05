@@ -55,7 +55,7 @@ public class Script implements TableModelListener, ListSelectionListener {
 
   public Script(String[] args) {
 
-    if ("trace".equals(args[0])) {
+    if (args.length > 0 && "trace".equals(args[0])) {
       log.on(SXLog.TRACE);
       shouldTrace = true;
     }
@@ -374,12 +374,40 @@ public class Script implements TableModelListener, ListSelectionListener {
   protected void checkContent(int row) {
     int currentIndent = 0;
     int currentIfIndent = 0;
+    int rowIndex = -1;
     for (List<ScriptCell> line : data) {
+      if (rowIndex < row) {
+        rowIndex++;
+        continue;
+      }
       ScriptCell command = line.get(0);
       command.resetIndent();
+      command.setIndent(currentIndent);
       if (command.isBlock()) {
         if (command.isBlockType(ScriptCell.BlockType.SINGLE)) {
-
+          command.setIndent(currentIndent);
+          currentIndent++;
+        } else {
+          if (command.isBlockType(ScriptCell.BlockType.IF)) {
+            command.setIndent(currentIndent);
+            currentIndent++;
+            currentIfIndent++;
+            command.setIfIndent(currentIfIndent);
+          } else {
+            if (currentIfIndent < 1) {
+              command.setIndent(currentIndent);
+              command.setIfIndent(-1);
+            } else {
+              if (command.isBlockType(ScriptCell.BlockType.ELSE)) {
+                command.setIndent(currentIndent - 1);
+                currentIfIndent--;
+                command.setIfIndent(currentIfIndent);
+              } else if (command.isBlockType(ScriptCell.BlockType.ELIF)) {
+                command.setIndent(currentIndent - 1);
+                command.setIfIndent(currentIfIndent);
+              }
+            }
+          }
         }
       }
     }
