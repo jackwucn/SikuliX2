@@ -1,104 +1,207 @@
 package com.sikulix.editor;
 
 import com.sikulix.core.SX;
-import com.sikulix.util.PopUpMenu;
+import com.sikulix.core.SXLog;
 
 import javax.swing.*;
 import java.awt.Component;
 import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
 public class PopUpMenus {
 
+  SXLog log;
+
+  class PopUpMenu extends JPopupMenu {
+
+    PopUpMenu parent = null;
+    PopUpMenu parentSub = null;
+    Component comp = null;
+    ScriptCell cell = null;
+    int x;
+    int y;
+
+    public JMenuItem createMenuItem(String name, Object ref) {
+      int index = name.indexOf("!");
+      String showName = name;
+      if (index > -1) {
+        showName = name.substring(0, index);
+      }
+      if ("?".equals(name)) {
+        name = "NotImplemented";
+      }
+      JMenuItem item = new JMenuItem(showName);
+      item.addActionListener(new MenuAction(name, ref));
+      return item;
+    }
+
+    public JMenuItem createMenuItem(PopUpMenu subMenu) {
+      String name = subMenu.getClass().getSimpleName();
+      name += "...";
+      JMenuItem item = new JMenuItem(name);
+      item.addActionListener(new MenuAction(name, subMenu));
+      return item;
+    }
+
+    public void createMenuSeperator() {
+      addSeparator();
+    }
+
+    class MenuAction implements ActionListener {
+
+      Method actMethod = null;
+      String actMethodName = "";
+      int actMethodParams = 1;
+      String action;
+      Object actClass = null;
+      boolean actIsParent = false;
+
+      public MenuAction(String name, Object ref) {
+        Class[] noParams = new Class[0];
+        Class[] methodParams = new Class[1];
+        String function = (name.substring(0, 1).toLowerCase() + name.substring(1));
+        if (name.contains("...")) {
+          function = function.replace("...", "");
+          actIsParent = true;
+        }
+        int index = function.indexOf(" ");
+        if (index > -1) {
+          function = function.substring(0, index);
+        }
+        index = function.indexOf("!");
+        if (index > -1) {
+          name = function.substring(0, index);
+          function = function.substring(index + 1);
+        }
+        if (actIsParent) {
+          actClass = ref;
+          actMethodParams = 0;
+          try {
+            actMethodName = "pop";
+            actMethod = actClass.getClass().getMethod(actMethodName, noParams);
+          } catch (NoSuchMethodException ex) {
+          }
+          action = function + "." + actMethodName;
+        } else {
+          try {
+            methodParams[0] = Class.forName("java.awt.event.ActionEvent");
+            actClass = ref;
+          } catch (ClassNotFoundException ex) {
+          }
+          if (SX.isNotNull(actClass)) {
+            try {
+              action = function;
+              actMethod = actClass.getClass().getMethod(function, methodParams);
+            } catch (NoSuchMethodException ex) {
+            }
+            if (SX.isNull(actMethod)) {
+              actMethodName = "addCommand";
+              methodParams[0] = String.class;
+              try {
+                actMethod = actClass.getClass().getMethod(actMethodName, methodParams);
+              } catch (NoSuchMethodException ex) {
+              }
+            }
+          }
+        }
+        if (SX.isNull(actMethod)) {
+          log.error("action missing: %s", function);
+        }
+      }
+
+      @Override
+      public void actionPerformed(ActionEvent e) {
+        if (actMethod != null) {
+          String actionClassName = (actClass.getClass().getName() + "." + action);
+          int hasDollar = actionClassName.indexOf("$");
+          if (hasDollar > -1) {
+            actionClassName = actionClassName.substring(hasDollar + 1);
+          }
+          try {
+            log.trace("action: %s", actionClassName);
+            Object[] params = new Object[actMethodParams];
+            if (actMethodParams > 0) {
+              if (actMethodName.isEmpty()) {
+                params[0] = e;
+              } else if ("addCommand".equals(actMethodName)) {
+                params[0] = action;
+              }
+            }
+            actMethod.invoke(actClass, params);
+          } catch (Exception ex) {
+            log.error("action %s return: %s", actionClassName, ex.getMessage());
+          }
+        }
+      }
+    }
+
+    void pop(Component comp, ScriptCell cell) {
+      this.comp = comp;
+      this.cell = cell;
+      this.x = cell.getRect().x;
+      this.y = cell.getRect().y;
+      show(comp, x, y);
+    }
+
+    public void pop() {
+      if (SX.isNotNull(parent)) {
+        parentSub.show(parent.comp, parent.x, parent.y);
+      }
+    }
+
+    ScriptCell getCell() {
+      if (SX.isNotNull(cell)) {
+        return cell;
+      }
+      if (SX.isNotNull(parent)) {
+        return parent.getCell();
+      }
+      log.error("no cell nor parent");
+      return null;
+    }
+  }
+
   public PopUpMenus(Script script) {
-    theScript = script;
-    theTable = theScript.getTable();
-    data = theScript.getData();
+    this.script = script;
+    log = script.log;
+    table = script.getTable();
+    data = script.getData();
   }
 
-  static Script theScript = null;
-  static List<List<ScriptCell>> data = null;
-  static ScriptTable theTable = null;
+  Script script;
+  ScriptTable table;
 
-  static void tableChanged() {
-    theTable.tableHasChanged();
+  List<List<ScriptCell>> data;
+  List<ScriptCell> savedLine = new ArrayList<>();
+
+  protected void command(ScriptCell cell) {
+    new Command().pop(table, cell);
   }
 
-  static List<ScriptCell> savedLine = new ArrayList<>();
+  private class Command extends PopUpMenu {
 
-  public static class Command extends PopUpMenu {
-
-    private static Command menu = null;
-
-    public static Command pop(Component comp, int x, int y) {
-      if (SX.isNull(menu)) {
-        menu = new Command();
-      }
-      menu.init(theTable, comp, x, y, theScript.shouldTrace);
-      menu.show(comp, x, y);
-      return menu;
-    }
-
-    private Command() {
-      add(createMenuItem("Global...", this));
-      createMenuSeperator();
-      add(createMenuItem("Finding...", this));
-      add(createMenuItem("Mouse...", this));
-      add(createMenuItem("Keyboard...", this));
-      add(createMenuItem("Window...", this));
-      createMenuSeperator();
-      add(createMenuItem("Blocks...", this));
-      add(createMenuItem("Scripts...", this));
-      add(createMenuItem("Testing...", this));
-    }
-
-    public void global(ActionEvent ae) {
-      Global.pop(this);
-    }
-
-    public void finding(ActionEvent ae) {
-      Finding.pop(this);
-    }
-
-    public void mouse(ActionEvent ae) {
-      DefaultSub.pop(this);
-    }
-
-    public void keyboard(ActionEvent ae) {
-      DefaultSub.pop(this);
-    }
-
-    public void window(ActionEvent ae) {
-      DefaultSub.pop(this);
-    }
-
-    public void blocks(ActionEvent ae) {
-      Blocks.pop(this);
-    }
-
-    public void scripts(ActionEvent ae) {
-      DefaultSub.pop(this);
-    }
-
-    public void testing(ActionEvent ae) {
-      DefaultSub.pop(this);
+    public Command() {
+      add(createMenuItem(new Global(this)));
+//      createMenuSeperator();
+//      add(createMenuItem(new Finding(this)));
+//      add(createMenuItem(new NotimplementedSub(this, "Mouse...")));
+//      add(createMenuItem(new NotimplementedSub(this, "Keyboard...")));
+//      add(createMenuItem(new NotimplementedSub(this, "Window...")));
+//      createMenuSeperator();
+//      add(createMenuItem(new Blocks(this)));
+//      add(createMenuItem(new NotimplementedSub(this, "Scripts...")));
+//      add(createMenuItem(new NotimplementedSub(this, "Testing...")));
     }
   }
 
-  public static class Finding extends PopUpMenu {
+  private class Finding extends PopUpMenu {
 
-    private static Finding menu = null;
-
-    public static void pop(PopUpMenu parentMenu) {
-      if (SX.isNull(menu)) {
-        menu = new Finding();
-      }
-      menu.init(parentMenu, theScript.shouldTrace);
-      menu.show(parentMenu.table, parentMenu.pos.x, parentMenu.pos.y);
-    }
-
-    private Finding() {
+    public Finding(PopUpMenu parentMenu) {
+      parent = parentMenu;
+      parentSub = this;
       add(createMenuItem("Find", this));
       add(createMenuItem("Wait", this));
       add(createMenuItem("FindAll", this));
@@ -107,47 +210,19 @@ public class PopUpMenus {
       add(createMenuItem("Vanish", this));
     }
 
-    public void find(ActionEvent ae) {
-      theScript.addCommandTemplate("#find", row, col);
-    }
-
-    public void wait(ActionEvent ae) {
-      theScript.addCommandTemplate("#wait", row, col);
-    }
-
-    public void vanish(ActionEvent ae) {
-      theScript.addCommandTemplate("#vanish", row, col);
-    }
-
-    public void findAll(ActionEvent ae) {
-      theScript.addCommandTemplate("#findAll", row, col);
-    }
-
-    public void findBest(ActionEvent ae) {
-      theScript.addCommandTemplate("#findBest", row, col);
-    }
-
-    public void findAny(ActionEvent ae) {
-      theScript.addCommandTemplate("#findAny", row, col);
+    public void addCommand(String menuItem) {
+      script.addCommandTemplate("#" + menuItem, getCell());
     }
   }
 
-  public static class Blocks extends PopUpMenu {
+  private class Blocks extends PopUpMenu {
 
-    private static Blocks menu = null;
-
-    public static void pop(PopUpMenu parentMenu) {
-      if (SX.isNull(menu)) {
-        menu = new Blocks();
-      }
-      menu.init(parentMenu, theScript.shouldTrace);
-      menu.show(parentMenu.table, parentMenu.pos.x, parentMenu.pos.y);
-    }
-
-    private Blocks() {
-      add(createMenuItem("If!is", this));
+    public Blocks(PopUpMenu parentMenu) {
+      parent = parentMenu;
+      parentSub = this;
+      add(createMenuItem("If", this));
       add(createMenuItem("IfNot", this));
-      add(createMenuItem("Else!otherwise", this));
+      add(createMenuItem("Else", this));
       add(createMenuItem("Elif", this));
       add(createMenuItem("ElifNot", this));
       add(createMenuItem("Loop", this));
@@ -155,58 +230,20 @@ public class PopUpMenus {
       add(createMenuItem("LoopWith", this));
     }
 
-    public void is(ActionEvent ae) {
-      theScript.addCommandTemplate("#if", row, col);
+    public void addCommand(String menuItem) {
+      script.addCommandTemplate("#" + menuItem, getCell());
     }
 
-    public void ifNot(ActionEvent ae) {
-      theScript.addCommandTemplate("#ifNot", row, col);
-    }
-
-    public void otherwise(ActionEvent ae) {
-      theScript.addCommandTemplate("#else", row, col);
-    }
-
-    public void elif(ActionEvent ae) {
-      theScript.addCommandTemplate("#elif", row, col);
-    }
-
-    public void elifNot(ActionEvent ae) {
-      theScript.addCommandTemplate("#elifNot", row, col);
-    }
-
-    public void loop(ActionEvent ae) {
-      theScript.addCommandTemplate("#loop", row, col);
-    }
-
-    public void loopFor(ActionEvent ae) {
-      theScript.addCommandTemplate("#loopFor", row, col);
-    }
-
-    public void loopWith(ActionEvent ae) {
-      theScript.addCommandTemplate("#loopWith", row, col);
-    }
   }
 
-  public static class Action extends PopUpMenu {
+  protected void action(ScriptCell cell) {
+    new Action().pop(table, cell);
+  }
 
-    private static Action menu = null;
+  private class Action extends PopUpMenu {
 
-    public static Action pop(Component comp, int x, int y) {
-      if (SX.isNull(menu)) {
-        menu = new Action();
-      }
-      menu.init(theTable, comp, x, y, theScript.shouldTrace);
-      menu.show(comp, x, y);
-      return menu;
-    }
-
-
-    private Action() {
+    public Action() {
       add(createMenuItem("Global...", this));
-      createMenuSeperator();
-      add(createMenuItem("Indent >", this));
-      add(createMenuItem("Dedent <", this));
       createMenuSeperator();
       add(createMenuItem("NewLine +", this));
       add(createMenuItem("DeleteLine", this));
@@ -217,157 +254,107 @@ public class PopUpMenus {
       add(createMenuItem("RunLine", this));
     }
 
-    public void global(ActionEvent ae) {
-      Global.pop(this);
-    }
-
-    public void indent(ActionEvent ae) {
-      theScript.indent(row, col);
-    }
-
-    public void dedent(ActionEvent ae) {
-      theScript.dedent(row, col);
-    }
 
     public void newLine(ActionEvent ae) {
-      data.add(row + 1, new ArrayList<>());
-      tableChanged();
-      table.setRowSelectionInterval(row + 1, row + 1);
-      table.setColumnSelectionInterval(col + 1, col + 1);
+//      data.add(row + 1, new ArrayList<>());
+//      table.tableHasChanged();
+//      table.setRowSelectionInterval(row + 1, row + 1);
+//      table.setColumnSelectionInterval(col + 1, col + 1);
     }
 
     public void deleteLine(ActionEvent ae) {
-      savedLine = data.remove(row);
-      tableChanged();
-      int selRow = row - 1 < 0 ? row : row - 1;
-      table.setRowSelectionInterval(selRow, selRow);
-      table.setColumnSelectionInterval(col, col);
+//      savedLine = data.remove(row);
+//      tableChanged();
+//      int selRow = row - 1 < 0 ? row : row - 1;
+//      table.setRowSelectionInterval(selRow, selRow);
+//      table.setColumnSelectionInterval(col, col);
     }
 
     public void emptyLine(ActionEvent ae) {
-      savedLine = theScript.cellAt(row, col + 1).setLine();
-      tableChanged();
-      table.setRowSelectionInterval(row, row);
-      table.setColumnSelectionInterval(col, col);
+//      savedLine = script.cellAt(row, col + 1).setLine();
+//      tableChanged();
+//      table.setRowSelectionInterval(row, row);
+//      table.setColumnSelectionInterval(col, col);
     }
 
     public void copyLine(ActionEvent ae) {
-      savedLine = data.get(row);
+//      savedLine = data.get(row);
     }
 
     public void runLine(ActionEvent ae) {
-      theScript.runScript(row, row);
+//      script.runScript(row, row);
     }
 
     public void insertLine(ActionEvent ae) {
-      data.add(row + 1, savedLine);
-      tableChanged();
-      table.setRowSelectionInterval(row + 1, row + 1);
-      table.setColumnSelectionInterval(col + 1, col + 1);
+//      data.add(row + 1, savedLine);
+//      tableChanged();
+//      table.setRowSelectionInterval(row + 1, row + 1);
+//      table.setColumnSelectionInterval(col + 1, col + 1);
     }
   }
 
-  public static class Global extends PopUpMenu {
+  private class Global extends PopUpMenu {
 
-    private static Global menu = null;
-
-    public static void pop(PopUpMenu parentMenu) {
-      if (SX.isNull(menu)) {
-        menu = new Global();
-      }
-      menu.init(parentMenu, theScript.shouldTrace);
-      menu.show(parentMenu.table, parentMenu.pos.x, parentMenu.pos.y);
-    }
-
-    private Global() {
+    public Global(PopUpMenu parentMenu) {
+      parent = parentMenu;
+      parentSub = this;
       add(createMenuItem("Help F1", this));
-      add(createMenuItem("Save... F2", this));
-      add(createMenuItem("Open... F3", this));
+      add(createMenuItem("Save F2", this));
+      add(createMenuItem("Open F3", this));
       add(createMenuItem("Run F4", this));
       add(createMenuItem("Capture F5", this));
       add(createMenuItem("Show F6", this));
       add(createMenuItem("Find F7", this));
     }
 
-    public void help(ActionEvent ae) {
-
+    public void help(ActionEvent e) {
+      log.trace("help requested");
     }
 
-    public void save(ActionEvent ae) {
-      theScript.saveScript();
+    public void save(ActionEvent e) {
+      script.saveScript();
     }
 
-    public void open(ActionEvent ae) {
-      theScript.loadScript();
+    public void open(ActionEvent e) {
+      script.loadScript();
     }
 
-    public void run(ActionEvent ae) {
-      if (col == 0) {
-        theScript.runScript(0, data.size() - 1);
-      } else {
-        theScript.runScript(row, row);
-      }
+    public void run(ActionEvent e) {
+      script.runScript(-1);
     }
 
-    public void capture(ActionEvent ae) {
-      if (col > 0) {
-        theScript.cellAt(row, col).capture();
-      }
+    public void capture(ActionEvent e) {
+      getCell().capture();
     }
 
-    public void show(ActionEvent ae) {
-      if (col > 0) {
-        theScript.cellAt(row, col).show();
-      }
+    public void show(ActionEvent e) {
+      getCell().show();
     }
 
-    public void find(ActionEvent ae) {
-      if (col > 0) {
-        theScript.cellAt(row, col).find();
-      }
-    }
-
-  }
-
-  public static class Default extends PopUpMenu {
-
-    private static Default menu = null;
-
-    public static void pop(Component comp, int x, int y) {
-      if (SX.isNull(menu)) {
-        menu = new Default();
-      }
-      menu.init(theTable, comp, x, y, theScript.shouldTrace);
-      menu.show(comp, x, y);
-    }
-
-    private Default() {
-      add(createMenuItem("NotImplemented", this));
-    }
-
-    public void notImplemented(ActionEvent ae) {
-
+    public void find(ActionEvent e) {
+      getCell().find();
     }
   }
 
-  public static class DefaultSub extends PopUpMenu {
+  protected void notimplemented(ScriptCell cell) {
+    new Command().pop(table, cell);
+  }
 
-    private static DefaultSub menu = null;
+  private class Notimplemented extends PopUpMenu {
 
-    public static void pop(PopUpMenu parentMenu) {
-      if (SX.isNull(menu)) {
-        menu = new DefaultSub();
-      }
-      menu.init(parentMenu, theScript.shouldTrace);
-      menu.show(parentMenu.table, parentMenu.pos.x, parentMenu.pos.y);
+    public Notimplemented() {
+      add(createMenuItem("Global...", this));
+    }
+  }
+
+  private class NotimplementedSub extends PopUpMenu {
+
+    public NotimplementedSub(PopUpMenu parentMenu, String name) {
+      parent = parentMenu;
+      add(createMenuItem("?", this));
     }
 
-    private DefaultSub() {
-      add(createMenuItem("NotImplemented", this));
-    }
-
-    public void notImplemented(ActionEvent ae) {
-
+    public void notimplemented(ActionEvent e) {
     }
   }
 }

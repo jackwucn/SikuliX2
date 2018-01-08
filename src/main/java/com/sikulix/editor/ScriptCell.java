@@ -9,6 +9,9 @@ import com.sikulix.api.Element;
 import com.sikulix.api.Picture;
 import com.sikulix.core.SX;
 
+import javax.swing.*;
+import java.awt.Point;
+import java.awt.Rectangle;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,19 +29,15 @@ class ScriptCell {
   private int indentLevel = 0;
   private int indentIfLevel = 0;
 
-  protected ScriptCell(Script script) {
-    this.script = script;
-    value = "";
+  protected ScriptCell() {
+
   }
 
-  protected ScriptCell(Script script, String value) {
+  protected ScriptCell(Script script, String value, int row, int col) {
     this.script = script;
     this.value = value.trim();
-  }
-
-  protected ScriptCell(Script script, String value, int col) {
-    this.script = script;
-    this.value = value.trim();
+    this.row = row;
+    this.col = col;
   }
 
   protected String getIndentMarker() {
@@ -68,15 +67,8 @@ class ScriptCell {
     return indentLevel;
   }
 
-  void doIndent() {
-    indentLevel++;
-  }
-
-  void doDedent() {
-    indentLevel = Math.max(0, --indentLevel);
-    if (isBlock() && indentLevel == 0) {
-      indentLevel = 1;
-    }
+  protected int getIfIndent() {
+    return indentIfLevel;
   }
 
   private boolean block = false;
@@ -156,7 +148,15 @@ class ScriptCell {
   }
 
   protected Element getCellClick() {
-    return Script.getCellClick(row, col + 1, script.getWindow(), script.getTable());
+    Point windowLocation = script.getWindow().getLocation();
+    Rectangle cell = script.getTable().getCellRect(row, col, false);
+    windowLocation.x += cell.x + 10;
+    windowLocation.y += cell.y + 70;
+    return new Element(windowLocation);
+  }
+
+  protected Rectangle getRect() {
+    return script.getTable().getCellRect(row, col, false);
   }
 
   protected void select() {
@@ -230,8 +230,8 @@ class ScriptCell {
   }
 
   protected ScriptCell asVariable() {
-    if (!value.startsWith("=")) {
-      value = "=" + value;
+    if (!value.startsWith("$")) {
+      value = "$" + value;
     }
     cellType = CellType.VARIABLE;
     return this;
@@ -278,6 +278,14 @@ class ScriptCell {
 
   protected ScriptCell set(String value) {
     this.value = value;
+    return this;
+  }
+
+  protected ScriptCell setValue(String value) {
+    if (SX.isNotNull(value)) {
+      this.value = value;
+    }
+    script.getTable().getModel().setValueAt(value, row, col);
     return this;
   }
 

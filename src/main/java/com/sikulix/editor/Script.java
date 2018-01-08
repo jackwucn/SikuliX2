@@ -18,7 +18,7 @@ import java.io.File;
 import java.util.*;
 import java.util.List;
 
-public class Script implements TableModelListener, ListSelectionListener {
+public class Script {
 
   protected static final SXLog log = SX.getSXLog("SX.SCRIPTEDITOR");
 
@@ -115,14 +115,14 @@ public class Script implements TableModelListener, ListSelectionListener {
     table.setPreferredScrollableViewportSize(tableDim);
     table.setFillsViewportHeight(true);
 
-    table.getModel().addTableModelListener(this);
+//    table.getModel().addTableModelListener(this);
+//
+//    ListSelectionModel listSelectionModel = table.getSelectionModel();
+//    listSelectionModel.addListSelectionListener(this);
+//    table.setSelectionModel(listSelectionModel);
 
-    ListSelectionModel listSelectionModel = table.getSelectionModel();
-    listSelectionModel.addListSelectionListener(this);
-    table.setSelectionModel(listSelectionModel);
-
-    table.addMouseListener(new MyMouseAdapter(1));
-    table.getTableHeader().addMouseListener(new MyMouseAdapter(0));
+    table.addMouseListener(new MyMouseAdapter(1, this));
+    table.getTableHeader().addMouseListener(new MyMouseAdapter(0, this));
 
     JScrollPane scrollPane = new JScrollPane(table);
     panel.add(scrollPane);
@@ -139,18 +139,21 @@ public class Script implements TableModelListener, ListSelectionListener {
   private class MyMouseAdapter extends MouseAdapter {
 
     private int type = 1;
+    private Script script = null;
 
     private MyMouseAdapter() {
     }
 
-    public MyMouseAdapter(int type) {
+    public MyMouseAdapter(int type, Script script) {
       this.type = type;
+      this.script = script;
     }
 
     public void mouseReleased(MouseEvent me) {
       Point where = me.getPoint();
       int row = table.rowAtPoint(where);
       int col = table.columnAtPoint(where);
+      ScriptCell cell = script.cellAt(row, col);
       int button = me.getButton();
 
       if (row < 0) {
@@ -167,11 +170,11 @@ public class Script implements TableModelListener, ListSelectionListener {
       if (button == 3) {
         if (type > 0) {
           if (col == 1) {
-            PopUpMenus.Command.pop(table, where.x, where.y);
+            popUpMenus.command(cell);
           } else if (col == 0) {
-            PopUpMenus.Action.pop(table, where.x, where.y);
+            popUpMenus.action(cell);
           } else {
-            PopUpMenus.Default.pop(table, where.x, where.y);
+            popUpMenus.notimplemented(cell);
           }
         } else {
 
@@ -182,38 +185,37 @@ public class Script implements TableModelListener, ListSelectionListener {
 
   }
 
-  @Override
-  public void tableChanged(TableModelEvent e) {
-    int firstRow = e.getFirstRow();
-    int lastRow = e.getLastRow();
-    int column = e.getColumn();
-    String changed = "NO_CELL";
-    if (firstRow == lastRow) {
-      changed = data.get(firstRow).get(column - 1).get();
-    }
-    if (column > 0) {
-      log.trace("changed: [%d, %d] %s", firstRow, column - 1, changed);
-    }
-  }
+//  @Override
+//  public void tableChanged(TableModelEvent e) {
+//    int firstRow = e.getFirstRow();
+//    int lastRow = e.getLastRow();
+//    int column = e.getColumn();
+//    String changed = "NO_CELL";
+//    if (firstRow == lastRow) {
+//      changed = data.get(firstRow).get(column - 1).get();
+//    }
+//    if (column > 0) {
+//      log.trace("changed: [%d, %d] %s", firstRow, column - 1, changed);
+//    }
+//  }
+//
+//  @Override
+//  public void valueChanged(ListSelectionEvent e) {
+//    if (!e.getValueIsAdjusting()) {
+//      if (!e.toString().contains("={}")) {
+//        int[] rows = table.getSelectedRows();
+//        int[] cols = table.getSelectedColumns();
+//        if (rows.length > 0 && cols.length > 0) {
+//          //log.trace("selected: (%d, %d)", rows[0], cols[0]);
+//        }
+//      }
+//    }
+//  }
 
-  @Override
-  public void valueChanged(ListSelectionEvent e) {
-    if (!e.getValueIsAdjusting()) {
-      if (!e.toString().contains("={}")) {
-        int[] rows = table.getSelectedRows();
-        int[] cols = table.getSelectedColumns();
-        if (rows.length > 0 && cols.length > 0) {
-          //log.trace("selected: (%d, %d)", rows[0], cols[0]);
-        }
-      }
-    }
-  }
-
-  Point currentCell = null;
   String savedCell = "";
 
   protected ScriptCell cellAt(int row, int col) {
-    int lineCol = col - 1;
+    int dataCol = col == 0 ? 0 : col - 1;
     if (row < 0) {
       row = 0;
     }
@@ -221,59 +223,39 @@ public class Script implements TableModelListener, ListSelectionListener {
       data.add(new ArrayList<>());
     }
     List<ScriptCell> line = data.get(row);
-    if (lineCol > line.size() - 1) {
-      for (int n = line.size(); n <= lineCol; n++) {
-        line.add(new ScriptCell(this));
+    if (dataCol > line.size() - 1) {
+      for (int n = line.size(); n <= dataCol; n++) {
+        line.add(new ScriptCell(this, "", row, col));
       }
     }
-    return data.get(row).get(lineCol).set(row, col);
-  }
-
-  protected ScriptCell lineAt(int row) {
-    return cellAt(row, 0);
-  }
-
-  protected static Element getCellClick(int row, int col, JFrame window, JTable table) {
-    Point windowLocation = window.getLocation();
-    Rectangle cell = table.getCellRect(row, col, false);
-    windowLocation.x += cell.x + 10;
-    windowLocation.y += cell.y + 70;
-    return new Element(windowLocation);
-  }
-
-  void indent(int row, int col) {
-    log.trace("action: indent");
-    cellAt(row, 2).doIndent();
-    table.tableHasChanged();
-  }
-
-  void dedent(int row, int col) {
-    log.trace("action: dedent");
-    cellAt(row, 2).doDedent();
-    table.tableHasChanged();
+    ScriptCell cell = data.get(row).get(dataCol);
+    cell.set(row, col);
+    return cell;
   }
 
   protected void loadScript() {
     data.clear();
     resultsCounter = 0;
+    int rowCount = -1;
     String theScript = com.sikulix.core.Content.readFileToString(fScript);
     for (String line : theScript.split("\\n")) {
       List<ScriptCell> aLine = new ArrayList<>();
       int colCount = 1;
+      rowCount++;
       for (String cellText : line.split("\\t")) {
-        if (cellText.contains("=result")) {
-          int count = -1;
-          String resultCount = cellText.replace("=result", "").trim();
+        String resultTarget = "$R";
+        if (cellText.contains(resultTarget)) {
+          int resultCount = -1;
           try {
-            count = Integer.parseInt(resultCount);
+            resultCount = Integer.parseInt(cellText.replace(resultTarget, "").trim());
           } catch (Exception ex) {
             cellText += "?";
           }
-          if (count >= resultsCounter) {
-            resultsCounter = count + 1;
+          if (resultCount >= resultsCounter) {
+            resultsCounter = resultCount + 1;
           }
         }
-        aLine.add(new ScriptCell(this, cellText));
+        aLine.add(new ScriptCell(this, cellText, rowCount, colCount));
         if (++colCount > maxCol) {
           break;
         }
@@ -303,8 +285,12 @@ public class Script implements TableModelListener, ListSelectionListener {
     }
   }
 
-  protected void runScript(int lineFrom, int lineTo) {
+  protected void runScript(int lineFrom) {
     window.setVisible(false);
+    int lineTo = lineFrom;
+    if (lineFrom < 0) {
+      lineTo = data.size() -1;
+    }
     for (int n = lineFrom; n <= lineTo; n++) {
       String sLine = "";
       String sep = "";
@@ -324,18 +310,15 @@ public class Script implements TableModelListener, ListSelectionListener {
 
   Map<String, String> images = new HashMap<>();
 
-  protected boolean addCommandTemplate(String command, int row, int col) {
-    boolean hasError = false;
+  protected boolean addCommandTemplate(String command, ScriptCell cell) {
     ScriptCell.BlockType blockType = null;
-    if (cellAt(row, col).isLineEmpty()) {
+    if (cell.isLineEmpty()) {
       if (commandTemplates.size() == 0) {
         initTemplates();
       }
       command = command.trim();
       String[] commandLine = commandTemplates.get(command).clone();
-      if (SX.isNull(commandLine)) {
-        hasError = true;
-      } else {
+      if (SX.isNotNull(commandLine)) {
         commandLine[0] = commandLine[0] + command;
         int lineLast = commandLine.length - 1;
         String lineEnd = commandLine[lineLast];
@@ -343,30 +326,21 @@ public class Script implements TableModelListener, ListSelectionListener {
         if ("result".equals(lineEnd)) {
           commandLine[lineLast] = "$R" + resultsCounter++;
         } else if (lineEnd.startsWith(block)) {
-          String suffix = lineEnd.replace(block, "");
-          if (lineEnd.length() > block.length()) {
-            if ("if".equals(suffix)) {
-              blockType = ScriptCell.BlockType.IF;
-            } else if ("el".equals(suffix)) {
-              blockType = ScriptCell.BlockType.ELSE;
-            } else if ("ei".equals(suffix)) {
-              blockType = ScriptCell.BlockType.ELIF;
-            } else {
-              log.error("addCommandTemplate: invalid {block} suffix: %s", suffix);
-              hasError = true;
-            }
-          } else {
+          if (command.startsWith("#if")) {
+            blockType = ScriptCell.BlockType.IF;
+          } else if (command.startsWith("#else")) {
+            blockType = ScriptCell.BlockType.ELSE;
+          } else if (command.startsWith("#elif")) {
+            blockType = ScriptCell.BlockType.ELIF;
+          } else if (command.startsWith("#loop")) {
             blockType = ScriptCell.BlockType.SINGLE;
           }
           commandLine[lineLast] = block;
         }
+        cell.setLine(blockType, commandLine);
+        table.tableHasChanged(cell);
+        return true;
       }
-      if (hasError) {
-        commandLine = new String[]{"#error!", commandLine[0]};
-      }
-      cellAt(row, col).setLine(blockType, commandLine);
-      table.tableHasChanged(row, col);
-      return true;
     }
     return false;
   }
@@ -374,24 +348,27 @@ public class Script implements TableModelListener, ListSelectionListener {
   protected void checkContent(int row) {
     int currentIndent = 0;
     int currentIfIndent = 0;
-    int rowIndex = -1;
+    int rowIndex = 0;
     for (List<ScriptCell> line : data) {
-      if (rowIndex < row) {
+      if (rowIndex != row) {
         rowIndex++;
         continue;
       }
-      //TODO debug it
       ScriptCell command = line.get(0);
       command.resetIndent();
+      if (row > 0) {
+        currentIndent = cellAt(row - 1, 1).getIndent();
+        currentIfIndent = cellAt(row - 1, 1).getIfIndent();
+      }
       command.setIndent(currentIndent);
       if (command.isBlock()) {
         if (command.isBlockType(ScriptCell.BlockType.SINGLE)) {
-          command.setIndent(currentIndent);
           currentIndent++;
+          command.setIndent(currentIndent);
         } else {
           if (command.isBlockType(ScriptCell.BlockType.IF)) {
-            command.setIndent(currentIndent);
             currentIndent++;
+            command.setIndent(currentIndent);
             currentIfIndent++;
             command.setIfIndent(currentIfIndent);
           } else {
@@ -429,12 +406,12 @@ public class Script implements TableModelListener, ListSelectionListener {
     commandTemplates.put("#clickDouble", new String[]{"", "@?", "result"});
     commandTemplates.put("#hover", new String[]{"", "@?", "result"});
 
-    commandTemplates.put("#if", new String[]{"", "{condition}", "{block}if"});
-    commandTemplates.put("#ifNot", new String[]{"", "{condition}", "{block}if"});
-    commandTemplates.put("#else", new String[]{"", "{block}el"});
-    commandTemplates.put("#elif", new String[]{"", "{condition}", "{block}ei"});
+    commandTemplates.put("#if", new String[]{"", "{condition}", "{block}"});
+    commandTemplates.put("#ifNot", new String[]{"", "{condition}", "{block}"});
+    commandTemplates.put("#else", new String[]{"", "{block}"});
+    commandTemplates.put("#elif", new String[]{"", "{condition}", "{block}"});
 
-    commandTemplates.put("#elifNot", new String[]{"", "{condition}", "{block}ei"});
+    commandTemplates.put("#elifNot", new String[]{"", "{condition}", "{block}"});
     commandTemplates.put("#loop", new String[]{"", "{condition}", "{block}"});
     commandTemplates.put("#loopWith", new String[]{"", "listvariable", "{block}"});
     commandTemplates.put("#loopFor", new String[]{"", "count step from", "{block}"});
@@ -444,13 +421,11 @@ public class Script implements TableModelListener, ListSelectionListener {
     commandTemplates.put("#log", new String[]{"", "template", "variable..."});
     commandTemplates.put("#pop", new String[]{"", "message", "result"});
 
-    commandTemplates.put("#codeblock", new String[]{"", "{block}", "result"});
     commandTemplates.put("#function", new String[]{"", "$?", "{block}", "parameter..."});
   }
 
-  protected void editBox(int row, int col) {
+  protected void editBox(ScriptCell cell) {
     Script.log.trace("EditBox: should open");
-    ScriptCell cell = cellAt(row, Math.max(1, col));
   }
 }
 
