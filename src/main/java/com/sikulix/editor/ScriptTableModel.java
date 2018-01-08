@@ -77,7 +77,7 @@ class ScriptTableModel extends AbstractTableModel {
     if (col == 0) {
       return;
     }
-    script.cellAt(row, col).set(value.toString());
+    script.cellAt(row, col).set(given);
     fireTableCellUpdated(row, col);
   }
 }

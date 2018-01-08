@@ -19,7 +19,6 @@ import java.util.List;
 class ScriptCell {
 
   enum CellType {COMMAND, IMAGE, SCRIPT, VARIABLE, LIST, MAP, IMAGELIST, IMAGEMAP, TEXT}
-  enum BlockType {SINGLE, IF, ELSE, ELIF}
 
   private Script script;
   private String value = "";
@@ -38,6 +37,10 @@ class ScriptCell {
     this.value = value.trim();
     this.row = row;
     this.col = col;
+  }
+
+  protected int getRow() {
+    return row;
   }
 
   protected String getIndentMarker() {
@@ -72,20 +75,6 @@ class ScriptCell {
   }
 
   private boolean block = false;
-  private BlockType bType = null;
-
-  void setBlock(BlockType bType) {
-    block = true;
-    this.bType = bType;
-  }
-
-  boolean isBlock() {
-    return block;
-  }
-
-  boolean isBlockType(BlockType bType) {
-    return this.bType.equals(bType);
-  }
 
   protected ScriptCell asCommand(int row, int col) {
     if (!value.startsWith("#")) {
@@ -136,7 +125,7 @@ class ScriptCell {
             imagename = "?" + imagename;
           }
           value = "@" + imagename;
-          script.getTable().setValueAt(value, row, col);
+          script.table.setValueAt(value, row, col);
           script.getWindow().setVisible(true);
         }
       }).start();
@@ -144,19 +133,21 @@ class ScriptCell {
   }
 
   protected void capture() {
-    asImage().getImage();
+    if (isEmpty() || value.startsWith("@")) {
+      asImage().getImage();
+    }
   }
 
   protected Element getCellClick() {
     Point windowLocation = script.getWindow().getLocation();
-    Rectangle cell = script.getTable().getCellRect(row, col, false);
+    Rectangle cell = script.table.getCellRect(row, col, false);
     windowLocation.x += cell.x + 10;
     windowLocation.y += cell.y + 70;
     return new Element(windowLocation);
   }
 
   protected Rectangle getRect() {
-    return script.getTable().getCellRect(row, col, false);
+    return script.table.getCellRect(row, col, false);
   }
 
   protected void select() {
@@ -169,41 +160,43 @@ class ScriptCell {
   }
 
   protected void show() {
-    asImage();
-    if (isValid()) {
-      loadPicture();
-      if (SX.isNotNull(picture)) {
-        new Thread(new Runnable() {
-          @Override
-          public void run() {
-            picture.show(1);
-            Do.on().clickFast(getCellClick());
-          }
-        }).start();
-      } else {
-        value = "@?" + imagename;
-        script.getTable().setValueAt(value, row, col);
+    if (!isEmpty() && CellType.IMAGE.equals(cellType)) {
+      if (isValid()) {
+        loadPicture();
+        if (SX.isNotNull(picture)) {
+          new Thread(new Runnable() {
+            @Override
+            public void run() {
+              picture.show(1);
+              Do.on().clickFast(getCellClick());
+            }
+          }).start();
+        } else {
+          value = "@?" + imagename;
+          script.table.setValueAt(value, row, col);
+        }
       }
     }
   }
 
   protected void find() {
-    asImage();
-    if (isValid()) {
-      loadPicture();
-      if (SX.isNotNull(picture)) {
-        new Thread(new Runnable() {
-          @Override
-          public void run() {
-            script.getWindow().setVisible(false);
-            Do.find(picture);
-            Do.on().showMatch();
-            script.getWindow().setVisible(true);
-          }
-        }).start();
-      } else {
-        value = "@?" + imagename;
-        script.getTable().setValueAt(value, row, col);
+    if (!isEmpty() && CellType.IMAGE.equals(cellType)) {
+      if (isValid()) {
+        loadPicture();
+        if (SX.isNotNull(picture)) {
+          new Thread(new Runnable() {
+            @Override
+            public void run() {
+              script.getWindow().setVisible(false);
+              Do.find(picture);
+              Do.on().showMatch();
+              script.getWindow().setVisible(true);
+            }
+          }).start();
+        } else {
+          value = "@?" + imagename;
+          script.table.setValueAt(value, row, col);
+        }
       }
     }
   }
@@ -285,7 +278,7 @@ class ScriptCell {
     if (SX.isNotNull(value)) {
       this.value = value;
     }
-    script.getTable().getModel().setValueAt(value, row, col);
+    script.table.getModel().setValueAt(value, row, col);
     return this;
   }
 
@@ -305,11 +298,60 @@ class ScriptCell {
     return oldLine;
   }
 
-  protected List<ScriptCell> setLine(BlockType bType, String... items) {
-    List<ScriptCell> oldLine = setLine(items);
-    if (SX.isNotNull(bType)) {
-      setBlock(bType);
+  protected void addLine(String command) {
+    script.data.add(row + 1, new ArrayList<>());
+    script.cellAt(row + 1, 1).setLine(command);
+    script.table.tableHasChanged();
+    script.table.setSelection(row, 1);
+  }
+
+  protected void newLine(int[] selectedRows) {
+    int numLines = selectedRows.length;
+    int currentRow = selectedRows[numLines - 1];
+    for (int n = 0; n < numLines; n++) {
+      script.data.add(currentRow + n + 1, new ArrayList<>());
     }
-    return oldLine;
+    script.table.tableHasChanged();
+    script.table.setSelection(currentRow + 1, 1);
+  }
+
+  protected void deleteLine(int[] selectedRows) {
+    script.savedLine.clear();
+    int currentRow = selectedRows[0];
+    for (int delRow : selectedRows) {
+      script.savedLine.add(script.data.remove(currentRow));
+    }
+    script.table.tableHasChanged();
+    script.table.setSelection(Math.max(0, currentRow - 1), 1);
+  }
+
+  protected void emptyLine(int[] selectedRows) {
+    script.savedLine.clear();
+    int currentRow = selectedRows[0];
+    for (int emptyRow : selectedRows) {
+      script.savedLine.add(script.cellAt(emptyRow, 1).setLine());
+    }
+    script.table.tableHasChanged();
+    script.table.setSelection(currentRow, 1);
+  }
+
+  protected void copyLine(int[] selectedRows) {
+    for (int copyRow : selectedRows) {
+      script.savedLine.add(script.data.get(copyRow));
+    }
+  }
+
+  protected void runLine(int[] selectedRows) {
+    script.runScript(selectedRows[0], selectedRows[selectedRows.length - 1]);
+  }
+
+  protected void insertLine(int[] selectedRows) {
+    int numLines = script.savedLine.size();
+    int currentRow = selectedRows[selectedRows.length - 1];
+    for (int n = 0; n < numLines; n++) {
+      script.data.add(currentRow + n + 1, script.savedLine.get(n));
+    }
+    script.table.tableHasChanged();
+    script.table.setSelection(row + 1, 1);
   }
 }

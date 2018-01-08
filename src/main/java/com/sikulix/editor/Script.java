@@ -1,22 +1,18 @@
 package com.sikulix.editor;
 
-import com.sikulix.api.Do;
-import com.sikulix.api.Element;
 import com.sikulix.core.SX;
 import com.sikulix.core.SXLog;
 
 import javax.swing.*;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
-import javax.swing.event.TableModelEvent;
-import javax.swing.event.TableModelListener;
 import javax.swing.table.JTableHeader;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Script {
 
@@ -31,7 +27,7 @@ public class Script {
   private Font customFont = new Font("Helvetica Bold", Font.PLAIN, 18);
   PopUpMenus popUpMenus = null;
 
-  private ScriptTable table = null;
+  ScriptTable table = null;
   public Rectangle rectTable = null;
   int maxCol = 7;
 
@@ -46,6 +42,7 @@ public class Script {
   }
 
   List<List<ScriptCell>> data = new ArrayList<>();
+  List<List<ScriptCell>> savedLine = new ArrayList<>();
 
   protected List<List<ScriptCell>> getData() {
     return data;
@@ -132,6 +129,7 @@ public class Script {
     window.pack();
     window.setLocation(rectTable.x, rectTable.y);
     window.setVisible(true);
+    table.setSelection(0, 0);
 
     popUpMenus = new PopUpMenus(this);
   }
@@ -159,25 +157,28 @@ public class Script {
       if (row < 0) {
         return;
       }
+      int[] selectedRows = table.getSelectedRows();
       if (type > 0) {
-        log.trace("clicked: R%d C%d B%d", row, col, button);
+        log.trace("clicked: R%d C%d B%d {%d ... %d}",
+                row, col, button, selectedRows[0], selectedRows[selectedRows.length - 1]);
       } else {
         log.trace("clicked: Header C%d B%d", col, button);
       }
       if (type > 0 && button > 1) {
-        table.setSelection(row, col);
+        if (selectedRows.length < 2) {
+          table.setSelection(row, col);
+        }
       }
       if (button == 3) {
         if (type > 0) {
-          if (col == 1) {
-            popUpMenus.command(cell);
-          } else if (col == 0) {
+          if (col == 0) {
             popUpMenus.action(cell);
+          } else if (col == 1) {
+            popUpMenus.command(cell);
           } else {
             popUpMenus.notimplemented(cell);
           }
         } else {
-
         }
         return;
       }
@@ -286,10 +287,13 @@ public class Script {
   }
 
   protected void runScript(int lineFrom) {
+    runScript(lineFrom, lineFrom);
+  }
+
+  protected void runScript(int lineFrom, int lineTo) {
     window.setVisible(false);
-    int lineTo = lineFrom;
     if (lineFrom < 0) {
-      lineTo = data.size() -1;
+      lineTo = data.size() - 1;
     }
     for (int n = lineFrom; n <= lineTo; n++) {
       String sLine = "";
@@ -317,8 +321,9 @@ public class Script {
         initTemplates();
       }
       command = command.trim();
-      String[] commandLine = commandTemplates.get(command).clone();
+      String[] commandLine = commandTemplates.get(command);
       if (SX.isNotNull(commandLine)) {
+        commandLine = commandLine.clone();
         commandLine[0] = commandLine[0] + command;
         int lineLast = commandLine.length - 1;
         String lineEnd = commandLine[lineLast];
@@ -333,14 +338,25 @@ public class Script {
           } else if (command.startsWith("#elif")) {
             blockType = ScriptCell.BlockType.ELIF;
           } else if (command.startsWith("#loop")) {
-            blockType = ScriptCell.BlockType.SINGLE;
+            blockType = ScriptCell.BlockType.LOOP;
           }
           commandLine[lineLast] = block;
         }
         cell.setLine(blockType, commandLine);
-        table.tableHasChanged(cell);
-        return true;
+        if (ScriptCell.BlockType.IF.equals(blockType)) {
+          cell.addLine("#endif");
+        } else if (ScriptCell.BlockType.LOOP.equals(blockType)) {
+          cell.addLine("#endloop");
+        } else {
+          table.tableHasChanged();
+        }
+        table.setSelection(cell.getRow(), 2);
+      } else {
+        cell.setLine(blockType, new String[]{command + "?"});
+        table.tableHasChanged();
+        table.setSelection(cell.getRow(), 1);
       }
+      return true;
     }
     return false;
   }
@@ -355,38 +371,13 @@ public class Script {
         continue;
       }
       ScriptCell command = line.get(0);
-      command.resetIndent();
-      if (row > 0) {
-        currentIndent = cellAt(row - 1, 1).getIndent();
-        currentIfIndent = cellAt(row - 1, 1).getIfIndent();
-      }
-      command.setIndent(currentIndent);
-      if (command.isBlock()) {
-        if (command.isBlockType(ScriptCell.BlockType.SINGLE)) {
-          currentIndent++;
-          command.setIndent(currentIndent);
-        } else {
-          if (command.isBlockType(ScriptCell.BlockType.IF)) {
-            currentIndent++;
-            command.setIndent(currentIndent);
-            currentIfIndent++;
-            command.setIfIndent(currentIfIndent);
-          } else {
-            if (currentIfIndent < 1) {
-              command.setIndent(currentIndent);
-              command.setIfIndent(-1);
-            } else {
-              if (command.isBlockType(ScriptCell.BlockType.ELSE)) {
-                command.setIndent(currentIndent - 1);
-                currentIfIndent--;
-                command.setIfIndent(currentIfIndent);
-              } else if (command.isBlockType(ScriptCell.BlockType.ELIF)) {
-                command.setIndent(currentIndent - 1);
-                command.setIfIndent(currentIfIndent);
-              }
-            }
-          }
-        }
+      if (command.get().startsWith("#")) {
+        command.resetIndent();
+      } else if (command.get().startsWith("@")) {
+
+      } else if (command.get().startsWith("$")) {
+      } else {
+
       }
     }
 
