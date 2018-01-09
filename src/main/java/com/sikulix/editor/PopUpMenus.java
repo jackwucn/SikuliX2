@@ -212,7 +212,7 @@ public class PopUpMenus {
     }
 
     public void addCommand(String menuItem) {
-      script.addCommandTemplate("#" + menuItem, getCell());
+      script.addCommandTemplate(menuItem, getCell());
     }
   }
 
@@ -228,7 +228,7 @@ public class PopUpMenus {
     }
 
     public void addCommand(String menuItem) {
-      script.addCommandTemplate("#" + menuItem, getCell());
+      script.addCommandTemplate(menuItem, getCell());
     }
   }
 
@@ -242,7 +242,7 @@ public class PopUpMenus {
     }
 
     public void addCommand(String menuItem) {
-      script.addCommandTemplate("#" + menuItem, getCell());
+      script.addCommandTemplate(menuItem, getCell());
     }
   }
 
@@ -255,7 +255,7 @@ public class PopUpMenus {
     }
 
     public void addCommand(String menuItem) {
-      script.addCommandTemplate("#" + menuItem, getCell());
+      script.addCommandTemplate(menuItem, getCell());
     }
   }
 
@@ -267,15 +267,18 @@ public class PopUpMenus {
       add(createMenuItem("If", this));
       add(createMenuItem("IfNot", this));
       add(createMenuItem("Else", this));
+      add(createMenuItem("IfElse", this));
+      createMenuSeperator();
       add(createMenuItem("Elif", this));
       add(createMenuItem("ElifNot", this));
+      createMenuSeperator();
       add(createMenuItem("Loop", this));
       add(createMenuItem("LoopFor", this));
       add(createMenuItem("LoopWith", this));
     }
 
     public void addCommand(String menuItem) {
-      script.addCommandTemplate("#" + menuItem, getCell());
+      script.addCommandTemplate(menuItem, getCell());
     }
 
   }
@@ -289,7 +292,7 @@ public class PopUpMenus {
     }
 
     public void addCommand(String menuItem) {
-      script.addCommandTemplate("#" + menuItem, getCell());
+      script.addCommandTemplate(menuItem, getCell());
     }
 
   }
@@ -303,7 +306,7 @@ public class PopUpMenus {
     }
 
     public void addCommand(String menuItem) {
-      script.addCommandTemplate("#" + menuItem, getCell());
+      script.addCommandTemplate(menuItem, getCell());
     }
 
   }

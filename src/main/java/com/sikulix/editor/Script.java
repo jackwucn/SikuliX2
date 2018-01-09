@@ -63,6 +63,7 @@ public class Script {
     JPanel panel = new JPanel(new GridLayout(1, 0));
     panel.setOpaque(true);
 
+    initTemplates();
     loadScript();
 
     table = new ScriptTable(this, new ScriptTableModel(this, maxCol, data));
@@ -321,9 +322,6 @@ public class Script {
 
   protected boolean addCommandTemplate(String command, ScriptCell cell) {
     if (cell.isLineEmpty()) {
-      if (commandTemplates.size() == 0) {
-        initTemplates();
-      }
       command = command.trim();
       String[] commandLine = commandTemplates.get(command);
       if (SX.isNotNull(commandLine)) {
@@ -335,19 +333,19 @@ public class Script {
           commandLine[lineLast] = "$R" + resultsCounter++;
         }
         cell.setLine(commandLine);
-        if (command.startsWith("#if")) {
-          cell.addLine("#endif");
-        } else if (command.startsWith("#loop")) {
-          cell.addLine("#endloop");
+        if (command.startsWith("if") && !command.contains("ifElse")) {
+          cell.addLine("endif");
+        } else if (command.startsWith("loop")) {
+          cell.addLine("endloop");
         } else {
-          table.tableHasChanged();
         }
         table.setSelection(cell.getRow(), 2);
       } else {
         cell.setLine(new String[]{command + "?"});
-        table.tableHasChanged();
         table.setSelection(cell.getRow(), 1);
       }
+      checkContent();
+      table.tableHasChanged();
       return true;
     }
     return false;
@@ -359,15 +357,18 @@ public class Script {
     int currentLoopIndent = 0;
     boolean hasElse = false;
     for (List<ScriptCell> line : data) {
+      if (line.size() == 0) {
+        continue;
+      }
       ScriptCell cell = line.get(0);
-      String command = cell.get();
-      if (command.startsWith("#")) {
+      String command = cell.get().trim();
+      if (SX.isNotNull(commandTemplates.get(command))) {
         cell.reset();
-        if (command.startsWith("#if")) {
+        if (command.startsWith("if")  && !command.contains("ifElse")) {
           currentIfIndent++;
           cell.setIndent(currentIndent, currentIfIndent, -1);
           currentIndent++;
-        } else if (command.startsWith("#elif")) {
+        } else if (command.startsWith("elif")) {
           if (currentIfIndent > 0 && !hasElse) {
             currentIndent--;
             cell.setIndent(currentIndent, currentIfIndent, -1);
@@ -375,7 +376,7 @@ public class Script {
           } else {
             cell.setError();
           }
-        } else if (command.startsWith("#else")) {
+        } else if (command.startsWith("else")) {
           if (currentIfIndent > 0) {
             hasElse = true;
             currentIndent--;
@@ -384,7 +385,7 @@ public class Script {
           } else {
             cell.setError();
           }
-        } else if (command.startsWith("#endif")) {
+        } else if (command.startsWith("endif")) {
           if (currentIfIndent > 0) {
             hasElse = false;
             currentIndent--;
@@ -393,11 +394,11 @@ public class Script {
           } else {
             cell.setError();
           }
-        } else if (command.startsWith("#loop")) {
+        } else if (command.startsWith("loop")) {
           currentLoopIndent++;
           cell.setIndent(currentIndent, -1, currentLoopIndent);
           currentIndent++;
-        } else if (command.startsWith("#endloop")) {
+        } else if (command.startsWith("endloop")) {
           if (currentLoopIndent > 0) {
             currentIndent--;
             currentLoopIndent--;
@@ -422,33 +423,36 @@ public class Script {
   Map<String, String[]> commandTemplates = new HashMap<>();
 
   private void initTemplates() {
-    commandTemplates.put("#find", new String[]{"", "@?", "result"});
-    commandTemplates.put("#wait", new String[]{"", "wait-time", "@?", "result"});
-    commandTemplates.put("#vanish", new String[]{"", "wait-time", "@?", "result"});
-    commandTemplates.put("#findAll", new String[]{"", "@?", "result"});
-    commandTemplates.put("#findBest", new String[]{"", "@[?", "result"});
-    commandTemplates.put("#findAny", new String[]{"", "@[?", "result"});
-    commandTemplates.put("#click", new String[]{"", "@?", "result"});
-    commandTemplates.put("#clickRight", new String[]{"", "@?", "result"});
-    commandTemplates.put("#clickDouble", new String[]{"", "@?", "result"});
-    commandTemplates.put("#hover", new String[]{"", "@?", "result"});
+    commandTemplates.put("find", new String[]{"", "@?", "result"});
+    commandTemplates.put("wait", new String[]{"", "wait-time", "@?", "result"});
+    commandTemplates.put("vanish", new String[]{"", "wait-time", "@?", "result"});
+    commandTemplates.put("findAll", new String[]{"", "@?", "result"});
+    commandTemplates.put("findBest", new String[]{"", "@[?", "result"});
+    commandTemplates.put("findAny", new String[]{"", "@[?", "result"});
+    commandTemplates.put("click", new String[]{"", "@?", "result"});
+    commandTemplates.put("clickRight", new String[]{"", "@?", "result"});
+    commandTemplates.put("clickDouble", new String[]{"", "@?", "result"});
+    commandTemplates.put("hover", new String[]{"", "@?", "result"});
 
-    commandTemplates.put("#if", new String[]{"", "{condition}", "{block}"});
-    commandTemplates.put("#ifNot", new String[]{"", "{condition}", "{block}"});
-    commandTemplates.put("#else", new String[]{"", "{block}"});
-    commandTemplates.put("#elif", new String[]{"", "{condition}", "{block}"});
-    commandTemplates.put("#elifNot", new String[]{"", "{condition}", "{block}"});
+    commandTemplates.put("if", new String[]{"", "{condition}", "{block}"});
+    commandTemplates.put("ifNot", new String[]{"", "{condition}", "{block}"});
+    commandTemplates.put("endif", new String[]{""});
+    commandTemplates.put("else", new String[]{"", "{block}"});
+    commandTemplates.put("elif", new String[]{"", "{condition}", "{block}"});
+    commandTemplates.put("elifNot", new String[]{"", "{condition}", "{block}"});
+    commandTemplates.put("ifElse", new String[]{"", "{condition}", "{block}", "{block}", "result"});
 
-    commandTemplates.put("#loop", new String[]{"", "{condition}", "{block}"});
-    commandTemplates.put("#loopWith", new String[]{"", "listvariable", "{block}"});
-    commandTemplates.put("#loopFor", new String[]{"", "count step from", "{block}"});
+    commandTemplates.put("loop", new String[]{"", "{condition}", "{block}"});
+    commandTemplates.put("loopWith", new String[]{"", "listvariable", "{block}"});
+    commandTemplates.put("loopFor", new String[]{"", "count step from", "{block}"});
+    commandTemplates.put("endloop", new String[]{""});
 
-    commandTemplates.put("#print", new String[]{"", "variable..."});
-    commandTemplates.put("#printf", new String[]{"", "template", "variable..."});
-    commandTemplates.put("#log", new String[]{"", "template", "variable..."});
-    commandTemplates.put("#pop", new String[]{"", "message", "result"});
+    commandTemplates.put("print", new String[]{"", "variable..."});
+    commandTemplates.put("printf", new String[]{"", "template", "variable..."});
+    commandTemplates.put("log", new String[]{"", "template", "variable..."});
+    commandTemplates.put("pop", new String[]{"", "message", "result"});
 
-    commandTemplates.put("#function", new String[]{"", "$?", "{block}", "parameter..."});
+    commandTemplates.put("function", new String[]{"", "$?", "{block}", "parameter..."});
   }
 
   protected void editBox(ScriptCell cell) {

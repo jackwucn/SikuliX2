@@ -90,18 +90,6 @@ class ScriptCell {
 
   private boolean block = false;
 
-  protected ScriptCell asCommand(int row, int col) {
-    if (!value.startsWith("#")) {
-      value = "#" + value;
-    }
-    cellType = CellType.COMMAND;
-    return this;
-  }
-
-  protected boolean isCommand() {
-    return CellType.COMMAND.equals(cellType);
-  }
-
   protected ScriptCell asImage() {
     if (isEmpty() || "@".equals(value)) {
       value = "@?";
@@ -332,7 +320,7 @@ class ScriptCell {
     for (int n = 0; n < numLines; n++) {
       script.data.add(currentRow + n + 1, new ArrayList<>());
     }
-    script.table.tableHasChanged();
+    script.table.tableCheckContent();
     script.table.setSelection(currentRow + 1, 1);
   }
 
@@ -342,7 +330,7 @@ class ScriptCell {
     for (int delRow : selectedRows) {
       script.savedLine.add(script.data.remove(currentRow));
     }
-    script.table.tableHasChanged();
+    script.table.tableCheckContent();
     script.table.setSelection(Math.max(0, currentRow - 1), 1);
   }
 
@@ -352,7 +340,7 @@ class ScriptCell {
     for (int emptyRow : selectedRows) {
       script.savedLine.add(script.cellAt(emptyRow, 1).setLine());
     }
-    script.table.tableHasChanged();
+    script.table.tableCheckContent();
     script.table.setSelection(currentRow, 1);
   }
 
@@ -372,7 +360,7 @@ class ScriptCell {
     for (int n = 0; n < numLines; n++) {
       script.data.add(currentRow + n + 1, script.savedLine.get(n));
     }
-    script.table.tableHasChanged();
+    script.table.tableCheckContent();
     script.table.setSelection(row + 1, 1);
   }
 }

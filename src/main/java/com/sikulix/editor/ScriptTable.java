@@ -39,9 +39,17 @@ class ScriptTable extends JTable {
       }
       if (isLineNumber) {
         if (keyCode == KeyEvent.VK_PLUS) {
-          script.data.add(currentRow + 1, new ArrayList<>());
-          tableHasChanged();
-          setSelection(currentRow + 1, currentCol + 1);
+          script.cellAt(row, col).newLine(getSelectedRows());
+          new Thread(new Runnable() {
+            @Override
+            public void run() {
+              Do.write("#ESC.");
+            }
+          }).start();
+          return false;
+        }
+        if (keyCode == KeyEvent.VK_MINUS) {
+          script.cellAt(row, col).deleteLine(getSelectedRows());
           new Thread(new Runnable() {
             @Override
             public void run() {
@@ -52,7 +60,7 @@ class ScriptTable extends JTable {
         }
         if (keyCode == KeyEvent.VK_BACK_SPACE) {
           currentCell.setLine();
-          tableHasChanged();
+          tableCheckContent();
           setSelection(currentRow, commandCol);
           return false;
         }
@@ -120,6 +128,10 @@ class ScriptTable extends JTable {
   //TODO correct possible focus problems
   protected void tableHasChanged() {
     setValueAt(null, -1, -1);
+  }
+
+  protected void tableCheckContent() {
+    script.checkContent();
   }
 
   protected void resetLineCol() {

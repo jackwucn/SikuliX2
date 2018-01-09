@@ -67,18 +67,22 @@ class ScriptTableModel extends AbstractTableModel {
       fireTableDataChanged();
       return;
     }
-    if (SX.isNull(value)) {
-      script.checkContent();
-      fireTableDataChanged();
-      script.getTable().setSelection(row, 2);
-      return;
-    }
     String given = ((String) value).trim();
     if (col == 0) {
       return;
     }
-    script.cellAt(row, col).set(given);
-    fireTableCellUpdated(row, col);
+    ScriptCell cell = script.cellAt(row, col);
+    if (col == 1) {
+      if (!given.isEmpty()) {
+        script.addCommandTemplate(given, cell);
+      } else {
+        cell.set(given);
+        script.checkContent();
+      }
+    } else {
+      cell.set(given);
+      fireTableCellUpdated(row, col);
+    }
   }
 
   public void cellUpdated(int row, int col) {
