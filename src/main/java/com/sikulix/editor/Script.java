@@ -443,7 +443,7 @@ public class Script {
     commandTemplates.put("#loopWith", new String[]{"", "listvariable", "{block}"});
     commandTemplates.put("#loopFor", new String[]{"", "count step from", "{block}"});
 
-    commandTemplates.put("#print", new String[]{""});
+    commandTemplates.put("#print", new String[]{"", "variable..."});
     commandTemplates.put("#printf", new String[]{"", "template", "variable..."});
     commandTemplates.put("#log", new String[]{"", "template", "variable..."});
     commandTemplates.put("#pop", new String[]{"", "message", "result"});
