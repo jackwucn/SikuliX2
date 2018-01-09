@@ -74,10 +74,16 @@ class ScriptTableModel extends AbstractTableModel {
     ScriptCell cell = script.cellAt(row, col);
     if (col == 1) {
       if (!given.isEmpty()) {
-        script.addCommandTemplate(given, cell);
+        if (!cell.isLineEmpty()) {
+          cell.set(given);
+          script.checkContent();
+        } else {
+          script.addCommandTemplate(given, cell);
+        }
       } else {
         cell.set(given);
         script.checkContent();
+        script.setSelection(cell);
       }
     } else {
       cell.set(given);

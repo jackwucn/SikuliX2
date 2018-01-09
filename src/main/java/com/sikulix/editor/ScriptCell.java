@@ -44,6 +44,10 @@ class ScriptCell {
     return row;
   }
 
+  protected int getCol() {
+    return col;
+  }
+
   protected String getMarker() {
     if (inError) {
       return "?!";
@@ -336,6 +340,7 @@ class ScriptCell {
 
   protected void emptyLine(int[] selectedRows) {
     script.savedLine.clear();
+    script.savedRows = selectedRows.clone();
     int currentRow = selectedRows[0];
     for (int emptyRow : selectedRows) {
       script.savedLine.add(script.cellAt(emptyRow, 1).setLine());

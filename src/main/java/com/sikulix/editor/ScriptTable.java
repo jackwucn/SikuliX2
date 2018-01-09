@@ -8,9 +8,7 @@ import com.sikulix.api.Do;
 
 import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
-import java.awt.*;
 import java.awt.event.KeyEvent;
-import java.util.ArrayList;
 import java.util.EventObject;
 
 class ScriptTable extends JTable {
@@ -37,6 +35,11 @@ class ScriptTable extends JTable {
       if (keyCode == 0 || keyCode == KeyEvent.VK_ESCAPE || keyCode == KeyEvent.VK_META) {
         return false;
       }
+      boolean isCtrl = false;
+      int modifier = ((KeyEvent) e).getModifiers();
+      if (modifier == KeyEvent.CTRL_MASK) {
+        isCtrl = true;
+      }
       if (isLineNumber) {
         if (keyCode == KeyEvent.VK_PLUS) {
           script.cellAt(row, col).newLine(getSelectedRows());
@@ -59,8 +62,11 @@ class ScriptTable extends JTable {
           return false;
         }
         if (keyCode == KeyEvent.VK_BACK_SPACE) {
-          currentCell.setLine();
-          tableCheckContent();
+          if (isCtrl) {
+            script.log.trace("editCellAt: CTRL Backspace");
+          } else {
+            currentCell.emptyLine(getSelectedRows());
+          }
           setSelection(currentRow, commandCol);
           return false;
         }
@@ -72,7 +78,11 @@ class ScriptTable extends JTable {
         script.editBox(currentCell);
         return false;
       } else if (keyCode == KeyEvent.VK_BACK_SPACE && currentCell.isEmpty()) {
-        currentCell.setValue(script.savedCell);
+        if (isCommand){
+          script.setValueAt(script.savedCellText, currentCell);
+        } else {
+          currentCell.setValue(script.savedCellText);
+        }
         return false;
       } else if (keyCode == KeyEvent.VK_F1) {
         Script.log.trace("F1: (%d,%d) %s (%d, %d, %d)",
@@ -108,7 +118,7 @@ class ScriptTable extends JTable {
         }
         return false;
       } else if (keyCode == KeyEvent.VK_DELETE || keyCode == KeyEvent.VK_BACK_SPACE) {
-        script.savedCell = currentCell.get();
+        script.savedCellText = currentCell.get();
         currentCell.setValue("");
         return false;
       }

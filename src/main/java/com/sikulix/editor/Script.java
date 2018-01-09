@@ -43,6 +43,7 @@ public class Script {
 
   List<List<ScriptCell>> data = new ArrayList<>();
   List<List<ScriptCell>> savedLine = new ArrayList<>();
+  int[] savedRows = new int[0];
 
   protected List<List<ScriptCell>> getData() {
     return data;
@@ -215,7 +216,7 @@ public class Script {
 //    }
 //  }
 
-  String savedCell = "";
+  String savedCellText = "";
 
   protected ScriptCell cellAt(int row, int col) {
     int dataCol = col == 0 ? 0 : col - 1;
@@ -234,6 +235,15 @@ public class Script {
     ScriptCell cell = data.get(row).get(dataCol);
     cell.set(row, col);
     return cell;
+  }
+
+  protected void setValueAt(String text, ScriptCell cell) {
+    table.getModel().setValueAt(text, cell.getRow(), cell.getCol());
+    setSelection(cell);
+  }
+
+  protected void setSelection(ScriptCell cell) {
+    table.setSelection(cell.getRow(), cell.getCol());
   }
 
   protected void loadScript() {
@@ -352,6 +362,7 @@ public class Script {
   }
 
   protected void checkContent() {
+    log.trace("checkContent enter");
     int currentIndent = 0;
     int currentIfIndent = 0;
     int currentLoopIndent = 0;
@@ -361,9 +372,9 @@ public class Script {
         continue;
       }
       ScriptCell cell = line.get(0);
+      cell.reset();
       String command = cell.get().trim();
       if (SX.isNotNull(commandTemplates.get(command))) {
-        cell.reset();
         if (command.startsWith("if")  && !command.contains("ifElse")) {
           currentIfIndent++;
           cell.setIndent(currentIndent, currentIfIndent, -1);
