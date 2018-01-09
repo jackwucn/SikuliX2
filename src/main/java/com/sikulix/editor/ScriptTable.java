@@ -67,7 +67,9 @@ class ScriptTable extends JTable {
         currentCell.setValue(script.savedCell);
         return false;
       } else if (keyCode == KeyEvent.VK_F1) {
-        Script.log.trace("(%d,%d): F1: help: %s", currentRow, currentCell, currentCell.get());
+        Script.log.trace("F1: (%d,%d) %s (%d, %d, %d)",
+                currentRow, currentCol, currentCell.get(),
+                currentCell.getIndent(), currentCell.getIfIndent(), currentCell.getLoopIndent());
         return false;
       } else if (keyCode == KeyEvent.VK_F2) {
         Script.log.trace("F2: save script");
@@ -76,7 +78,6 @@ class ScriptTable extends JTable {
       } else if (keyCode == KeyEvent.VK_F3) {
         Script.log.trace("F3: open script");
         script.loadScript();
-        getModel().setValueAt("", -1, -1);
         return false;
       } else if (keyCode == KeyEvent.VK_F4) {
         Script.log.trace("F4: show");
@@ -118,6 +119,12 @@ class ScriptTable extends JTable {
 
   //TODO correct possible focus problems
   protected void tableHasChanged() {
-    getModel().setValueAt(null, -1, -1);
+    setValueAt(null, -1, -1);
+  }
+
+  protected void resetLineCol() {
+    for (int n = 0; n < getModel().getRowCount(); n++) {
+      ((ScriptTableModel) getModel()).cellUpdated(n, 0);
+    }
   }
 }

@@ -120,6 +120,7 @@ public class Script {
 
     table.addMouseListener(new MyMouseAdapter(1, this));
     table.getTableHeader().addMouseListener(new MyMouseAdapter(0, this));
+    checkContent();
 
     JScrollPane scrollPane = new JScrollPane(table);
     panel.add(scrollPane);
@@ -265,6 +266,10 @@ public class Script {
         data.add(aLine);
       }
     }
+    if (SX.isNotNull(table)) {
+      checkContent();
+      table.setSelection(0, 1);
+    }
   }
 
   protected void saveScript() {
@@ -315,7 +320,6 @@ public class Script {
   Map<String, String> images = new HashMap<>();
 
   protected boolean addCommandTemplate(String command, ScriptCell cell) {
-    ScriptCell.BlockType blockType = null;
     if (cell.isLineEmpty()) {
       if (commandTemplates.size() == 0) {
         initTemplates();
@@ -327,32 +331,20 @@ public class Script {
         commandLine[0] = commandLine[0] + command;
         int lineLast = commandLine.length - 1;
         String lineEnd = commandLine[lineLast];
-        String block = "{block}";
         if ("result".equals(lineEnd)) {
           commandLine[lineLast] = "$R" + resultsCounter++;
-        } else if (lineEnd.startsWith(block)) {
-          if (command.startsWith("#if")) {
-            blockType = ScriptCell.BlockType.IF;
-          } else if (command.startsWith("#else")) {
-            blockType = ScriptCell.BlockType.ELSE;
-          } else if (command.startsWith("#elif")) {
-            blockType = ScriptCell.BlockType.ELIF;
-          } else if (command.startsWith("#loop")) {
-            blockType = ScriptCell.BlockType.LOOP;
-          }
-          commandLine[lineLast] = block;
         }
-        cell.setLine(blockType, commandLine);
-        if (ScriptCell.BlockType.IF.equals(blockType)) {
+        cell.setLine(commandLine);
+        if (command.startsWith("#if")) {
           cell.addLine("#endif");
-        } else if (ScriptCell.BlockType.LOOP.equals(blockType)) {
+        } else if (command.startsWith("#loop")) {
           cell.addLine("#endloop");
         } else {
           table.tableHasChanged();
         }
         table.setSelection(cell.getRow(), 2);
       } else {
-        cell.setLine(blockType, new String[]{command + "?"});
+        cell.setLine(new String[]{command + "?"});
         table.tableHasChanged();
         table.setSelection(cell.getRow(), 1);
       }
@@ -361,26 +353,70 @@ public class Script {
     return false;
   }
 
-  protected void checkContent(int row) {
+  protected void checkContent() {
     int currentIndent = 0;
     int currentIfIndent = 0;
-    int rowIndex = 0;
+    int currentLoopIndent = 0;
+    boolean hasElse = false;
     for (List<ScriptCell> line : data) {
-      if (rowIndex != row) {
-        rowIndex++;
-        continue;
+      ScriptCell cell = line.get(0);
+      String command = cell.get();
+      if (command.startsWith("#")) {
+        cell.reset();
+        if (command.startsWith("#if")) {
+          currentIfIndent++;
+          cell.setIndent(currentIndent, currentIfIndent, -1);
+          currentIndent++;
+        } else if (command.startsWith("#elif")) {
+          if (currentIfIndent > 0 && !hasElse) {
+            currentIndent--;
+            cell.setIndent(currentIndent, currentIfIndent, -1);
+            currentIndent++;
+          } else {
+            cell.setError();
+          }
+        } else if (command.startsWith("#else")) {
+          if (currentIfIndent > 0) {
+            hasElse = true;
+            currentIndent--;
+            cell.setIndent(currentIndent, currentIfIndent, -1);
+            currentIndent++;
+          } else {
+            cell.setError();
+          }
+        } else if (command.startsWith("#endif")) {
+          if (currentIfIndent > 0) {
+            hasElse = false;
+            currentIndent--;
+            currentIfIndent--;
+            cell.setIndent(currentIndent, currentIfIndent, -1);
+          } else {
+            cell.setError();
+          }
+        } else if (command.startsWith("#loop")) {
+          currentLoopIndent++;
+          cell.setIndent(currentIndent, -1, currentLoopIndent);
+          currentIndent++;
+        } else if (command.startsWith("#endloop")) {
+          if (currentLoopIndent > 0) {
+            currentIndent--;
+            currentLoopIndent--;
+            cell.setIndent(currentIndent, -1, currentLoopIndent);
+          } else {
+            cell.setError();
+          }
+        } else {
+          cell.setIndent(currentIndent, currentIfIndent, currentLoopIndent);
+        }
       }
-      ScriptCell command = line.get(0);
-      if (command.get().startsWith("#")) {
-        command.resetIndent();
-      } else if (command.get().startsWith("@")) {
+      if (cell.get().startsWith("@")) {
 
-      } else if (command.get().startsWith("$")) {
-      } else {
+      }
+      if (cell.get().startsWith("$")) {
 
       }
     }
-
+    table.tableHasChanged();
   }
 
   Map<String, String[]> commandTemplates = new HashMap<>();
@@ -401,8 +437,8 @@ public class Script {
     commandTemplates.put("#ifNot", new String[]{"", "{condition}", "{block}"});
     commandTemplates.put("#else", new String[]{"", "{block}"});
     commandTemplates.put("#elif", new String[]{"", "{condition}", "{block}"});
-
     commandTemplates.put("#elifNot", new String[]{"", "{condition}", "{block}"});
+
     commandTemplates.put("#loop", new String[]{"", "{condition}", "{block}"});
     commandTemplates.put("#loopWith", new String[]{"", "listvariable", "{block}"});
     commandTemplates.put("#loopFor", new String[]{"", "count step from", "{block}"});

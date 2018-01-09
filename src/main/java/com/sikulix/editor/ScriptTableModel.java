@@ -41,7 +41,7 @@ class ScriptTableModel extends AbstractTableModel {
 
   public Object getValueAt(int row, int col) {
     if (col == 0) {
-      return String.format("%6d %s", row + 1, script.cellAt(row, 2).getIndentMarker());
+      return String.format("%6d %s", row + 1, script.cellAt(row, 1).getMarker());
     }
     if (row > data.size() - 1) {
       return "";
@@ -68,7 +68,7 @@ class ScriptTableModel extends AbstractTableModel {
       return;
     }
     if (SX.isNull(value)) {
-      script.checkContent(row);
+      script.checkContent();
       fireTableDataChanged();
       script.getTable().setSelection(row, 2);
       return;
@@ -79,5 +79,9 @@ class ScriptTableModel extends AbstractTableModel {
     }
     script.cellAt(row, col).set(given);
     fireTableCellUpdated(row, col);
+  }
+
+  public void cellUpdated(int row, int col) {
+    super.fireTableCellUpdated(row, col);
   }
 }

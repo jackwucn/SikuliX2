@@ -9,7 +9,6 @@ import com.sikulix.api.Element;
 import com.sikulix.api.Picture;
 import com.sikulix.core.SX;
 
-import javax.swing.*;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.io.File;
@@ -27,6 +26,8 @@ class ScriptCell {
   private int col = -1;
   private int indentLevel = 0;
   private int indentIfLevel = 0;
+  private int indentLoopLevel = 0;
+  private boolean inError = false;
 
   protected ScriptCell() {
 
@@ -43,26 +44,35 @@ class ScriptCell {
     return row;
   }
 
-  protected String getIndentMarker() {
+  protected String getMarker() {
+    if (inError) {
+      return "?!";
+    }
     if (indentLevel > 0) {
       return String.format(">%d", indentLevel);
     }
     return "";
   }
 
-  protected void resetIndent() {
-    indentLevel = indentIfLevel = 0;
+  protected boolean hasError() {
+    return inError;
   }
 
-  protected void setIndent(int level) {
+  protected void reset() {
+    indentLevel = indentIfLevel = indentLoopLevel = 0;
+    inError = false;
+    value = value.replace(" ?!", "");
+  }
+
+  protected void setIndent(int level, int ifLevel, int loopLevel) {
     if (level > -1) {
       indentLevel = level;
     }
-  }
-
-  protected void setIfIndent(int level) {
-    if (level > -1) {
-      indentIfLevel = level;
+    if (ifLevel > -1) {
+      indentIfLevel = ifLevel;
+    }
+    if (loopLevel > -1) {
+      indentLoopLevel = loopLevel;
     }
   }
 
@@ -72,6 +82,10 @@ class ScriptCell {
 
   protected int getIfIndent() {
     return indentIfLevel;
+  }
+
+  protected int getLoopIndent() {
+    return indentLoopLevel;
   }
 
   private boolean block = false;
@@ -278,8 +292,15 @@ class ScriptCell {
     if (SX.isNotNull(value)) {
       this.value = value;
     }
-    script.table.getModel().setValueAt(value, row, col);
+    script.table.setValueAt(value, row, col);
     return this;
+  }
+
+  protected void setError() {
+    if (!value.endsWith("?!")) {
+      value += " ?!";
+    }
+    inError = true;
   }
 
   protected List<ScriptCell> setLine(String... items) {
