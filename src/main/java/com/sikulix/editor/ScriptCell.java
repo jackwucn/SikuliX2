@@ -95,10 +95,13 @@ class ScriptCell {
   private boolean block = false;
 
   protected ScriptCell asImage() {
+    if (CellType.IMAGE.equals(cellType)) {
+      return this;
+    }
     if (isEmpty() || "@".equals(value)) {
       value = "@?";
       imagename = "";
-    } else if (!value.startsWith("@")) {
+    } else if (!value.startsWith("@") && !value.startsWith("$")) {
       imagename = value;
       value = "@?" + value;
     } else {
@@ -115,32 +118,40 @@ class ScriptCell {
   String imagename = "";
   Picture picture = null;
 
-  private void getImage() {
-    imagename = value.replace("@", "").replace("?", "");
-    imagename = Do.input("Image Capture", "... enter a name", imagename);
-    if (SX.isSet(imagename)) {
-      new Thread(new Runnable() {
-        @Override
-        public void run() {
-          script.getWindow().setVisible(false);
-          SX.pause(1);
-          picture = Do.userCapture();
-          if (SX.isNotNull(picture)) {
-            picture.save(imagename, script.getScriptPath().getParent());
-          } else {
-            imagename = "?" + imagename;
-          }
-          value = "@" + imagename;
-          script.table.setValueAt(value, row, col);
-          script.getWindow().setVisible(true);
-        }
-      }).start();
-    }
-  }
-
   protected void capture() {
     if (isEmpty() || value.startsWith("@")) {
-      asImage().getImage();
+      asImage();
+      imagename = value.replace("@", "").replace("?", "");
+      imagename = Do.input("Image Capture", "... enter a name", imagename);
+      if (SX.isNotNull(imagename)) {
+        if (SX.isNotSet(imagename)) {
+          imagename = "img" + (script.images.size() + 1);
+        }
+        if (!script.images.contains(imagename)) {
+          script.images.add(imagename);
+        }
+        new Thread(new Runnable() {
+          @Override
+          public void run() {
+            script.getWindow().setVisible(false);
+            SX.pause(1);
+            ScriptCell.this.picture = Do.userCapture();
+            if (SX.isNotNull(ScriptCell.this.picture)) {
+              ScriptCell.this.picture.save(imagename, script.getScriptPath().getParent());
+              ScriptCell.this.picture = null;
+            } else {
+              if (!existsPicture()) {
+                imagename = "?" + imagename;
+              }
+            }
+            value = "@" + imagename;
+            script.table.setValueAt(value, row, col);
+            script.getWindow().setVisible(true);
+          }
+        }).start();
+      } else {
+        script.getWindow().setVisible(true);
+      }
     }
   }
 
@@ -166,15 +177,16 @@ class ScriptCell {
   }
 
   protected void show() {
-    if (!isEmpty() && CellType.IMAGE.equals(cellType)) {
-      if (isValid()) {
+    if (!isEmpty()) {
+      if (asImage().isValid()) {
         loadPicture();
         if (SX.isNotNull(picture)) {
           new Thread(new Runnable() {
             @Override
             public void run() {
               picture.show(1);
-              Do.on().clickFast(getCellClick());
+              script.getWindow().setVisible(true);
+              picture = null;
             }
           }).start();
         } else {
@@ -186,8 +198,8 @@ class ScriptCell {
   }
 
   protected void find() {
-    if (!isEmpty() && CellType.IMAGE.equals(cellType)) {
-      if (isValid()) {
+    if (!isEmpty()) {
+      if (asImage().isValid()) {
         loadPicture();
         if (SX.isNotNull(picture)) {
           new Thread(new Runnable() {
@@ -197,6 +209,7 @@ class ScriptCell {
               Do.find(picture);
               Do.on().showMatch();
               script.getWindow().setVisible(true);
+              picture = null;
             }
           }).start();
         } else {
@@ -208,12 +221,15 @@ class ScriptCell {
   }
 
   private void loadPicture() {
-    if (SX.isNull(picture)) {
-      File fPicture = new File(script.getScriptPath().getParentFile(), imagename + ".png");
-      if (fPicture.exists()) {
-        picture = new Picture(fPicture.getAbsolutePath());
-      }
+    File fPicture = new File(script.getScriptPath().getParentFile(), imagename + ".png");
+    if (fPicture.exists()) {
+      picture = new Picture(fPicture.getAbsolutePath());
     }
+  }
+
+  private boolean existsPicture() {
+    File fPicture = new File(script.getScriptPath().getParentFile(), imagename + ".png");
+    return fPicture.exists();
   }
 
   protected ScriptCell asScript() {

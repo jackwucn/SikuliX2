@@ -53,6 +53,7 @@ Settings.ClickDelay = 0
 Settings.ShowActions = false
 Settings.SlowMotionDelay = 2
 Settings.MoveMouseDelay = 0.5
+Settings.MouseSilent = false
 
 # about highlighting 
 Settings.Highlight = false

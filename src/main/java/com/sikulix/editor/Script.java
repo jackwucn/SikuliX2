@@ -1,5 +1,6 @@
 package com.sikulix.editor;
 
+import com.sikulix.api.Picture;
 import com.sikulix.core.SX;
 import com.sikulix.core.SXLog;
 
@@ -123,6 +124,7 @@ public class Script {
     table.addMouseListener(new MyMouseAdapter(1, this));
     table.getTableHeader().addMouseListener(new MyMouseAdapter(0, this));
     checkContent();
+    collectVariables();
 
     JScrollPane scrollPane = new JScrollPane(table);
     panel.add(scrollPane);
@@ -246,6 +248,20 @@ public class Script {
     table.setSelection(cell.getRow(), cell.getCol());
   }
 
+  protected void assist(ScriptCell cell) {
+    String cellText = cell.get();
+    Script.log.trace("F1: (%d,%d) %s (%d, %d, %d)",
+            cell.getRow(), cell.getCol(), cellText,
+            cell.getIndent(), cell.getIfIndent(), cell.getLoopIndent());
+    if (cellText.startsWith("@")) {
+      if (cellText.startsWith("@?")) {
+        cell.capture();
+      } else {
+        cell.show();
+      }
+    }
+  }
+
   protected void loadScript() {
     data.clear();
     resultsCounter = 0;
@@ -328,7 +344,31 @@ public class Script {
 
   List<String> variables = new ArrayList<>();
 
-  Map<String, String> images = new HashMap<>();
+  List<String> images = new ArrayList<>();
+
+  protected void collectVariables() {
+    for (List<ScriptCell> line : data) {
+      if (line.size() == 0) {
+        continue;
+      }
+      for (ScriptCell cell : line) {
+        String cellText = cell.get();
+        if (cellText.startsWith("@")) {
+          if (!cellText.startsWith("@?")) {
+            String imageName = cellText.substring(1);
+            if (!images.contains(imageName)) {
+              images.add(imageName);
+            }
+          }
+        } else if (cellText.startsWith("$")) {
+          String imageName = cellText.substring(1);
+          if (!variables.contains(imageName)) {
+            variables.add(imageName);
+          }
+        }
+      }
+    }
+  }
 
   protected boolean addCommandTemplate(String command, ScriptCell cell) {
     if (cell.isLineEmpty()) {
@@ -375,7 +415,7 @@ public class Script {
       cell.reset();
       String command = cell.get().trim();
       if (SX.isNotNull(commandTemplates.get(command))) {
-        if (command.startsWith("if")  && !command.contains("ifElse")) {
+        if (command.startsWith("if") && !command.contains("ifElse")) {
           currentIfIndent++;
           cell.setIndent(currentIndent, currentIfIndent, -1);
           currentIndent++;
@@ -454,8 +494,8 @@ public class Script {
     commandTemplates.put("ifElse", new String[]{"", "{condition}", "{block}", "{block}", "result"});
 
     commandTemplates.put("loop", new String[]{"", "{condition}", "{block}"});
-    commandTemplates.put("loopWith", new String[]{"", "listvariable", "{block}"});
-    commandTemplates.put("loopFor", new String[]{"", "count step from", "{block}"});
+    commandTemplates.put("loopWith", new String[]{"", "$?listvariable", "{block}"});
+    commandTemplates.put("loopFor", new String[]{"", "$?count $?step $?from", "{block}"});
     commandTemplates.put("endloop", new String[]{""});
 
     commandTemplates.put("print", new String[]{"", "variable..."});

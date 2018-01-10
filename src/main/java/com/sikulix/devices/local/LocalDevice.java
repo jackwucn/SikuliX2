@@ -409,6 +409,9 @@ public class LocalDevice extends IDevice {
 
   private void checkMouseMoved(Element loc) {
     //TODO implementation with native hook
+    if ("true" .equals(SX.getOption("Settings.MouseSilent"))) {
+      return;
+    }
     PointerInfo mp = MouseInfo.getPointerInfo();
     Point pCurrent;
     if (mp == null) {

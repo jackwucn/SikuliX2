@@ -78,16 +78,14 @@ class ScriptTable extends JTable {
         script.editBox(currentCell);
         return false;
       } else if (keyCode == KeyEvent.VK_BACK_SPACE && currentCell.isEmpty()) {
-        if (isCommand){
+        if (isCommand) {
           script.setValueAt(script.savedCellText, currentCell);
         } else {
           currentCell.setValue(script.savedCellText);
         }
         return false;
       } else if (keyCode == KeyEvent.VK_F1) {
-        Script.log.trace("F1: (%d,%d) %s (%d, %d, %d)",
-                currentRow, currentCol, currentCell.get(),
-                currentCell.getIndent(), currentCell.getIfIndent(), currentCell.getLoopIndent());
+        script.assist(currentCell);
         return false;
       } else if (keyCode == KeyEvent.VK_F2) {
         Script.log.trace("F2: save script");
@@ -98,24 +96,20 @@ class ScriptTable extends JTable {
         script.loadScript();
         return false;
       } else if (keyCode == KeyEvent.VK_F4) {
-        Script.log.trace("F4: show");
-        currentCell.show();
-        return false;
-      } else if (keyCode == KeyEvent.VK_F5) {
-        Script.log.trace("F5: capture");
-        currentCell.capture();
-        return false;
-      } else if (keyCode == KeyEvent.VK_F6) {
-        Script.log.trace("F6: find");
-        currentCell.find();
-        return false;
-      } else if (keyCode == KeyEvent.VK_F7) {
-        Script.log.trace("F7: run script");
+        Script.log.trace("F4: run script");
         if (isLineNumber) {
           script.runScript(-1);
         } else {
           script.runScript(currentRow);
         }
+        return false;
+      } else if (keyCode == KeyEvent.VK_F5) {
+        Script.log.trace("F5: find");
+        currentCell.find();
+        return false;
+      } else if (keyCode == KeyEvent.VK_F6) {
+        return false;
+      } else if (keyCode == KeyEvent.VK_F7) {
         return false;
       } else if (keyCode == KeyEvent.VK_DELETE || keyCode == KeyEvent.VK_BACK_SPACE) {
         script.savedCellText = currentCell.get();

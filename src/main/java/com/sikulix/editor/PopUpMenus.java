@@ -360,17 +360,15 @@ public class PopUpMenus {
     public Global(PopUpMenu parentMenu) {
       parent = parentMenu;
       parentSub = this;
-      add(createMenuItem("Help F1", this));
+      add(createMenuItem("Assist F1", this));
       add(createMenuItem("Save F2", this));
       add(createMenuItem("Open F3", this));
-      add(createMenuItem("Show F4", this));
-      add(createMenuItem("Capture F5", this));
-      add(createMenuItem("Find F6", this));
-      add(createMenuItem("Run F7", this));
+      add(createMenuItem("Run F4", this));
+      add(createMenuItem("Find F5", this));
     }
 
-    public void help(ActionEvent e) {
-      log.trace("help requested");
+    public void assist(ActionEvent e) {
+      script.assist(getCell());
     }
 
     public void save(ActionEvent e) {
@@ -383,14 +381,6 @@ public class PopUpMenus {
 
     public void run(ActionEvent e) {
       script.runScript(-1);
-    }
-
-    public void capture(ActionEvent e) {
-      getCell().capture();
-    }
-
-    public void show(ActionEvent e) {
-      getCell().show();
     }
 
     public void find(ActionEvent e) {

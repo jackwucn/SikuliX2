@@ -92,6 +92,6 @@ class ScriptTableModel extends AbstractTableModel {
   }
 
   public void cellUpdated(int row, int col) {
-    super.fireTableCellUpdated(row, col);
+    fireTableCellUpdated(row, col);
   }
 }

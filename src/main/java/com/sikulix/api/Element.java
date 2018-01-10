@@ -1723,8 +1723,11 @@ public class Element implements Comparable<Element> {
   public Element clickFast(Object... args) {
     String moveDelay = SX.getOption("Settings.MoveMouseDelay");
     SX.setOption("Settings.MoveMouseDelay", "0");
+    String moveSilent = SX.getOption("Settings.MouseSilent");
+    SX.setOption("Settings.MouseSilent", "true");
     Element fastTarget = click(args);
     SX.setOption("Settings.MoveMouseDelay", moveDelay);
+    SX.setOption("Settings.MouseSilent", moveSilent);
     return fastTarget;
   }
 
