@@ -5,6 +5,11 @@ import com.sikulix.core.SX;
 import com.sikulix.core.SXLog;
 
 import javax.swing.*;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
+import javax.swing.event.TableModelEvent;
+import javax.swing.event.TableModelListener;
+import javax.swing.plaf.basic.BasicListUI;
 import javax.swing.table.JTableHeader;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
@@ -15,7 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class Script {
+public class Script implements TableModelListener {
 
   protected static final SXLog log = SX.getSXLog("SX.SCRIPTEDITOR");
 
@@ -116,7 +121,7 @@ public class Script {
     table.setFillsViewportHeight(true);
 
 //    table.getModel().addTableModelListener(this);
-//
+
 //    ListSelectionModel listSelectionModel = table.getSelectionModel();
 //    listSelectionModel.addListSelectionListener(this);
 //    table.setSelectionModel(listSelectionModel);
@@ -137,6 +142,16 @@ public class Script {
     table.setSelection(0, 0);
 
     popUpMenus = new PopUpMenus(this);
+  }
+
+//  @Override
+//  public void valueChanged(ListSelectionEvent e) {
+//    log.trace("valueChanged(ListSelectionEvent)");
+//  }
+
+  @Override
+  public void tableChanged(TableModelEvent e) {
+//    log.trace("tableChanged: ");
   }
 
   private class MyMouseAdapter extends MouseAdapter {
@@ -191,31 +206,8 @@ public class Script {
 
   }
 
-//  @Override
 //  public void tableChanged(TableModelEvent e) {
-//    int firstRow = e.getFirstRow();
-//    int lastRow = e.getLastRow();
-//    int column = e.getColumn();
-//    String changed = "NO_CELL";
-//    if (firstRow == lastRow) {
-//      changed = data.get(firstRow).get(column - 1).get();
-//    }
-//    if (column > 0) {
-//      log.trace("changed: [%d, %d] %s", firstRow, column - 1, changed);
-//    }
-//  }
-//
-//  @Override
-//  public void valueChanged(ListSelectionEvent e) {
-//    if (!e.getValueIsAdjusting()) {
-//      if (!e.toString().contains("={}")) {
-//        int[] rows = table.getSelectedRows();
-//        int[] cols = table.getSelectedColumns();
-//        if (rows.length > 0 && cols.length > 0) {
-//          //log.trace("selected: (%d, %d)", rows[0], cols[0]);
-//        }
-//      }
-//    }
+//      log.trace("tableChanged:");
 //  }
 
   String savedCellText = "";
@@ -376,7 +368,7 @@ public class Script {
       String[] commandLine = commandTemplates.get(command);
       if (SX.isNotNull(commandLine)) {
         commandLine = commandLine.clone();
-        commandLine[0] = commandLine[0] + command;
+        commandLine[0] = command + commandLine[0];
         int lineLast = commandLine.length - 1;
         String lineEnd = commandLine[lineLast];
         if ("result".equals(lineEnd)) {
@@ -478,8 +470,8 @@ public class Script {
     commandTemplates.put("wait", new String[]{"", "wait-time", "@?", "result"});
     commandTemplates.put("vanish", new String[]{"", "wait-time", "@?", "result"});
     commandTemplates.put("findAll", new String[]{"", "@?", "result"});
-    commandTemplates.put("findBest", new String[]{"", "@[?", "result"});
-    commandTemplates.put("findAny", new String[]{"", "@[?", "result"});
+    commandTemplates.put("findBest", new String[]{"", "$?listVariable", "result"});
+    commandTemplates.put("findAny", new String[]{"", "$?listVariable", "result"});
     commandTemplates.put("click", new String[]{"", "@?", "result"});
     commandTemplates.put("clickRight", new String[]{"", "@?", "result"});
     commandTemplates.put("clickDouble", new String[]{"", "@?", "result"});
@@ -494,7 +486,7 @@ public class Script {
     commandTemplates.put("ifElse", new String[]{"", "{condition}", "{block}", "{block}", "result"});
 
     commandTemplates.put("loop", new String[]{"", "{condition}", "{block}"});
-    commandTemplates.put("loopWith", new String[]{"", "$?listvariable", "{block}"});
+    commandTemplates.put("loopWith", new String[]{"", "$?listVariable", "{block}"});
     commandTemplates.put("loopFor", new String[]{"", "$?count $?step $?from", "{block}"});
     commandTemplates.put("endloop", new String[]{""});
 
@@ -503,7 +495,12 @@ public class Script {
     commandTemplates.put("log", new String[]{"", "template", "variable..."});
     commandTemplates.put("pop", new String[]{"", "message", "result"});
 
-    commandTemplates.put("function", new String[]{"", "$?", "{block}", "parameter..."});
+    commandTemplates.put("image", new String[]{"", "@?", "$?similar", "$?offset"});
+    commandTemplates.put("variable", new String[]{"", "$V?", "{block}"});
+    commandTemplates.put("listVariable", new String[]{"", "$L?", "$?item..."});
+    commandTemplates.put("function", new String[]{"", "$F?", "{block}", "$?parameter..."});
+    commandTemplates.put("/", new String[]{"continuation"});
+    commandTemplates.put("#", new String[]{"comment"});
   }
 
   protected void editBox(ScriptCell cell) {

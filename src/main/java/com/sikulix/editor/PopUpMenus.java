@@ -288,7 +288,12 @@ public class PopUpMenus {
     public Scripts(PopUpMenu parentMenu) {
       parent = parentMenu;
       parentSub = this;
-      add(createMenuItem("Scripts", this));
+      add(createMenuItem("Image", this));
+      add(createMenuItem("Variable", this));
+      add(createMenuItem("ListVariable", this));
+      add(createMenuItem("Function", this));
+      createMenuSeperator();
+      add(createMenuItem("Import", this));
     }
 
     public void addCommand(String menuItem) {

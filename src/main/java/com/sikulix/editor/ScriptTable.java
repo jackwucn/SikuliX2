@@ -51,6 +51,16 @@ class ScriptTable extends JTable {
           }).start();
           return false;
         }
+        if (keyCode == KeyEvent.VK_SLASH || keyCode == KeyEvent.VK_NUMBER_SIGN) {
+          script.cellAt(row, col).newLine(new int[]{row});
+          new Thread(new Runnable() {
+            @Override
+            public void run() {
+              Do.write("#N.");
+            }
+          }).start();
+          return false;
+        }
         if (keyCode == KeyEvent.VK_MINUS) {
           script.cellAt(row, col).deleteLine(getSelectedRows());
           new Thread(new Runnable() {
