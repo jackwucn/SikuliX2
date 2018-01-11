@@ -332,6 +332,8 @@ public class PopUpMenus {
       add(createMenuItem("CopyLines c", this));
       add(createMenuItem("InsertLines i", this));
       createMenuSeperator();
+      add(createMenuItem("HideUnhide h", this));
+      createMenuSeperator();
       add(createMenuItem("RunLines", this));
     }
 
@@ -353,6 +355,10 @@ public class PopUpMenus {
 
     public void insertLines(ActionEvent ae) {
       getCell().insertLine(selectedRows);
+    }
+
+    public void hideUnhide(ActionEvent ae) {
+      getCell().hideLine(selectedRows);
     }
 
     public void runLines(ActionEvent ae) {

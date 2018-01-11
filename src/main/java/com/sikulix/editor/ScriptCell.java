@@ -334,6 +334,38 @@ class ScriptCell {
     script.table.setSelection(row, 1);
   }
 
+  protected void hideLine(int[] selectedRows) {
+    int currentRow = selectedRows[0];
+    ScriptCell firstCell = script.cellAt(selectedRows[0], Script.commandCol);
+    if (selectedRows.length == 1) {
+      if (firstCell.isFirstHidden()) {
+        int count = firstCell.getHidden();
+        for (int ix = currentRow; ix < currentRow + count; ix++) {
+          script.cellAt(ix, 1).setHidden(0);
+        }
+        currentRow--;
+      }
+    } else {
+      script.cellAt(currentRow, 1).setHidden(selectedRows.length);
+    }
+    script.table.tableCheckContent();
+    script.table.setSelection(currentRow + 1, 0);
+  }
+
+  private int hiddenCount = 0;
+
+  private void setHidden(int count) {
+    hiddenCount = count;
+  }
+
+  protected int getHidden() {
+    return hiddenCount;
+  }
+
+  protected boolean isFirstHidden() {
+    return hiddenCount > 0;
+  }
+
   protected void newLineEmpty(int[] selectedRows) {
     newLine(selectedRows, null);
   }
@@ -344,7 +376,7 @@ class ScriptCell {
     for (int n = 0; n < numLines; n++) {
       script.data.add(currentRow + n + 1, new ArrayList<>());
       if (SX.isSet(token)) {
-        boolean success =  script.addCommandTemplate(token,
+        boolean success = script.addCommandTemplate(token,
                 script.cellAt(currentRow + 1, 1));
         if (success) {
           break;
@@ -354,7 +386,6 @@ class ScriptCell {
       }
     }
     script.table.tableCheckContent();
-//    script.table.setSelection(currentRow + 1, 1);
   }
 
   protected void deleteLine(int[] selectedRows) {
@@ -368,7 +399,6 @@ class ScriptCell {
 
   protected void emptyLine(int[] selectedRows) {
     script.savedLine.clear();
-    script.savedRows = selectedRows.clone();
     int currentRow = selectedRows[0];
     for (int emptyRow : selectedRows) {
       script.savedLine.add(script.cellAt(emptyRow, 1).setLine());
@@ -378,6 +408,7 @@ class ScriptCell {
   }
 
   protected void copyLine(int[] selectedRows) {
+    script.savedLine.clear();
     for (int copyRow : selectedRows) {
       script.savedLine.add(script.data.get(copyRow));
     }
@@ -395,5 +426,9 @@ class ScriptCell {
     }
     script.table.tableCheckContent();
     script.table.setSelection(row + 1, 1);
+  }
+
+  public String toString() {
+    return String.format("Cell: (%d,%d) %s i(%d %d %d) h%d", row, col, value, indentLevel, indentIfLevel, indentLoopLevel, hiddenCount);
   }
 }

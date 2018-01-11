@@ -4,9 +4,6 @@
 
 package com.sikulix.editor;
 
-import com.sikulix.api.Do;
-import com.sikulix.core.SX;
-
 import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
 import java.awt.event.KeyEvent;
@@ -21,17 +18,13 @@ class ScriptTable extends JTable {
     this.script = script;
   }
 
-  private static final int numberCol = 0;
-  private static final int commandCol = 1;
-  private static final int firstParamCol = 2;
-
   @Override
   public boolean editCellAt(int row, int col, EventObject e) {
     ScriptCell currentCell = script.cellAt(row, col);
     int currentRow = row;
     int currentCol = col;
-    boolean isLineNumber = currentCol == numberCol;
-    boolean isCommand = currentCol == commandCol;
+    boolean isLineNumber = currentCol == Script.numberCol;
+    boolean isCommand = currentCol == Script.commandCol;
     if (e instanceof KeyEvent) {
       int keyCode = ((KeyEvent) e).getExtendedKeyCode();
       if (keyCode == 0 || keyCode == KeyEvent.VK_ESCAPE || keyCode == KeyEvent.VK_META) {
@@ -48,7 +41,7 @@ class ScriptTable extends JTable {
           new Thread(new Runnable() {
             @Override
             public void run() {
-              script.table.setSelection(row + 1, commandCol);
+              script.table.setSelection(row + 1, Script.commandCol);
             }
           }).start();
           return false;
@@ -59,7 +52,7 @@ class ScriptTable extends JTable {
           new Thread(new Runnable() {
             @Override
             public void run() {
-              script.table.setSelection(row + 1, firstParamCol);
+              script.table.setSelection(row + 1, Script.firstParamCol);
             }
           }).start();
           return false;
@@ -70,7 +63,7 @@ class ScriptTable extends JTable {
           new Thread(new Runnable() {
             @Override
             public void run() {
-              script.table.setSelection(Math.max(0, selRows[0] - 1), numberCol);
+              script.table.setSelection(Math.max(0, selRows[0] - 1), Script.numberCol);
             }
           }).start();
           return false;
@@ -81,7 +74,7 @@ class ScriptTable extends JTable {
           } else {
             currentCell.emptyLine(getSelectedRows());
           }
-          setSelection(currentRow, commandCol);
+          setSelection(currentRow, Script.commandCol);
           return false;
         }
       }

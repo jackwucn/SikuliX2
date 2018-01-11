@@ -4,8 +4,6 @@
 
 package com.sikulix.editor;
 
-import com.sikulix.core.SX;
-
 import javax.swing.table.AbstractTableModel;
 import java.util.ArrayList;
 import java.util.List;
@@ -40,18 +38,23 @@ class ScriptTableModel extends AbstractTableModel {
   }
 
   public Object getValueAt(int row, int col) {
-    if (col == 0) {
-      return String.format("%6d %s", row + 1, script.cellAt(row, 1).getMarker());
+    int ixData = script.skipCells[row];
+    if (ixData > data.size() - 1) {
+      return null;
     }
-    if (row > data.size() - 1) {
-      return "";
+    ScriptCell commandCell = script.cellAt(ixData, Script.commandCol);
+    if (col == Script.numberCol) {
+      if (commandCell.isFirstHidden()) {
+        return String.format("  V-%s-V ", commandCell.getHidden());
+      }
+      return String.format("%6d %s", ixData + 1, commandCell.getMarker());
     }
     int lineCol = col - 1;
-    List<ScriptCell> line = data.get(row);
+    List<ScriptCell> line = data.get(ixData);
     if (lineCol > line.size() - 1) {
       return "";
     }
-    return data.get(row).get(lineCol).get();
+    return data.get(ixData).get(lineCol).get();
   }
 
   public Class getColumnClass(int c) {

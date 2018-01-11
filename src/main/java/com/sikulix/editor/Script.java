@@ -23,6 +23,9 @@ import java.util.Map;
 public class Script implements TableModelListener {
 
   protected static final SXLog log = SX.getSXLog("SX.SCRIPTEDITOR");
+  protected static final int numberCol = 0;
+  protected static final int commandCol = 1;
+  protected static final int firstParamCol = 2;
 
   private JFrame window;
 
@@ -49,7 +52,6 @@ public class Script implements TableModelListener {
 
   List<List<ScriptCell>> data = new ArrayList<>();
   List<List<ScriptCell>> savedLine = new ArrayList<>();
-  int[] savedRows = new int[0];
 
   protected List<List<ScriptCell>> getData() {
     return data;
@@ -392,17 +394,35 @@ public class Script implements TableModelListener {
     return false;
   }
 
+  protected int[] skipCells;
+  protected int[] skipCellsRef;
+
   protected void checkContent() {
     log.trace("checkContent enter");
     int currentIndent = 0;
     int currentIfIndent = 0;
     int currentLoopIndent = 0;
     boolean hasElse = false;
+    int nextAfterHidden = 0;
+    skipCells = new int[data.size()];
+    skipCellsRef = new int[data.size()];
+    int ixSkipCells = -1;
+    int ixSkipCellsRef = -1;
     for (List<ScriptCell> line : data) {
+      ixSkipCells++;
+      ixSkipCellsRef++;
+      ScriptCell cell = line.get(0);
+      skipCellsRef[nextAfterHidden] = ixSkipCells;
+      if (cell.isFirstHidden()) {
+        skipCells[ixSkipCells] = nextAfterHidden;
+        nextAfterHidden += cell.getHidden();
+      } else {
+        skipCells[ixSkipCells] = nextAfterHidden;
+        nextAfterHidden++;
+      }
       if (line.size() == 0) {
         continue;
       }
-      ScriptCell cell = line.get(0);
       cell.reset();
       String command = cell.get().trim();
       if (SX.isNotNull(commandTemplates.get(command))) {
@@ -458,6 +478,7 @@ public class Script implements TableModelListener {
       if (cell.get().startsWith("$")) {
 
       }
+      //log.trace("checkContent: %s", cell);
     }
     table.tableHasChanged();
   }
