@@ -5,6 +5,7 @@
 package com.sikulix.editor;
 
 import com.sikulix.api.Do;
+import com.sikulix.core.SX;
 
 import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
@@ -22,6 +23,7 @@ class ScriptTable extends JTable {
 
   private static final int numberCol = 0;
   private static final int commandCol = 1;
+  private static final int firstParamCol = 2;
 
   @Override
   public boolean editCellAt(int row, int col, EventObject e) {
@@ -42,31 +44,33 @@ class ScriptTable extends JTable {
       }
       if (isLineNumber) {
         if (keyCode == KeyEvent.VK_PLUS) {
-          script.cellAt(row, col).newLine(getSelectedRows());
+          script.cellAt(row, col).newLineEmpty(getSelectedRows());
           new Thread(new Runnable() {
             @Override
             public void run() {
-              Do.write("#ESC.");
+              script.table.setSelection(row + 1, commandCol);
             }
           }).start();
           return false;
         }
         if (keyCode == KeyEvent.VK_SLASH || keyCode == KeyEvent.VK_NUMBER_SIGN) {
-          script.cellAt(row, col).newLine(new int[]{row});
+          String token = keyCode == KeyEvent.VK_SLASH ? "/" : "#";
+          script.cellAt(row, col).newLine(new int[]{row}, token);
           new Thread(new Runnable() {
             @Override
             public void run() {
-              Do.write("#N.");
+              script.table.setSelection(row + 1, firstParamCol);
             }
           }).start();
           return false;
         }
         if (keyCode == KeyEvent.VK_MINUS) {
-          script.cellAt(row, col).deleteLine(getSelectedRows());
+          final int[] selRows = getSelectedRows();
+          script.cellAt(row, col).deleteLine(selRows);
           new Thread(new Runnable() {
             @Override
             public void run() {
-              Do.write("#ESC.");
+              script.table.setSelection(Math.max(0, selRows[0] - 1), numberCol);
             }
           }).start();
           return false;

@@ -387,7 +387,6 @@ public class Script implements TableModelListener {
         table.setSelection(cell.getRow(), 1);
       }
       checkContent();
-      table.tableHasChanged();
       return true;
     }
     return false;

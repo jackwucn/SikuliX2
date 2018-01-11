@@ -334,14 +334,27 @@ class ScriptCell {
     script.table.setSelection(row, 1);
   }
 
-  protected void newLine(int[] selectedRows) {
+  protected void newLineEmpty(int[] selectedRows) {
+    newLine(selectedRows, null);
+  }
+
+  protected void newLine(int[] selectedRows, String token) {
     int numLines = selectedRows.length;
     int currentRow = selectedRows[numLines - 1];
     for (int n = 0; n < numLines; n++) {
       script.data.add(currentRow + n + 1, new ArrayList<>());
+      if (SX.isSet(token)) {
+        boolean success =  script.addCommandTemplate(token,
+                script.cellAt(currentRow + 1, 1));
+        if (success) {
+          break;
+        } else {
+          token = null;
+        }
+      }
     }
     script.table.tableCheckContent();
-    script.table.setSelection(currentRow + 1, 1);
+//    script.table.setSelection(currentRow + 1, 1);
   }
 
   protected void deleteLine(int[] selectedRows) {
@@ -351,7 +364,6 @@ class ScriptCell {
       script.savedLine.add(script.data.remove(currentRow));
     }
     script.table.tableCheckContent();
-    script.table.setSelection(Math.max(0, currentRow - 1), 1);
   }
 
   protected void emptyLine(int[] selectedRows) {

@@ -336,7 +336,7 @@ public class PopUpMenus {
     }
 
     public void newLines(ActionEvent ae) {
-      getCell().newLine(selectedRows);
+      getCell().newLineEmpty(selectedRows);
     }
 
     public void deleteLines(ActionEvent ae) {
