@@ -346,7 +346,11 @@ class ScriptCell {
         currentRow--;
       }
     } else {
-      script.cellAt(currentRow, 1).setHidden(selectedRows.length);
+      int count = selectedRows.length;
+      script.cellAt(currentRow, 1).setHidden(count);
+      for (int ix = currentRow + 1; ix < currentRow + count; ix++) {
+        script.cellAt(ix, 1).setHidden(-1);
+      }
     }
     script.table.tableCheckContent();
     script.table.setSelection(currentRow + 1, 0);
@@ -364,6 +368,10 @@ class ScriptCell {
 
   protected boolean isFirstHidden() {
     return hiddenCount > 0;
+  }
+
+  protected boolean isHiddenBody() {
+    return hiddenCount < 0;
   }
 
   protected void newLineEmpty(int[] selectedRows) {

@@ -4,6 +4,8 @@
 
 package com.sikulix.editor;
 
+import com.sikulix.core.SX;
+
 import javax.swing.table.AbstractTableModel;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,10 +40,11 @@ class ScriptTableModel extends AbstractTableModel {
   }
 
   public Object getValueAt(int row, int col) {
-    int ixData = script.skipCells[row];
-    if (ixData > data.size() - 1) {
-      return null;
+    int ixData = script.tableLines[row];
+    if (ixData < 0) {
+      return "";
     }
+    ixData = row;
     ScriptCell commandCell = script.cellAt(ixData, Script.commandCol);
     if (col == Script.numberCol) {
       if (commandCell.isFirstHidden()) {

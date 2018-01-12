@@ -1,15 +1,11 @@
 package com.sikulix.editor;
 
-import com.sikulix.api.Picture;
 import com.sikulix.core.SX;
 import com.sikulix.core.SXLog;
 
 import javax.swing.*;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
-import javax.swing.plaf.basic.BasicListUI;
 import javax.swing.table.JTableHeader;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
@@ -219,10 +215,22 @@ public class Script implements TableModelListener {
     if (row < 0) {
       row = 0;
     }
+    int cellRef = tableLines[row];
+    if (cellRef != row) {
+      row = cellRef;
+    }
+    if (row > data.size() - 1) {
+      log.error("cellAt: row: %d", row);
+    }
     if (row > data.size() - 1) {
       data.add(new ArrayList<>());
     }
-    List<ScriptCell> line = data.get(row);
+    List<ScriptCell> line = null;
+    try {
+      line = data.get(row);
+    } catch (IndexOutOfBoundsException ex) {
+      log.error("");
+    }
     if (dataCol > line.size() - 1) {
       for (int n = line.size(); n <= dataCol; n++) {
         line.add(new ScriptCell(this, "", row, col));
@@ -394,31 +402,29 @@ public class Script implements TableModelListener {
     return false;
   }
 
-  protected int[] skipCells;
-  protected int[] skipCellsRef;
+  protected int[] tableLines;
 
   protected void checkContent() {
-    log.trace("checkContent enter");
+    log.trace("checkContent started");
     int currentIndent = 0;
     int currentIfIndent = 0;
     int currentLoopIndent = 0;
     boolean hasElse = false;
-    int nextAfterHidden = 0;
-    skipCells = new int[data.size()];
-    skipCellsRef = new int[data.size()];
-    int ixSkipCells = -1;
-    int ixSkipCellsRef = -1;
+    int nextDataLine = 0;
+    tableLines = new int[data.size()];
+    for (int ix = 0; ix < tableLines.length; ix++) {
+      tableLines[ix] = -1;
+    }
+    int ixTableLines = -1;
     for (List<ScriptCell> line : data) {
-      ixSkipCells++;
-      ixSkipCellsRef++;
       ScriptCell cell = line.get(0);
-      skipCellsRef[nextAfterHidden] = ixSkipCells;
+      if (!cell.isHiddenBody()) {
+        tableLines[++ixTableLines] = nextDataLine;
+      }
       if (cell.isFirstHidden()) {
-        skipCells[ixSkipCells] = nextAfterHidden;
-        nextAfterHidden += cell.getHidden();
-      } else {
-        skipCells[ixSkipCells] = nextAfterHidden;
-        nextAfterHidden++;
+        nextDataLine += cell.getHidden();
+      } else if (!cell.isHiddenBody()) {
+        nextDataLine++;
       }
       if (line.size() == 0) {
         continue;
@@ -481,6 +487,7 @@ public class Script implements TableModelListener {
       //log.trace("checkContent: %s", cell);
     }
     table.tableHasChanged();
+    log.trace("checkContent finished");
   }
 
   Map<String, String[]> commandTemplates = new HashMap<>();
