@@ -85,14 +85,14 @@
     </dependency>
 <!--
     <dependency>
-      &lt;!&ndash;modified BSD license&ndash;&gt;
-      &lt;!&ndash;based on https://github.com/bobbylight :: RSyntaxTextArea, AutoComplete, RSTALanguageSupport&ndash;&gt;
       <groupId>com.sikulix</groupId>
       <artifactId>sikulix2rtext</artifactId>
       <version>2.0.0-SNAPSHOT</version>
     </dependency>
 -->
     <dependency>
+      <!--modified BSD license-->
+      <!--based on https://github.com/bobbylight :: RSyntaxTextArea, AutoComplete, RSTALanguageSupport-->
       <groupId>com.fifesoft</groupId>
       <artifactId>rsyntaxtextarea</artifactId>
       <version>2.6.1</version>
