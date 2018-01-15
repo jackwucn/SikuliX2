@@ -338,31 +338,31 @@ public class PopUpMenus {
     }
 
     public void newLines(ActionEvent ae) {
-      getCell().newLineEmpty(selectedRows);
+      getCell().lineNew(selectedRows);
     }
 
     public void deleteLines(ActionEvent ae) {
-      getCell().deleteLine(selectedRows);
+      getCell().lineDelete(selectedRows);
     }
 
     public void emptyLines(ActionEvent ae) {
-      getCell().emptyLine(selectedRows);
+      getCell().lineEmpty(selectedRows);
     }
 
     public void copyLines(ActionEvent ae) {
-      getCell().copyLine(selectedRows);
+      getCell().lineCopy(selectedRows);
     }
 
     public void insertLines(ActionEvent ae) {
-      getCell().insertLine(selectedRows);
+      getCell().lineInsert(selectedRows);
     }
 
     public void hideUnhide(ActionEvent ae) {
-      getCell().hideLine(selectedRows);
+      getCell().lineHide(selectedRows);
     }
 
     public void runLines(ActionEvent ae) {
-      getCell().runLine(selectedRows);
+      getCell().lineRun(selectedRows);
     }
   }
 

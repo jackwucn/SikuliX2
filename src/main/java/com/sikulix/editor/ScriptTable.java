@@ -19,12 +19,10 @@ class ScriptTable extends JTable {
   }
 
   @Override
-  public boolean editCellAt(int row, int col, EventObject e) {
-    ScriptCell currentCell = script.cellAt(row, col);
-    int currentRow = row;
-    int currentCol = col;
-    boolean isLineNumber = currentCol == Script.numberCol;
-    boolean isCommand = currentCol == Script.commandCol;
+  public boolean editCellAt(int tableRow, int tableCol, EventObject e) {
+    ScriptCell currentCell = script.tableCell(tableRow, tableCol);
+    boolean isLineNumber = tableCol == Script.numberCol;
+    boolean isCommand = tableCol == Script.commandCol;
     if (e instanceof KeyEvent) {
       int keyCode = ((KeyEvent) e).getExtendedKeyCode();
       if (keyCode == 0 || keyCode == KeyEvent.VK_ESCAPE || keyCode == KeyEvent.VK_META) {
@@ -37,44 +35,25 @@ class ScriptTable extends JTable {
       }
       if (isLineNumber) {
         if (keyCode == KeyEvent.VK_PLUS) {
-          script.cellAt(row, col).newLineEmpty(getSelectedRows());
-          new Thread(new Runnable() {
-            @Override
-            public void run() {
-              script.table.setSelection(row + 1, Script.commandCol);
-            }
-          }).start();
+          currentCell.lineNew(getSelectedRows());
           return false;
         }
         if (keyCode == KeyEvent.VK_SLASH || keyCode == KeyEvent.VK_NUMBER_SIGN) {
           String token = keyCode == KeyEvent.VK_SLASH ? "/" : "#";
-          script.cellAt(row, col).newLine(new int[]{row}, token);
-          new Thread(new Runnable() {
-            @Override
-            public void run() {
-              script.table.setSelection(row + 1, Script.firstParamCol);
-            }
-          }).start();
+          currentCell.lineNew(new int[]{tableRow}, token);
           return false;
         }
         if (keyCode == KeyEvent.VK_MINUS) {
-          final int[] selRows = getSelectedRows();
-          script.cellAt(row, col).deleteLine(selRows);
-          new Thread(new Runnable() {
-            @Override
-            public void run() {
-              script.table.setSelection(Math.max(0, selRows[0] - 1), Script.numberCol);
-            }
-          }).start();
+          currentCell.lineDelete(getSelectedRows());
           return false;
         }
         if (keyCode == KeyEvent.VK_BACK_SPACE) {
           if (isCtrl) {
             script.log.trace("editCellAt: CTRL Backspace");
           } else {
-            currentCell.emptyLine(getSelectedRows());
+            currentCell.lineEmpty(getSelectedRows());
           }
-          setSelection(currentRow, Script.commandCol);
+          setSelection(tableRow, Script.commandCol);
           return false;
         }
       }
@@ -88,7 +67,7 @@ class ScriptTable extends JTable {
         if (isCommand) {
           script.setValueAt(script.savedCellText, currentCell);
         } else {
-          currentCell.setValue(script.savedCellText);
+          currentCell.setValue(script.savedCellText, tableRow, tableCol);
         }
         return false;
       } else if (keyCode == KeyEvent.VK_F1) {
@@ -107,7 +86,7 @@ class ScriptTable extends JTable {
         if (isLineNumber) {
           script.runScript(-1);
         } else {
-          script.runScript(currentRow);
+          script.runScript(tableRow);
         }
         return false;
       } else if (keyCode == KeyEvent.VK_F5) {
@@ -120,13 +99,13 @@ class ScriptTable extends JTable {
         return false;
       } else if (keyCode == KeyEvent.VK_DELETE || keyCode == KeyEvent.VK_BACK_SPACE) {
         script.savedCellText = currentCell.get();
-        currentCell.setValue("");
+        currentCell.setValue("", tableRow, tableCol);
         return false;
       }
       Script.log.trace("keycode: %d %s", keyCode, KeyEvent.getKeyText(keyCode));
     }
     if (!isLineNumber) {
-      return super.editCellAt(currentRow, currentCol, e);
+      return super.editCellAt(tableRow, tableCol, e);
     }
     return false;
   }
@@ -138,11 +117,11 @@ class ScriptTable extends JTable {
 
   //TODO correct possible focus problems
   protected void tableHasChanged() {
-    for (int ix = 0; ix < script.tableLines.length; ix++) {
-      if (script.tableLines[ix] < 0) {
-        setValueAt("DELETE", -ix, ix);
-      }
-    }
+//    for (int ix = 0; ix < script.lines.size(); ix++) {
+//      if (script.lines.get(ix) < 0) {
+//        setValueAt("DELETE", -ix, ix);
+//      }
+//    }
     setValueAt(null, -1, -1);
   }
 

@@ -39,23 +39,25 @@ class ScriptTableModel extends AbstractTableModel {
     return String.format("Item%d", col - 1);
   }
 
-  public Object getValueAt(int row, int col) {
-    ScriptCell commandCell = script.cellAt(row, Script.commandCol);
-    if (SX.isNull(commandCell)) {
+  public Object getValueAt(int tableRow, int tableCol) {
+    ScriptCell cell = script.tableCell(tableRow, tableCol);
+    if (SX.isNull(cell)) {
       return "";
     }
-    if (col == Script.numberCol) {
+    int dataRow = script.lines.get(tableRow);
+    if (tableCol == Script.numberCol) {
+      ScriptCell commandCell = script.dataCell(dataRow, Script.commandCol);
       if (commandCell.isFirstHidden()) {
         return String.format("  V-%s-V ", commandCell.getHidden());
       }
-      return String.format("%6d %s", row + 1, commandCell.getMarker());
+      return String.format("%6d %s", dataRow + 1, commandCell.getMarker());
     }
-    int lineCol = col - 1;
-    List<ScriptCell> line = data.get(row);
+    int lineCol = tableCol - 1;
+    List<ScriptCell> line = data.get(dataRow);
     if (lineCol > line.size() - 1) {
       return "";
     }
-    return data.get(row).get(lineCol).get();
+    return script.dataCell(dataRow, tableCol).get();
   }
 
   public Class getColumnClass(int c) {
@@ -91,19 +93,19 @@ class ScriptTableModel extends AbstractTableModel {
     if (col == 0) {
       return;
     }
-    ScriptCell cell = script.cellAt(row, col);
+    ScriptCell cell = script.tableCell(row, col);
     if (col == 1) {
-      if (!given.isEmpty()) {
+      if (given.isEmpty()) {
+        cell.set(given);
+        script.checkContent();
+        script.setSelection(cell);
+      } else {
         if (!cell.isLineEmpty()) {
           cell.set(given);
           script.checkContent();
         } else {
           script.addCommandTemplate(given, cell);
         }
-      } else {
-        cell.set(given);
-        script.checkContent();
-        script.setSelection(cell);
       }
     } else {
       cell.set(given);

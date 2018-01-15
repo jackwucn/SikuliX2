@@ -46,8 +46,10 @@ public class Script implements TableModelListener {
     return fScript;
   }
 
+  List<Integer> lines = new ArrayList<>();
+
   List<List<ScriptCell>> data = new ArrayList<>();
-  List<List<ScriptCell>> savedLine = new ArrayList<>();
+  List<List<ScriptCell>> savedLines = new ArrayList<>();
 
   protected List<List<ScriptCell>> getData() {
     return data;
@@ -169,7 +171,7 @@ public class Script implements TableModelListener {
       Point where = me.getPoint();
       int row = table.rowAtPoint(where);
       int col = table.columnAtPoint(where);
-      ScriptCell cell = script.cellAt(row, col);
+      ScriptCell cell = script.tableCell(row, col);
       if (SX.isNull(cell)) {
         return;
       }
@@ -213,38 +215,41 @@ public class Script implements TableModelListener {
 
   String savedCellText = "";
 
-  protected ScriptCell cellAt(int row, int col) {
-    int dataCol = col == 0 ? 0 : col - 1;
-    if (row < 0) {
-      row = 0;
+  protected ScriptCell tableCell(int tableRow, int tableCol) {
+    int dataCol = tableCol == 0 ? 0 : tableCol - 1;
+    if (tableRow < 0) {
+      tableRow = 0;
     }
-    int cellRef = tableLines[row];
-    if (cellRef < 0) {
+    int dataRow = lines.get(tableRow);
+    if (dataRow < 0) {
       return null;
     }
-    if (cellRef != row) {
-      row = cellRef;
-    }
-    if (row > data.size() - 1) {
-      log.error("cellAt: row: %d", row);
-    }
-    if (row > data.size() - 1) {
-      data.add(new ArrayList<>());
-    }
-    List<ScriptCell> line = null;
+//    if (dataRow > data.size() - 1) {
+//      log.error("tableCell: row: %d", dataRow);
+//    }
+//    if (dataRow > data.size() - 1) {
+//      data.add(new ArrayList<>());
+//    }
+    List<ScriptCell> dataLine = null;
     try {
-      line = data.get(row);
+      dataLine = data.get(dataRow);
     } catch (IndexOutOfBoundsException ex) {
-      log.error("");
+      log.error("tableCell: %d (max: %d)", dataRow, data.size() - 1);
     }
-    if (dataCol > line.size() - 1) {
-      for (int n = line.size(); n <= dataCol; n++) {
-        line.add(new ScriptCell(this, "", row, col));
-      }
+    if (dataCol > dataLine.size() - 1) {
+      return null;
+//      for (int n = dataLine.size(); n <= dataCol; n++) {
+//        dataLine.add(new ScriptCell(this, "", dataRow, dataCol));
+//      }
     }
-    ScriptCell cell = data.get(row).get(dataCol);
-    cell.set(row, col);
+    ScriptCell cell = data.get(dataRow).get(dataCol);
+    cell.set(dataRow, dataCol);
     return cell;
+  }
+
+  protected ScriptCell dataCell(int dataRow, int tableCol) {
+    int dataCol = tableCol == 0 ? 0 : tableCol - 1;
+    return data.get(dataRow).get(dataCol);
   }
 
   protected void setValueAt(String text, ScriptCell cell) {
@@ -390,16 +395,16 @@ public class Script implements TableModelListener {
         if ("result".equals(lineEnd)) {
           commandLine[lineLast] = "$R" + resultsCounter++;
         }
-        cell.setLine(commandLine);
+        cell.lineSet(commandLine);
         if (command.startsWith("if") && !command.contains("ifElse")) {
-          cell.addLine("endif");
+          cell.lineAdd("endif");
         } else if (command.startsWith("loop")) {
-          cell.addLine("endloop");
+          cell.lineAdd("endloop");
         } else {
         }
         table.setSelection(cell.getRow(), 2);
       } else {
-        cell.setLine(new String[]{command + "?"});
+        cell.lineSet(new String[]{command + "?"});
         table.setSelection(cell.getRow(), 1);
       }
       checkContent();
@@ -408,8 +413,6 @@ public class Script implements TableModelListener {
     return false;
   }
 
-  protected int[] tableLines;
-
   protected void checkContent() {
     log.trace("checkContent started");
     int currentIndent = 0;
@@ -417,15 +420,15 @@ public class Script implements TableModelListener {
     int currentLoopIndent = 0;
     boolean hasElse = false;
     int nextDataLine = 0;
-    tableLines = new int[data.size()];
-    for (int ix = 0; ix < tableLines.length; ix++) {
-      tableLines[ix] = -1;
+    int ixLines =0;
+    lines.clear();
+    for (int ix = 0; ix < data.size(); ix++) {
+      lines.add(-1);
     }
-    int ixTableLines = -1;
     for (List<ScriptCell> line : data) {
       ScriptCell cell = line.get(0);
       if (!cell.isHiddenBody()) {
-        tableLines[++ixTableLines] = nextDataLine;
+        lines.set(ixLines++, nextDataLine);
       }
       if (cell.isFirstHidden()) {
         nextDataLine += cell.getHidden();
@@ -493,7 +496,11 @@ public class Script implements TableModelListener {
       //log.trace("checkContent: %s", cell);
     }
     table.tableHasChanged();
-    log.trace("checkContent finished");
+    String sLines = "";
+    for (int ix : lines) {
+      sLines += ix + ",";
+    }
+    log.trace("checkContent finished (%s)", sLines);
   }
 
   Map<String, String[]> commandTemplates = new HashMap<>();
