@@ -40,24 +40,22 @@ class ScriptTableModel extends AbstractTableModel {
   }
 
   public Object getValueAt(int row, int col) {
-    int ixData = script.tableLines[row];
-    if (ixData < 0) {
+    ScriptCell commandCell = script.cellAt(row, Script.commandCol);
+    if (SX.isNull(commandCell)) {
       return "";
     }
-    ixData = row;
-    ScriptCell commandCell = script.cellAt(ixData, Script.commandCol);
     if (col == Script.numberCol) {
       if (commandCell.isFirstHidden()) {
         return String.format("  V-%s-V ", commandCell.getHidden());
       }
-      return String.format("%6d %s", ixData + 1, commandCell.getMarker());
+      return String.format("%6d %s", row + 1, commandCell.getMarker());
     }
     int lineCol = col - 1;
-    List<ScriptCell> line = data.get(ixData);
+    List<ScriptCell> line = data.get(row);
     if (lineCol > line.size() - 1) {
       return "";
     }
-    return data.get(ixData).get(lineCol).get();
+    return data.get(row).get(lineCol).get();
   }
 
   public Class getColumnClass(int c) {
@@ -69,10 +67,26 @@ class ScriptTableModel extends AbstractTableModel {
   }
 
   public void setValueAt(Object value, int row, int col) {
-    if (row < 0 && col < 0) {
-      fireTableDataChanged();
-      return;
+    if (row < 0 ) {
+      if (col < 0) {
+        fireTableDataChanged();
+        return;
+      }
+      row = -row - 1;
+      if ("DELETE".equals(value.toString())) {
+        fireTableRowsDeleted(row, col);
+        return;
+      }
+      if ("INSERT".equals(value.toString())) {
+        fireTableRowsInserted(row, col);
+        return;
+      }
+      if ("UPDATE".equals(value.toString())) {
+        fireTableRowsUpdated(row, col);
+        return;
+      }
     }
+
     String given = ((String) value).trim();
     if (col == 0) {
       return;

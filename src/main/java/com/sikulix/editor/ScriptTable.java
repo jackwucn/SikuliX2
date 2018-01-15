@@ -138,6 +138,11 @@ class ScriptTable extends JTable {
 
   //TODO correct possible focus problems
   protected void tableHasChanged() {
+    for (int ix = 0; ix < script.tableLines.length; ix++) {
+      if (script.tableLines[ix] < 0) {
+        setValueAt("DELETE", -ix, ix);
+      }
+    }
     setValueAt(null, -1, -1);
   }
 

@@ -170,6 +170,9 @@ public class Script implements TableModelListener {
       int row = table.rowAtPoint(where);
       int col = table.columnAtPoint(where);
       ScriptCell cell = script.cellAt(row, col);
+      if (SX.isNull(cell)) {
+        return;
+      }
       int button = me.getButton();
 
       if (row < 0) {
@@ -216,6 +219,9 @@ public class Script implements TableModelListener {
       row = 0;
     }
     int cellRef = tableLines[row];
+    if (cellRef < 0) {
+      return null;
+    }
     if (cellRef != row) {
       row = cellRef;
     }
