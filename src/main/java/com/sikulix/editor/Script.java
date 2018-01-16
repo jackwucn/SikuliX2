@@ -176,10 +176,6 @@ public class Script implements TableModelListener {
         return;
       }
       int button = me.getButton();
-
-      if (row < 0) {
-        return;
-      }
       int[] selectedRows = table.getSelectedRows();
       if (type > 0) {
         log.trace("clicked: R%d C%d B%d {%d ... %d}",
@@ -202,6 +198,7 @@ public class Script implements TableModelListener {
             popUpMenus.notimplemented(cell);
           }
         } else {
+          popUpMenus.notimplemented(tableCell(0, 0));
         }
         return;
       }
@@ -224,32 +221,32 @@ public class Script implements TableModelListener {
     if (dataRow < 0) {
       return null;
     }
-//    if (dataRow > data.size() - 1) {
-//      log.error("tableCell: row: %d", dataRow);
-//    }
-//    if (dataRow > data.size() - 1) {
-//      data.add(new ArrayList<>());
-//    }
-    List<ScriptCell> dataLine = null;
-    try {
-      dataLine = data.get(dataRow);
-    } catch (IndexOutOfBoundsException ex) {
-      log.error("tableCell: %d (max: %d)", dataRow, data.size() - 1);
-    }
-    if (dataCol > dataLine.size() - 1) {
+    if (tableCol > data.get(dataRow).size()) {
       return null;
-//      for (int n = dataLine.size(); n <= dataCol; n++) {
-//        dataLine.add(new ScriptCell(this, "", dataRow, dataCol));
-//      }
     }
-    ScriptCell cell = data.get(dataRow).get(dataCol);
-    cell.set(dataRow, dataCol);
-    return cell;
+    return dataCell(dataRow, dataCol);
   }
 
   protected ScriptCell dataCell(int dataRow, int tableCol) {
     int dataCol = tableCol == 0 ? 0 : tableCol - 1;
-    return data.get(dataRow).get(dataCol);
+    List<ScriptCell> line = data.get(dataRow);
+//    if (dataCol > line.size() -1) {
+//      for (int n = line.size(); n <= dataCol; n++) {
+//        line.add(new ScriptCell(this, "", dataRow, n + 1));
+//      }
+//    }
+    return line.get(dataCol);
+  }
+
+  protected void dataCellSet(int dataRow, int tableCol, String item) {
+    int dataCol = tableCol == 0 ? 0 : tableCol - 1;
+    List<ScriptCell> line = data.get(dataRow);
+    if (dataCol > line.size() -1) {
+      for (int n = line.size(); n <= dataCol; n++) {
+        line.add(new ScriptCell(this, "", dataRow, n + 1));
+      }
+    }
+    line.get(dataCol).set(item);
   }
 
   protected void setValueAt(String text, ScriptCell cell) {
@@ -413,12 +410,7 @@ public class Script implements TableModelListener {
     return false;
   }
 
-  protected void checkContent() {
-    log.trace("checkContent started");
-    int currentIndent = 0;
-    int currentIfIndent = 0;
-    int currentLoopIndent = 0;
-    boolean hasElse = false;
+  protected void resetLines() {
     int nextDataLine = 0;
     int ixLines =0;
     lines.clear();
@@ -435,6 +427,18 @@ public class Script implements TableModelListener {
       } else if (!cell.isHiddenBody()) {
         nextDataLine++;
       }
+    }
+  }
+
+  protected void checkContent() {
+    log.trace("checkContent started");
+    int currentIndent = 0;
+    int currentIfIndent = 0;
+    int currentLoopIndent = 0;
+    boolean hasElse = false;
+    resetLines();
+    for (List<ScriptCell> line : data) {
+      ScriptCell cell = line.get(0);
       if (line.size() == 0) {
         continue;
       }

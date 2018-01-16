@@ -69,7 +69,7 @@ class ScriptTableModel extends AbstractTableModel {
   }
 
   public void setValueAt(Object value, int row, int col) {
-    if (row < 0 ) {
+    if (row < 0) {
       if (col < 0) {
         fireTableDataChanged();
         return;
@@ -94,6 +94,31 @@ class ScriptTableModel extends AbstractTableModel {
       return;
     }
     ScriptCell cell = script.tableCell(row, col);
+    if (SX.isNull(cell)) {
+      int dataRow = script.lines.get(row);
+      if (dataRow == -1) {
+        if (col != Script.commandCol) {
+          return;
+        }
+        int tableRow = 0;
+        Integer[] linesArray = script.lines.toArray(new Integer[0]);
+        for (int ref : linesArray) {
+          if (ref == -1) {
+            List<ScriptCell> newLine = new ArrayList<>();
+            newLine.add(new ScriptCell(script, "", data.size(), Script.commandCol));
+            data.add(newLine);
+            script.lines.set(tableRow, data.size() - 1);
+          }
+          if (tableRow == row) {
+            break;
+          }
+          tableRow++;
+        }
+      } else {
+        script.dataCellSet(dataRow, col, "");
+      }
+      cell = script.tableCell(row, col);
+    }
     if (col == 1) {
       if (given.isEmpty()) {
         cell.set(given);
