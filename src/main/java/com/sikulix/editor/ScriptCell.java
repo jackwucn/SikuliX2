@@ -5,12 +5,9 @@
 package com.sikulix.editor;
 
 import com.sikulix.api.Do;
-import com.sikulix.api.Element;
 import com.sikulix.api.Picture;
 import com.sikulix.core.SX;
 
-import java.awt.Point;
-import java.awt.Rectangle;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,7 +19,7 @@ class ScriptCell {
   private Script script;
   private String value = "";
   private CellType cellType = CellType.TEXT;
-  private int row = -1;
+//  private int row = -1;
   private int col = -1;
   private int indentLevel = 0;
   private int indentIfLevel = 0;
@@ -33,23 +30,14 @@ class ScriptCell {
 
   }
 
-  protected ScriptCell(Script script, String value, int row, int col) {
-    init(script, value, row, col);
+  protected ScriptCell(Script script, String value, int col) {
+    init(script, value, col);
   }
 
-  private void init(Script script, String value, int row, int col) {
+  private void init(Script script, String value, int col) {
     this.script = script;
     this.value = value.trim();
-    this.row = row;
     this.col = col;
-  }
-
-  protected int getRow() {
-    return row;
-  }
-
-  protected int getCol() {
-    return col;
   }
 
   protected String getMarker() {
@@ -156,7 +144,6 @@ class ScriptCell {
               }
             }
             value = "@" + imagename;
-            script.table.setValueAt(value, row, col);
             script.getWindow().setVisible(true);
           }
         }).start();
@@ -164,27 +151,6 @@ class ScriptCell {
         script.getWindow().setVisible(true);
       }
     }
-  }
-
-  protected Element getCellClick() {
-    Point windowLocation = script.getWindow().getLocation();
-    Rectangle cell = script.table.getCellRect(row, col, false);
-    windowLocation.x += cell.x + 10;
-    windowLocation.y += cell.y + 70;
-    return new Element(windowLocation);
-  }
-
-  protected Rectangle getRect() {
-    return script.table.getCellRect(row, col, false);
-  }
-
-  protected void select() {
-    new Thread(new Runnable() {
-      @Override
-      public void run() {
-        Do.on().clickFast(getCellClick());
-      }
-    }).start();
   }
 
   protected void show() {
@@ -202,7 +168,6 @@ class ScriptCell {
           }).start();
         } else {
           value = "@?" + imagename;
-          script.table.setValueAt(value, row, col);
         }
       }
     }
@@ -225,7 +190,6 @@ class ScriptCell {
           }).start();
         } else {
           value = "@?" + imagename;
-          script.table.setValueAt(value, row, col);
         }
       }
     }
@@ -275,15 +239,6 @@ class ScriptCell {
     return SX.isNotSet(value);
   }
 
-  protected boolean isLineEmpty() {
-    for (ScriptCell cell : script.data.get(row)) {
-      if (!cell.isEmpty()) {
-        return false;
-      }
-    }
-    return true;
-  }
-
   protected boolean isValid() {
     boolean valid = SX.isSet(value);
     if (valid && isImage()) {
@@ -296,8 +251,7 @@ class ScriptCell {
     return value;
   }
 
-  protected ScriptCell set(int row, int col) {
-    this.row = row;
+  protected ScriptCell set(int col) {
     this.col = col;
     return this;
   }
@@ -322,38 +276,28 @@ class ScriptCell {
     inError = true;
   }
 
-  protected void lineSet(String... items) {
-    if (items.length == 0) {
-      script.data.set(row, new ArrayList<>());
-    } else {
-      int col = 1;
-      for (String item : items) {
-        script.dataCellSet(row, col++, item);
-      }
-    }
-  }
-
-  protected void lineAdd(String command) {
-    script.data.add(row + 1, new ArrayList<>());
-    script.dataCellSet(row + 1, 1, command);
-    script.table.tableHasChanged();
-    script.table.setSelection(row, 1);
-  }
-
   private List<Integer> getSelectedDataRows(int[] selectedRows) {
     List<Integer> selectedDataRows = new ArrayList<>();
-    int currentDataRow = script.lines.get(selectedRows[0]);
-    int nextDataRow, nextTableRow;
-    for (int n = 0; n < selectedRows.length; n++) {
-      nextTableRow = selectedRows[n] + 1;
-      try {
-        nextDataRow = script.lines.get(nextTableRow);
-        while (currentDataRow < nextDataRow) {
+    if (selectedRows.length == 1) {
+      selectedDataRows.add(script.lines.get(selectedRows[0]));
+    } else {
+      int currentDataRow = script.lines.get(selectedRows[0]);
+      int nextDataRow, nextTableRow;
+      for (int n = 0; n < selectedRows.length; n++) {
+        nextTableRow = selectedRows[n] + 1;
+        try {
+          nextDataRow = script.lines.get(nextTableRow);
+          if (nextDataRow < 0) {
+            selectedDataRows.add(currentDataRow);
+            break;
+          }
+          while (currentDataRow < nextDataRow) {
+            selectedDataRows.add(currentDataRow++);
+          }
+        } catch (Exception ex) {
           selectedDataRows.add(currentDataRow++);
+          break;
         }
-      } catch (Exception ex) {
-        selectedDataRows.add(currentDataRow++);
-        break;
       }
     }
     return selectedDataRows;
@@ -384,7 +328,7 @@ class ScriptCell {
 
   private int hiddenCount = 0;
 
-  private void setHidden(int count) {
+  protected void setHidden(int count) {
     hiddenCount = count;
   }
 
@@ -413,12 +357,11 @@ class ScriptCell {
     for (int n = 0; n < numLines; n++) {
       List<ScriptCell> line = new ArrayList<>();
       int lineAdded = currentDataRow + n + 1;
-      line.add(new ScriptCell(script, "", lineAdded, Script.commandCol));
+      line.add(new ScriptCell(script, "", Script.commandCol));
       script.data.add(lineAdded, line);
       if (SX.isSet(token)) {
         script.resetLines();
-        boolean success = script.addCommandTemplate(token,
-                script.tableCell(currentDataRow + 1, Script.commandCol));
+        boolean success = script.addCommandTemplate(token, new TableCell(script, firstNewLine, Script.commandCol), null);
         if (success) {
           selectCol = Script.commandCol + 1;
           break;
@@ -456,7 +399,7 @@ class ScriptCell {
     for (int sourceRow : rows) {
       List<ScriptCell> copyRow = new ArrayList<>();
       for (ScriptCell cell : script.data.get(sourceRow)) {
-        copyRow.add(new ScriptCell(script, cell.get(), -1, -1));
+        copyRow.add(new ScriptCell(script, cell.get(), cell.col));
       }
       script.savedLines.add(copyRow);
     }
@@ -484,11 +427,11 @@ class ScriptCell {
     script.runScript(selectedDataRows.get(0), selectedDataRows.get(selectedDataRows.size() - 1));
   }
 
-  List<ScriptCell> getSavedLine(int rowTarget) {
+  List<ScriptCell> getSavedLine() {
     List<ScriptCell> savedLine = script.savedLines.remove(0);
     List<ScriptCell> savedClean = new ArrayList<>();
     for (ScriptCell cell : savedLine) {
-      savedClean.add(new ScriptCell(script, cell.get(), rowTarget, cell.getCol()));
+      savedClean.add(new ScriptCell(script, cell.get(), cell.col));
     }
     return savedClean;
   }
@@ -499,13 +442,13 @@ class ScriptCell {
     List<Integer> selectedDataRows = getSelectedDataRows(selectedRows);
     int currentRow = selectedDataRows.get(selectedDataRows.size() - 1);
     for (int n = 0; n < numLines; n++) {
-      script.data.add(currentRow + n + 1, getSavedLine(currentRow + n + 1));
+      script.data.add(currentRow + n + 1, getSavedLine());
     }
     script.table.tableCheckContent();
     script.table.setSelection(firstNewLine, Script.numberCol);
   }
 
   public String toString() {
-    return String.format("Cell: (%d,%d) %s i(%d %d %d) h%d", row, col, value, indentLevel, indentIfLevel, indentLoopLevel, hiddenCount);
+    return String.format("Cell: (?,%d) %s i(%d %d %d) h%d", col, value, indentLevel, indentIfLevel, indentLoopLevel, hiddenCount);
   }
 }

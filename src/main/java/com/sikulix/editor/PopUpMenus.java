@@ -4,7 +4,7 @@ import com.sikulix.core.SX;
 import com.sikulix.core.SXLog;
 
 import javax.swing.*;
-import java.awt.Component;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.lang.reflect.Method;
@@ -20,7 +20,7 @@ public class PopUpMenus {
     PopUpMenu parent = null;
     PopUpMenu parentSub = null;
     Component comp = null;
-    ScriptCell cell = null;
+    TableCell cell = null;
     int x;
     int y;
     int[] selectedRows = new int[0];
@@ -41,6 +41,13 @@ public class PopUpMenus {
 
     public JMenuItem createMenuItem(PopUpMenu subMenu) {
       String name = subMenu.getClass().getSimpleName();
+      name += "...";
+      JMenuItem item = new JMenuItem(name);
+      item.addActionListener(new MenuAction(name, subMenu));
+      return item;
+    }
+
+    public JMenuItem createMenuItem(PopUpMenu subMenu, String name) {
       name += "...";
       JMenuItem item = new JMenuItem(name);
       item.addActionListener(new MenuAction(name, subMenu));
@@ -139,11 +146,12 @@ public class PopUpMenus {
       }
     }
 
-    void pop(Component comp, ScriptCell cell) {
+    void pop(Component comp, TableCell cell) {
       this.comp = comp;
       this.cell = cell;
-      this.x = cell.getRect().x;
-      this.y = cell.getRect().y;
+      Rectangle cellRectangle = cell.getRect();
+      this.x = cellRectangle.x;
+      this.y = cellRectangle.y + cellRectangle.height;
       show(comp, x, y);
     }
 
@@ -153,7 +161,7 @@ public class PopUpMenus {
       }
     }
 
-    ScriptCell getCell() {
+    TableCell getCell() {
       if (SX.isNotNull(cell)) {
         return cell;
       }
@@ -162,6 +170,18 @@ public class PopUpMenus {
       }
       log.error("no cell nor parent");
       return null;
+    }
+
+    ScriptCell getDataCell() {
+      return script.evalDataCell(getCell());
+    }
+
+    int[] getSelectedRows() {
+      int[] selectedRows = null;
+      if (SX.isNotNull(parent)) {
+        selectedRows = parent.selectedRows;
+      }
+      return selectedRows;
     }
   }
 
@@ -178,7 +198,7 @@ public class PopUpMenus {
   List<List<ScriptCell>> data;
   List<ScriptCell> savedLine = new ArrayList<>();
 
-  protected void command(ScriptCell cell) {
+  protected void command(TableCell cell) {
     new Command().pop(table, cell);
   }
 
@@ -212,7 +232,7 @@ public class PopUpMenus {
     }
 
     public void addCommand(String menuItem) {
-      script.addCommandTemplate(menuItem, getCell());
+      script.addCommandTemplate(menuItem, getCell(), null);
     }
   }
 
@@ -228,7 +248,7 @@ public class PopUpMenus {
     }
 
     public void addCommand(String menuItem) {
-      script.addCommandTemplate(menuItem, getCell());
+      script.addCommandTemplate(menuItem, getCell(), null);
     }
   }
 
@@ -242,7 +262,7 @@ public class PopUpMenus {
     }
 
     public void addCommand(String menuItem) {
-      script.addCommandTemplate(menuItem, getCell());
+      script.addCommandTemplate(menuItem, getCell(), null);
     }
   }
 
@@ -255,7 +275,7 @@ public class PopUpMenus {
     }
 
     public void addCommand(String menuItem) {
-      script.addCommandTemplate(menuItem, getCell());
+      script.addCommandTemplate(menuItem, getCell(), null);
     }
   }
 
@@ -264,13 +284,17 @@ public class PopUpMenus {
     public Blocks(PopUpMenu parentMenu) {
       parent = parentMenu;
       parentSub = this;
+      String parentName = parent.getClass().getSimpleName();
+      Boolean isCommand = "Command".equals(parentName);
       add(createMenuItem("If", this));
       add(createMenuItem("IfNot", this));
-      add(createMenuItem("Else", this));
-      add(createMenuItem("IfElse", this));
-      createMenuSeperator();
-      add(createMenuItem("Elif", this));
-      add(createMenuItem("ElifNot", this));
+      if (isCommand) {
+        add(createMenuItem("Else", this));
+        add(createMenuItem("IfElse", this));
+        createMenuSeperator();
+        add(createMenuItem("Elif", this));
+        add(createMenuItem("ElifNot", this));
+      }
       createMenuSeperator();
       add(createMenuItem("Loop", this));
       add(createMenuItem("LoopFor", this));
@@ -278,7 +302,7 @@ public class PopUpMenus {
     }
 
     public void addCommand(String menuItem) {
-      script.addCommandTemplate(menuItem, getCell());
+      script.addCommandTemplate(menuItem, getCell(), getSelectedRows());
     }
 
   }
@@ -297,7 +321,7 @@ public class PopUpMenus {
     }
 
     public void addCommand(String menuItem) {
-      script.addCommandTemplate(menuItem, getCell());
+      script.addCommandTemplate(menuItem, getCell(), null);
     }
 
   }
@@ -311,12 +335,12 @@ public class PopUpMenus {
     }
 
     public void addCommand(String menuItem) {
-      script.addCommandTemplate(menuItem, getCell());
+      script.addCommandTemplate(menuItem, getCell(), null);
     }
 
   }
 
-  protected void action(ScriptCell cell) {
+  protected void action(TableCell cell) {
     new Action().pop(table, cell);
   }
 
@@ -333,36 +357,39 @@ public class PopUpMenus {
       add(createMenuItem("InsertLines i", this));
       createMenuSeperator();
       add(createMenuItem("HideUnhide h", this));
+      if (selectedRows.length > 0) {
+        add(createMenuItem(new Blocks(this), "Surround"));
+      }
       createMenuSeperator();
       add(createMenuItem("RunLines", this));
     }
 
     public void newLines(ActionEvent ae) {
-      getCell().lineNew(selectedRows);
+      getDataCell().lineNew(selectedRows);
     }
 
     public void deleteLines(ActionEvent ae) {
-      getCell().lineDelete(selectedRows);
+      getDataCell().lineDelete(selectedRows);
     }
 
     public void emptyLines(ActionEvent ae) {
-      getCell().lineEmpty(selectedRows);
+      getDataCell().lineEmpty(selectedRows);
     }
 
     public void copyLines(ActionEvent ae) {
-      getCell().lineCopy(selectedRows);
+      getDataCell().lineCopy(selectedRows);
     }
 
     public void insertLines(ActionEvent ae) {
-      getCell().lineInsert(selectedRows);
+      getDataCell().lineInsert(selectedRows);
     }
 
     public void hideUnhide(ActionEvent ae) {
-      getCell().lineHide(selectedRows);
+      getDataCell().lineHide(selectedRows);
     }
 
     public void runLines(ActionEvent ae) {
-      getCell().lineRun(selectedRows);
+      getDataCell().lineRun(selectedRows);
     }
   }
 
@@ -395,11 +422,11 @@ public class PopUpMenus {
     }
 
     public void find(ActionEvent e) {
-      getCell().find();
+      getDataCell().find();
     }
   }
 
-  protected void notimplemented(ScriptCell cell) {
+  protected void notimplemented(TableCell cell) {
     new Notimplemented().pop(table, cell);
   }
 

@@ -22,7 +22,8 @@ class ScriptTable extends JTable {
 
   @Override
   public boolean editCellAt(int tableRow, int tableCol, EventObject e) {
-    ScriptCell currentCell = script.tableCell(tableRow, tableCol);
+    TableCell tCell = new TableCell(script, tableRow, tableCol);
+    ScriptCell currentCell = script.evalDataCell(tableRow, tableCol);
     boolean isLineNumber = tableCol == Script.numberCol;
     boolean isCommand = tableCol == Script.commandCol;
     if (SX.isNotNull(currentCell)) {
@@ -81,20 +82,20 @@ class ScriptTable extends JTable {
           }
         }
         if (isCommand && keyCode == KeyEvent.VK_SPACE && currentCell.isEmpty()) {
-          script.popUpMenus.command(currentCell);
+          script.popUpMenus.command(tCell);
           return false;
         } else if (keyCode == KeyEvent.VK_SPACE) {
           script.editBox(currentCell);
           return false;
         } else if (keyCode == KeyEvent.VK_BACK_SPACE && currentCell.isEmpty()) {
           if (isCommand) {
-            script.setValueAt(script.savedCellText, currentCell);
+            script.setValueAt(script.savedCellText, tCell);
           } else {
             currentCell.setValue(script.savedCellText, tableRow, tableCol);
           }
           return false;
         } else if (keyCode == KeyEvent.VK_F1) {
-          script.assist(currentCell);
+          script.assist(tCell);
           return false;
         } else if (keyCode == KeyEvent.VK_F2) {
           Script.log.trace("F2: save script");

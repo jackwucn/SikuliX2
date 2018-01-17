@@ -171,10 +171,7 @@ public class Script implements TableModelListener {
       Point where = me.getPoint();
       int row = table.rowAtPoint(where);
       int col = table.columnAtPoint(where);
-      ScriptCell cell = script.tableCell(row, col);
-      if (SX.isNull(cell)) {
-        return;
-      }
+      TableCell cell = new TableCell(script, row, col);
       int button = me.getButton();
       int[] selectedRows = table.getSelectedRows();
       if (type > 0) {
@@ -198,7 +195,7 @@ public class Script implements TableModelListener {
             popUpMenus.notimplemented(cell);
           }
         } else {
-          popUpMenus.notimplemented(tableCell(0, 0));
+          popUpMenus.notimplemented(new TableCell(script, 0, 0));
         }
         return;
       }
@@ -212,7 +209,11 @@ public class Script implements TableModelListener {
 
   String savedCellText = "";
 
-  protected ScriptCell tableCell(int tableRow, int tableCol) {
+  protected ScriptCell evalDataCell(TableCell tCell) {
+    return evalDataCell(tCell.row, tCell.col);
+  }
+
+  protected ScriptCell evalDataCell(int tableRow, int tableCol) {
     int dataCol = tableCol == 0 ? 0 : tableCol - 1;
     if (tableRow < 0) {
       tableRow = 0;
@@ -243,25 +244,22 @@ public class Script implements TableModelListener {
     List<ScriptCell> line = data.get(dataRow);
     if (dataCol > line.size() -1) {
       for (int n = line.size(); n <= dataCol; n++) {
-        line.add(new ScriptCell(this, "", dataRow, n + 1));
+        line.add(new ScriptCell(this, "", n + 1));
       }
     }
     line.get(dataCol).set(item);
   }
 
-  protected void setValueAt(String text, ScriptCell cell) {
-    table.getModel().setValueAt(text, cell.getRow(), cell.getCol());
-    setSelection(cell);
+  protected void setValueAt(String text, TableCell cell) {
+    table.getModel().setValueAt(text, cell.row, cell.col);
+    table.setSelection(cell.row, cell.col);
   }
 
-  protected void setSelection(ScriptCell cell) {
-    table.setSelection(cell.getRow(), cell.getCol());
-  }
-
-  protected void assist(ScriptCell cell) {
+  protected void assist(TableCell tCell) {
+    ScriptCell cell = evalDataCell(tCell);
     String cellText = cell.get();
     Script.log.trace("F1: (%d,%d) %s (%d, %d, %d)",
-            cell.getRow(), cell.getCol(), cellText,
+            tCell.row, tCell.col, cellText,
             cell.getIndent(), cell.getIfIndent(), cell.getLoopIndent());
     if (cellText.startsWith("@")) {
       if (cellText.startsWith("@?")) {
@@ -275,12 +273,11 @@ public class Script implements TableModelListener {
   protected void loadScript() {
     data.clear();
     resultsCounter = 0;
-    int rowCount = -1;
+    int hiddenCount = 0;
     String theScript = com.sikulix.core.Content.readFileToString(fScript);
     for (String line : theScript.split("\\n")) {
       List<ScriptCell> aLine = new ArrayList<>();
       int colCount = 1;
-      rowCount++;
       for (String cellText : line.split("\\t")) {
         String resultTarget = "$R";
         if (cellText.contains(resultTarget)) {
@@ -293,13 +290,34 @@ public class Script implements TableModelListener {
           if (resultCount >= resultsCounter) {
             resultsCounter = resultCount + 1;
           }
+        } else if (cellText.startsWith("#")) {
+          if (cellText.startsWith("# h ")) {
+            try {
+              hiddenCount = Integer.parseInt(cellText.split(" ")[2]);
+              if (hiddenCount > 1) {
+                aLine.get(0).setHidden(hiddenCount--);
+                hiddenCount = -hiddenCount;
+              }
+            } catch (Exception ex) { }
+          }
+          cellText = null;
         }
-        aLine.add(new ScriptCell(this, cellText, rowCount, colCount));
-        if (++colCount > maxCol) {
-          break;
+        if (SX.isNotNull(cellText)) {
+          aLine.add(new ScriptCell(this, cellText, colCount));
+          if (++colCount > maxCol) {
+            break;
+          }
         }
       }
       if (aLine.size() > 0) {
+        if (hiddenCount != 0) {
+          if (hiddenCount > 0) {
+            aLine.get(0).setHidden(-1);
+            hiddenCount--;
+          } else {
+            hiddenCount = -hiddenCount;
+          }
+        }
         data.add(aLine);
       }
     }
@@ -319,6 +337,9 @@ public class Script implements TableModelListener {
         sTab = "\t";
       }
       if (SX.isSet(sLine)) {
+        if (line.get(0).isFirstHidden()) {
+          sLine += sTab + "# h " + line.get(0).getHidden();
+        }
         theScript += sLine + "\n";
       }
     }
@@ -380,8 +401,13 @@ public class Script implements TableModelListener {
     }
   }
 
-  protected boolean addCommandTemplate(String command, ScriptCell cell) {
-    if (cell.isLineEmpty()) {
+  protected boolean addCommandTemplate(String command, TableCell tCell, int[] selectedRows) {
+    if (SX.isNotNull(selectedRows) && tCell.col == numberCol) {
+      log.trace("addCommandTemplate: should surround with: %s", command);
+      return true;
+    }
+    ScriptCell cell = evalDataCell(tCell);
+    if (tCell.isLineEmpty()) {
       command = command.trim();
       String[] commandLine = commandTemplates.get(command);
       if (SX.isNotNull(commandLine)) {
@@ -392,17 +418,17 @@ public class Script implements TableModelListener {
         if ("result".equals(lineEnd)) {
           commandLine[lineLast] = "$R" + resultsCounter++;
         }
-        cell.lineSet(commandLine);
+        tCell.lineSet(commandLine);
         if (command.startsWith("if") && !command.contains("ifElse")) {
-          cell.lineAdd("endif");
+          tCell.lineAdd("endif");
         } else if (command.startsWith("loop")) {
-          cell.lineAdd("endloop");
+          tCell.lineAdd("endloop");
         } else {
         }
-        table.setSelection(cell.getRow(), 2);
+        table.setSelection(tCell.row, 2);
       } else {
-        cell.lineSet(new String[]{command + "?"});
-        table.setSelection(cell.getRow(), 1);
+        tCell.lineSet(new String[]{command + "?"});
+        table.setSelection(tCell.row, 1);
       }
       checkContent();
       return true;
