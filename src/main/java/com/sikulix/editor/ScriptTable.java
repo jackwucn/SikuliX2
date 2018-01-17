@@ -140,6 +140,11 @@ class ScriptTable extends JTable {
     setColumnSelectionInterval(col, col);
   }
 
+  protected void setLineSelection(int firstRow, int lastRow) {
+    setRowSelectionInterval(firstRow, lastRow);
+    setColumnSelectionInterval(0, 0);
+  }
+
   //TODO correct possible focus problems
   protected void tableHasChanged() {
 //    for (int ix = 0; ix < script.lines.size(); ix++) {

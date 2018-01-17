@@ -402,17 +402,22 @@ public class Script implements TableModelListener {
   }
 
   protected boolean addCommandTemplate(String command, TableCell tCell, int[] selectedRows) {
+    command = command.trim();
+    String[] commandLine = commandTemplates.get(command);
+    commandLine = commandLine.clone();
+    commandLine[0] = command + commandLine[0];
+    boolean success = false;
     if (SX.isNotNull(selectedRows) && tCell.col == numberCol) {
       log.trace("addCommandTemplate: should surround with: %s", command);
-      return true;
-    }
-    ScriptCell cell = evalDataCell(tCell);
-    if (tCell.isLineEmpty()) {
-      command = command.trim();
-      String[] commandLine = commandTemplates.get(command);
+      TableCell tCellFirst = new TableCell(this, selectedRows[0]);
+      tCellFirst.previousRow().lineAdd(commandLine);
+      resetLines();
+      TableCell tCellLast = new TableCell(this, selectedRows[selectedRows.length - 1]);
+      tCellLast.nextRow().lineAdd(command.startsWith("if") ? "endif" : "endloop");
+      table.setLineSelection(tCellFirst.row, tCellLast.row);
+      success = true;
+    } else if (tCell.isLineEmpty()) {
       if (SX.isNotNull(commandLine)) {
-        commandLine = commandLine.clone();
-        commandLine[0] = command + commandLine[0];
         int lineLast = commandLine.length - 1;
         String lineEnd = commandLine[lineLast];
         if ("result".equals(lineEnd)) {
@@ -430,10 +435,12 @@ public class Script implements TableModelListener {
         tCell.lineSet(new String[]{command + "?"});
         table.setSelection(tCell.row, 1);
       }
-      checkContent();
-      return true;
+      success = true;
     }
-    return false;
+    if (success) {
+      checkContent();
+    }
+    return success;
   }
 
   protected void resetLines() {

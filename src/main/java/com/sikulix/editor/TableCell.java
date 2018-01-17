@@ -21,6 +21,20 @@ public class TableCell {
     this.script = script;
   }
 
+  public TableCell(Script script, int row) {
+    this.row = row;
+    this.col = 0;
+    this.script = script;
+  }
+
+  public TableCell nextRow() {
+    return new TableCell(script,row + 1);
+  }
+
+  public TableCell previousRow() {
+    return new TableCell(script,row - 1);
+  }
+
   protected Rectangle getRect() {
     return script.table.getCellRect(row, col, false);
   }
@@ -47,9 +61,24 @@ public class TableCell {
     }
   }
 
-  protected void lineAdd(String command) {
-    int dataRow = script.lines.get(row);
-    script.data.add(dataRow + 1, new ArrayList<>());
-    script.dataCellSet(dataRow + 1, 1, command);
+  protected void lineAdd(String... items) {
+    int dataRow;
+    if (row < 0) {
+      dataRow = 0;
+      script.data.add(0, new ArrayList<>());
+    } else if (row > script.data.size() - 1) {
+      script.data.add(new ArrayList<>());
+      dataRow = script.data.size() -1;
+    } else {
+      dataRow = script.lines.get(row);
+      if (dataRow < 0) {
+        script.data.add(new ArrayList<>());
+        dataRow = script.data.size() - 1;
+      } else {
+        script.data.add(dataRow + 1, new ArrayList<>());
+        dataRow++;
+      }
+    }
+    new TableCell(script, dataRow).lineSet(items);
   }
 }
