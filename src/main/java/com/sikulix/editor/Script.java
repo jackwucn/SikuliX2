@@ -159,6 +159,14 @@ public class Script implements TableModelListener {
     private int type = 1;
     private Script script = null;
 
+    private boolean inBody() {
+      return type > 0;
+    }
+
+    private boolean inHeader() {
+      return type < 1;
+    }
+
     private MyMouseAdapter() {
     }
 
@@ -172,21 +180,32 @@ public class Script implements TableModelListener {
       int row = table.rowAtPoint(where);
       int col = table.columnAtPoint(where);
       TableCell cell = new TableCell(script, row, col);
+      if (inHeader()) {
+        cell.setHeader();
+      }
       int button = me.getButton();
       int[] selectedRows = table.getSelectedRows();
-      if (type > 0) {
+      if (inBody()) {
         log.trace("clicked: R%d C%d B%d {%d ... %d}",
                 row, col, button, selectedRows[0], selectedRows[selectedRows.length - 1]);
       } else {
         log.trace("clicked: Header C%d B%d", col, button);
       }
-      if (type > 0 && button > 1) {
+      if (inHeader() && col == Script.numberCol && button == 1) {
+        if (table.getSelectedRows().length > 1) {
+          script.table.setSelection(0, 0);
+        } else {
+          script.table.setLineSelection(0, script.getLastValidLine());
+        }
+        return;
+      }
+      if (inBody() && button > 1) {
         if (selectedRows.length < 2) {
           table.setSelection(row, col);
         }
       }
       if (button == 3) {
-        if (type > 0) {
+        if (inBody()) {
           if (col == 0) {
             popUpMenus.action(cell);
           } else if (col == 1) {
@@ -195,7 +214,7 @@ public class Script implements TableModelListener {
             popUpMenus.notimplemented(cell);
           }
         } else {
-          popUpMenus.notimplemented(new TableCell(script, 0, 0));
+          popUpMenus.action(cell);
         }
         return;
       }
@@ -213,6 +232,10 @@ public class Script implements TableModelListener {
     return evalDataCell(tCell.row, tCell.col);
   }
 
+  protected ScriptCell evalCommandCell(TableCell tCell) {
+    return evalDataCell(tCell.row, 1);
+  }
+
   protected ScriptCell evalDataCell(int tableRow, int tableCol) {
     int dataCol = tableCol == 0 ? 0 : tableCol - 1;
     if (tableRow < 0) {
@@ -228,8 +251,7 @@ public class Script implements TableModelListener {
     return dataCell(dataRow, dataCol);
   }
 
-  protected ScriptCell dataCell(int dataRow, int tableCol) {
-    int dataCol = tableCol == 0 ? 0 : tableCol - 1;
+  protected ScriptCell dataCell(int dataRow, int dataCol) {
     List<ScriptCell> line = data.get(dataRow);
 //    if (dataCol > line.size() -1) {
 //      for (int n = line.size(); n <= dataCol; n++) {
@@ -242,7 +264,7 @@ public class Script implements TableModelListener {
   protected void dataCellSet(int dataRow, int tableCol, String item) {
     int dataCol = tableCol == 0 ? 0 : tableCol - 1;
     List<ScriptCell> line = data.get(dataRow);
-    if (dataCol > line.size() -1) {
+    if (dataCol > line.size() - 1) {
       for (int n = line.size(); n <= dataCol; n++) {
         line.add(new ScriptCell(this, "", n + 1));
       }
@@ -255,18 +277,132 @@ public class Script implements TableModelListener {
     table.setSelection(cell.row, cell.col);
   }
 
-  protected void assist(TableCell tCell) {
+  private TableCell findNextForLoop(TableCell tCell) {
     ScriptCell cell = evalDataCell(tCell);
-    String cellText = cell.get();
+    int indent = cell.getLoopIndent() - 1;
+    int lastLine = getLastValidLine();
+    while (true) {
+      tCell = tCell.nextRow();
+      if (tCell.row > lastLine) {
+        tCell = new TableCell(this, lastLine);
+        break;
+      }
+      cell = evalDataCell(tCell);
+      String cellText = cell.get();
+      if (cellText.contains("endloop")) {
+        if (indent == cell.getLoopIndent()) {
+          break;
+        }
+      }
+    }
+    return tCell;
+  }
+
+  private TableCell findNextForIf(TableCell tCell, String command) {
+    ScriptCell cell = evalDataCell(tCell);
+    int indent = cell.getIfIndent();
+    int endIfIndent = indent - 1;
+    boolean endIfOnly = command.contains("endif");
+    int lastLine = getLastValidLine();
+    while (true) {
+      tCell = tCell.nextRow();
+      if (tCell.row > lastLine) {
+        tCell = new TableCell(this, lastLine);
+        break;
+      }
+      cell = evalDataCell(tCell);
+      String cellText = cell.get();
+      if (cellText.contains("endif") && (cell.getIfIndent() == endIfIndent)) {
+        break;
+      }
+      if (!endIfOnly) {
+        if (cellText.contains("else") || cellText.contains("elif")) {
+          if (indent == cell.getIfIndent()) {
+            break;
+          }
+        }
+      }
+    }
+    return tCell;
+  }
+
+  private TableCell findIfForEndIf(TableCell tCell) {
+    ScriptCell cell = evalDataCell(tCell);
+    int indent = cell.getIfIndent() + 1;
+    while (true) {
+      tCell = tCell.previousRow();
+      if (tCell.row < 0) {
+        tCell = new TableCell(this, 0);
+        break;
+      }
+      cell = evalDataCell(tCell);
+      String cellText = cell.get();
+      if (cellText.startsWith("if") && !cellText.contains("ifElse") && cell.getIfIndent() == indent) {
+        break;
+      }
+    }
+    return tCell;
+  }
+
+  protected void assist(TableCell tCell) {
+    ScriptCell cell;
+    String cellText;
+    int[] selectedRows = table.getSelectedRows();
+    if (selectedRows.length > 1) {
+      tCell = new TableCell(this, selectedRows[0], numberCol);
+    }
+    if (!tCell.isItemCol()) {
+      cell = evalCommandCell(tCell);
+      if (!cell.isFirstHidden()) {
+        TableCell firstCell = new TableCell(this, tCell.row, commandCol);
+        TableCell lastCell = null;
+        if (cell.get().startsWith("loop")) {
+          lastCell = findNextForLoop(firstCell);
+        } else {
+          if (tCell.isLineNumber()) {
+            if (cell.get().startsWith("if")) {
+              lastCell = findNextForIf(firstCell, "endif");
+            }
+          } else {
+            if (cell.get().startsWith("if") || cell.get().startsWith("elif") || cell.get().startsWith("else")) {
+              lastCell = findNextForIf(firstCell, "else");
+            }
+            if (cell.get().startsWith("endif")) {
+              lastCell = findIfForEndIf(firstCell);
+            }
+            firstCell = null;
+          }
+        }
+        if (SX.isNotNull(lastCell)) {
+          if (SX.isNull(firstCell)) {
+            table.setSelection(lastCell.row, 1);
+          } else {
+            table.setLineSelection(firstCell.row, lastCell.row);
+          }
+        }
+        return;
+      }
+    }
+    cell = evalDataCell(tCell);
+    cellText = cell.get();
     Script.log.trace("F1: (%d,%d) %s (%d, %d, %d)",
             tCell.row, tCell.col, cellText,
             cell.getIndent(), cell.getIfIndent(), cell.getLoopIndent());
     if (cellText.startsWith("@")) {
       if (cellText.startsWith("@?")) {
-        cell.capture();
+        cell.capture(tCell);
       } else {
-        cell.show();
+        cell.show(tCell);
       }
+      return;
+    }
+    if (cellText.startsWith("$")) {
+      if (cellText.startsWith("$?")) {
+        // set value/block
+      } else {
+        // go to def/display
+      }
+      return;
     }
   }
 
@@ -298,7 +434,8 @@ public class Script implements TableModelListener {
                 aLine.get(0).setHidden(hiddenCount--);
                 hiddenCount = -hiddenCount;
               }
-            } catch (Exception ex) { }
+            } catch (Exception ex) {
+            }
           }
           cellText = null;
         }
@@ -407,14 +544,21 @@ public class Script implements TableModelListener {
     commandLine = commandLine.clone();
     commandLine[0] = command + commandLine[0];
     boolean success = false;
+    TableCell tCellFirst = null;
+    TableCell tCellLast = null;
     if (SX.isNotNull(selectedRows) && tCell.col == numberCol) {
       log.trace("addCommandTemplate: should surround with: %s", command);
-      TableCell tCellFirst = new TableCell(this, selectedRows[0]);
-      tCellFirst.previousRow().lineAdd(commandLine);
+      tCellFirst = new TableCell(this, selectedRows[0]);
+      boolean addedBefore = tCellFirst.previousRow().lineAdd(commandLine);
+      if (addedBefore) {
+        tCellFirst.row += 1;
+      }
       resetLines();
-      TableCell tCellLast = new TableCell(this, selectedRows[selectedRows.length - 1]);
+      tCellLast = new TableCell(this, selectedRows[selectedRows.length - 1] + 1);
+      if (tCellLast.row > getLastValidLine()) {
+        tCellLast.row = getLastValidLine();
+      }
       tCellLast.nextRow().lineAdd(command.startsWith("if") ? "endif" : "endloop");
-      table.setLineSelection(tCellFirst.row, tCellLast.row);
       success = true;
     } else if (tCell.isLineEmpty()) {
       if (SX.isNotNull(commandLine)) {
@@ -439,13 +583,16 @@ public class Script implements TableModelListener {
     }
     if (success) {
       checkContent();
+      if (SX.allNotNull(tCellFirst, tCellLast)) {
+        table.setLineSelection(tCellFirst.row, tCellLast.row);
+      }
     }
     return success;
   }
 
   protected void resetLines() {
     int nextDataLine = 0;
-    int ixLines =0;
+    int ixLines = 0;
     lines.clear();
     for (int ix = 0; ix < data.size(); ix++) {
       lines.add(-1);
@@ -461,6 +608,17 @@ public class Script implements TableModelListener {
         nextDataLine++;
       }
     }
+  }
+
+  protected int getLastValidLine() {
+    int validLine = -1;
+    for (int line : lines) {
+      if (line < 0) {
+        break;
+      }
+      validLine++;
+    }
+    return validLine;
   }
 
   protected void checkContent() {

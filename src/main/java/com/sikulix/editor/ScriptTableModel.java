@@ -46,7 +46,7 @@ class ScriptTableModel extends AbstractTableModel {
     }
     int dataRow = script.lines.get(tableRow);
     if (tableCol == Script.numberCol) {
-      ScriptCell commandCell = script.dataCell(dataRow, Script.commandCol);
+      ScriptCell commandCell = script.dataCell(dataRow, Script.commandCol - 1);
       if (commandCell.isFirstHidden()) {
         return String.format("  V-%s-V ", commandCell.getHidden());
       }
@@ -57,7 +57,7 @@ class ScriptTableModel extends AbstractTableModel {
     if (lineCol > line.size() - 1) {
       return "";
     }
-    return script.dataCell(dataRow, tableCol).get();
+    return script.dataCell(dataRow, tableCol - 1).get();
   }
 
   public Class getColumnClass(int c) {

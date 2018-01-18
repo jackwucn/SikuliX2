@@ -1590,6 +1590,14 @@ public class SX {
     return null != obj;
   }
 
+  public static boolean allNotNull(Object... objs) {
+    boolean retVal = true;
+    for (Object obj : objs) {
+      retVal &= null != obj;
+    }
+    return retVal;
+  }
+
   public static boolean isNotSet(Object obj) {
     if (null != obj && obj instanceof String) {
       if (((String) obj).isEmpty()) {

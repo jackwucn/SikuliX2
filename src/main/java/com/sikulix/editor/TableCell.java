@@ -10,6 +10,7 @@ import java.util.ArrayList;
 public class TableCell {
   int row = -1;
   int col = -1;
+  private boolean header = false;
 
   Script script = null;
 
@@ -27,12 +28,36 @@ public class TableCell {
     this.script = script;
   }
 
+  public void setHeader() {
+    header = true;
+  }
+
+  public boolean isHeader() {
+    return header;
+  }
+
+  public boolean isLineNumber() {
+    return col == 0;
+  }
+
+  public boolean isItemCol() {
+    return col > 0;
+  }
+
   public TableCell nextRow() {
     return new TableCell(script,row + 1);
   }
 
   public TableCell previousRow() {
     return new TableCell(script,row - 1);
+  }
+
+  public TableCell nextCol() {
+    return new TableCell(script,row, Math.min(script.maxCol, col + 1));
+  }
+
+  public TableCell previousCol() {
+    return new TableCell(script,row, Math.max(0, col - 1));
   }
 
   protected Rectangle getRect() {
@@ -49,7 +74,10 @@ public class TableCell {
   }
 
   protected void lineSet(String... items) {
-    int dataRow = script.lines.get(row);
+    lineSet(script.lines.get(row), items);
+  }
+
+  private void lineSet(int dataRow, String... items) {
     if (items.length == 0) {
       script.data.set(dataRow, new ArrayList<>());
       script.data.get(dataRow).add(new ScriptCell(script, "", Script.commandCol));
@@ -61,9 +89,11 @@ public class TableCell {
     }
   }
 
-  protected void lineAdd(String... items) {
+  protected boolean lineAdd(String... items) {
     int dataRow;
+    boolean addedBefore = false;
     if (row < 0) {
+      addedBefore = true;
       dataRow = 0;
       script.data.add(0, new ArrayList<>());
     } else if (row > script.data.size() - 1) {
@@ -79,6 +109,7 @@ public class TableCell {
         dataRow++;
       }
     }
-    new TableCell(script, dataRow).lineSet(items);
+    lineSet(dataRow, items);
+    return addedBefore;
   }
 }

@@ -5,6 +5,7 @@
 package com.sikulix.editor;
 
 import com.sikulix.api.Do;
+import com.sikulix.api.Element;
 import com.sikulix.api.Picture;
 import com.sikulix.core.SX;
 
@@ -117,7 +118,7 @@ class ScriptCell {
   String imagename = "";
   Picture picture = null;
 
-  protected void capture() {
+  protected void capture(TableCell tCell) {
     if (isEmpty() || value.startsWith("@")) {
       asImage();
       imagename = value.replace("@", "").replace("?", "");
@@ -153,7 +154,7 @@ class ScriptCell {
     }
   }
 
-  protected void show() {
+  protected void show(TableCell tCell) {
     if (!isEmpty()) {
       if (asImage().isValid()) {
         loadPicture();
@@ -161,6 +162,7 @@ class ScriptCell {
           new Thread(new Runnable() {
             @Override
             public void run() {
+              //new Element(tCell.getRect()).show(2);
               picture.show(1);
               script.getWindow().setVisible(true);
               picture = null;
@@ -307,19 +309,19 @@ class ScriptCell {
     List<Integer> selectedDataRows = getSelectedDataRows(selectedRows);
     int currentDataRow = selectedDataRows.get(0);
     if (selectedRows.length == 1) {
-      ScriptCell firstCell = script.dataCell(currentDataRow, Script.commandCol);
+      ScriptCell firstCell = script.dataCell(currentDataRow, Script.commandCol - 1);
       if (firstCell.isFirstHidden()) {
         int count = firstCell.getHidden();
         for (int ix = currentDataRow; ix < currentDataRow + count; ix++) {
-          script.dataCell(ix, Script.commandCol).setHidden(0);
+          script.dataCell(ix, Script.commandCol - 1).setHidden(0);
         }
         currentDataRow--;
       }
     } else {
       int count = selectedDataRows.size();
-      script.dataCell(currentDataRow, Script.commandCol).setHidden(count);
+      script.dataCell(currentDataRow, Script.commandCol - 1).setHidden(count);
       for (int ix = currentDataRow + 1; ix < currentDataRow + count; ix++) {
-        script.dataCell(ix, Script.commandCol).setHidden(-1);
+        script.dataCell(ix, Script.commandCol -1).setHidden(-1);
       }
     }
     script.table.tableCheckContent();
