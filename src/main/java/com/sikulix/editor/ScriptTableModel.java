@@ -44,13 +44,15 @@ class ScriptTableModel extends AbstractTableModel {
     if (SX.isNull(cell)) {
       return "";
     }
-    int dataRow = script.lines.get(tableRow);
+//    int dataRow = script.lines.get(tableRow);
+    int dataRow = tableRow;
     ScriptCell commandCell = script.dataCell(dataRow, Script.commandCol - 1);
     if (tableCol == Script.numberCol) {
+      String sHidden = "%6d %s";
       if (commandCell.isFirstHidden()) {
-        return String.format("  V-%s-V ", commandCell.getHidden());
+        sHidden ="%4d... %s";
       }
-      return String.format("%6d %s", dataRow + 1, commandCell.getMarker());
+      return String.format(sHidden, script.lines.get(tableRow) + 1, commandCell.getMarker());
     }
     String indentSpace = "";
     if (tableCol == Script.commandCol) {

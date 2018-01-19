@@ -26,10 +26,12 @@ class ScriptTable extends JTable {
     ScriptCell currentCell = script.evalDataCell(tableRow, tableCol);
     boolean isLineNumber = tableCol == Script.numberCol;
     boolean isCommand = tableCol == Script.commandCol;
+    int keyCode = 0;
     if (SX.isNotNull(currentCell)) {
       if (e instanceof KeyEvent) {
-        int keyCode = ((KeyEvent) e).getExtendedKeyCode();
-        if (keyCode == 0 || keyCode == KeyEvent.VK_ESCAPE || keyCode == KeyEvent.VK_META) {
+        keyCode = ((KeyEvent) e).getExtendedKeyCode();
+//        if (keyCode == 0 || keyCode == KeyEvent.VK_ESCAPE || keyCode == KeyEvent.VK_META) {
+        if (keyCode == 0 || keyCode == KeyEvent.VK_META) {
           return false;
         }
         boolean isCtrl = false;
@@ -38,6 +40,17 @@ class ScriptTable extends JTable {
           isCtrl = true;
         }
         if (isLineNumber) {
+          if (keyCode == KeyEvent.VK_ESCAPE) {
+            int firstLine = script.table.getSelectedRows()[0];
+            if (script.table.getSelectedRows().length > 1) {
+              script.table.setLineSelection(firstLine, firstLine);
+            }
+            return false;
+          }
+          if (keyCode == KeyEvent.VK_SPACE) {
+            script.popUpMenus.action(tCell);
+            return false;
+          }
           if (keyCode == KeyEvent.VK_PLUS) {
             currentCell.lineNew(getSelectedRows());
             return false;
@@ -130,6 +143,9 @@ class ScriptTable extends JTable {
       }
     }
     if (!isLineNumber) {
+      if (e instanceof KeyEvent && keyCode == KeyEvent.VK_ESCAPE) {
+        return false;
+      }
       return super.editCellAt(tableRow, tableCol, e);
     }
     return false;

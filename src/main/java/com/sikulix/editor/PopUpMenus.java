@@ -7,6 +7,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,22 +35,25 @@ public class PopUpMenus {
       if ("?".equals(name)) {
         name = "NotImplemented";
       }
+      Character menuChar = name.substring(0, 1).toUpperCase().toCharArray()[0];
       JMenuItem item = new JMenuItem(showName);
+      item.setMnemonic(menuChar);
       item.addActionListener(new MenuAction(name, ref));
       return item;
     }
 
     public JMenuItem createMenuItem(PopUpMenu subMenu) {
-      String name = subMenu.getClass().getSimpleName();
-      name += "...";
-      JMenuItem item = new JMenuItem(name);
-      item.addActionListener(new MenuAction(name, subMenu));
-      return item;
+      return createMenuItem(subMenu, null);
     }
 
     public JMenuItem createMenuItem(PopUpMenu subMenu, String name) {
+      if (SX.isNull(name)) {
+        name = subMenu.getClass().getSimpleName();
+      }
+      Character menuChar = name.substring(0, 1).toUpperCase().toCharArray()[0];
       name += "...";
       JMenuItem item = new JMenuItem(name);
+      item.setMnemonic(menuChar);
       item.addActionListener(new MenuAction(name, subMenu));
       return item;
     }
@@ -361,7 +365,7 @@ public class PopUpMenus {
         add(createMenuItem(new Blocks(this), "Surround"));
       }
       createMenuSeperator();
-      add(createMenuItem("RunLines", this));
+      add(createMenuItem("RunLines r", this));
     }
 
     public void newLines(ActionEvent ae) {

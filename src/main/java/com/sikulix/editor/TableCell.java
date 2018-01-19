@@ -41,7 +41,7 @@ public class TableCell {
   }
 
   public boolean isItemCol() {
-    return col > 0;
+    return col > 1;
   }
 
   public TableCell nextRow() {
@@ -65,7 +65,8 @@ public class TableCell {
   }
 
   protected boolean isLineEmpty() {
-    for (ScriptCell cell : script.data.get(script.lines.get(row))) {
+//    for (ScriptCell cell : script.data.get(script.lines.get(row))) {
+    for (ScriptCell cell : script.data.get(row)) {
       if (!cell.isEmpty()) {
         return false;
       }
@@ -74,7 +75,8 @@ public class TableCell {
   }
 
   protected void lineSet(String... items) {
-    lineSet(script.lines.get(row), items);
+//    lineSet(script.lines.get(row), items);
+    lineSet(row, items);
   }
 
   private void lineSet(int dataRow, String... items) {
@@ -100,7 +102,8 @@ public class TableCell {
       script.data.add(new ArrayList<>());
       dataRow = script.data.size() -1;
     } else {
-      dataRow = script.lines.get(row);
+//      dataRow = script.lines.get(row);
+      dataRow = row;
       if (dataRow < 0) {
         script.data.add(new ArrayList<>());
         dataRow = script.data.size() - 1;
