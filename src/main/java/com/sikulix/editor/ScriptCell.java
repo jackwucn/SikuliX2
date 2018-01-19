@@ -51,6 +51,14 @@ class ScriptCell {
     return "";
   }
 
+  protected String getIndentSpace() {
+    String space = "";
+    for (int n = 0; n < indentLevel; n++) {
+      space += "  ";
+    }
+    return space;
+  }
+
   protected boolean hasError() {
     return inError;
   }

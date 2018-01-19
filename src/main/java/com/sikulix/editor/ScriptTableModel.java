@@ -45,19 +45,23 @@ class ScriptTableModel extends AbstractTableModel {
       return "";
     }
     int dataRow = script.lines.get(tableRow);
+    ScriptCell commandCell = script.dataCell(dataRow, Script.commandCol - 1);
     if (tableCol == Script.numberCol) {
-      ScriptCell commandCell = script.dataCell(dataRow, Script.commandCol - 1);
       if (commandCell.isFirstHidden()) {
         return String.format("  V-%s-V ", commandCell.getHidden());
       }
       return String.format("%6d %s", dataRow + 1, commandCell.getMarker());
+    }
+    String indentSpace = "";
+    if (tableCol == Script.commandCol) {
+      indentSpace = commandCell.getIndentSpace();
     }
     int lineCol = tableCol - 1;
     List<ScriptCell> line = data.get(dataRow);
     if (lineCol > line.size() - 1) {
       return "";
     }
-    return script.dataCell(dataRow, tableCol - 1).get();
+    return indentSpace + script.dataCell(dataRow, tableCol - 1).get();
   }
 
   public Class getColumnClass(int c) {

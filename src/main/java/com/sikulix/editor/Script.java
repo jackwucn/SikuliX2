@@ -34,7 +34,7 @@ public class Script implements TableModelListener {
 
   ScriptTable table = null;
   public Rectangle rectTable = null;
-  int maxCol = 7;
+  int maxCol = 6;
 
   protected ScriptTable getTable() {
     return table;
@@ -103,8 +103,8 @@ public class Script implements TableModelListener {
     int tableW = tableDim.width;
     int tableCols = table.getColumnCount();
     int col0W = 70;
-    int col1W = 90;
-    int colLast = 400;
+    int col1W = 150;
+    int colLast = 250;
     table.getColumnModel().getColumn(0).setPreferredWidth(col0W);
     table.getColumnModel().getColumn(1).setPreferredWidth(col1W);
     table.getColumnModel().getColumn(maxCol).setPreferredWidth(colLast);
@@ -114,8 +114,8 @@ public class Script implements TableModelListener {
     }
 
     table.setGridColor(Color.LIGHT_GRAY);
-    table.setShowGrid(false);
-    table.setShowHorizontalLines(true);
+    table.setShowGrid(true);
+//    table.setShowHorizontalLines(true);
 
     table.setPreferredScrollableViewportSize(tableDim);
     table.setFillsViewportHeight(true);
