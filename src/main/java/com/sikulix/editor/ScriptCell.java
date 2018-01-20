@@ -266,6 +266,16 @@ class ScriptCell {
     return valid;
   }
 
+  private boolean header = false;
+
+  public void setHeader() {
+    header = true;
+  }
+
+  public boolean isHeader() {
+    return header;
+  }
+
   protected String get() {
     return value;
   }
@@ -318,6 +328,10 @@ class ScriptCell {
     script.table.setLineSelection(shouldSelectFirst, shouldSelectLast);
   }
 
+  protected void lineUnhideAll() {
+    script.log.error("lineUnhideAll: not implemented");
+  }
+
   private int hiddenCount = 0;
 
   private List<List<ScriptCell>> hiddenData = null;
@@ -351,6 +365,14 @@ class ScriptCell {
   }
 
   protected void lineNew(int[] selectedRows, String token) {
+    if (isHeader()) {
+      for (int n : selectedRows) {
+        new TableCell(script,-1, 0).lineAdd();
+      }
+      script.table.tableCheckContent();
+      select(0, 0);
+      return;
+    }
     int numLines = selectedRows.length;
     int firstNewLine = selectedRows[numLines - 1] + 1;
     int currentDataRow = firstNewLine - 1;
@@ -422,8 +444,16 @@ class ScriptCell {
   }
 
   protected void lineInsert(int[] selectedRows) {
-    int firstNewLine = selectedRows[selectedRows.length - 1] + 1;
     int numLines = script.savedLines.size();
+    if (isHeader()) {
+      for (int n = 0; n < numLines; n++) {
+        script.data.add(n, script.savedLines.remove(0));
+      }
+      script.table.tableCheckContent();
+      select(0, 0);
+      return;
+    }
+    int firstNewLine = selectedRows[selectedRows.length - 1] + 1;
     int currentRow = selectedRows[selectedRows.length - 1];
     for (int n = 0; n < numLines; n++) {
       script.data.add(currentRow + n + 1, script.savedLines.remove(0));

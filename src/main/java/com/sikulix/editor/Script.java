@@ -222,7 +222,9 @@ public class Script implements TableModelListener {
             popUpMenus.notimplemented(cell);
           }
         } else {
-          popUpMenus.action(cell);
+          if (col < 2) {
+            popUpMenus.action(cell);
+          }
         }
         return;
       }
@@ -237,7 +239,11 @@ public class Script implements TableModelListener {
   String savedCellText = "";
 
   protected ScriptCell evalDataCell(TableCell tCell) {
-    return evalDataCell(tCell.row, tCell.col);
+    ScriptCell cell = evalDataCell(tCell.row, tCell.col);
+    if (tCell.isHeader()) {
+      cell.setHeader();
+    }
+    return cell;
   }
 
   protected ScriptCell evalCommandCell(TableCell tCell) {
@@ -634,7 +640,7 @@ public class Script implements TableModelListener {
         int lineLast = commandLine.length - 1;
         String lineEnd = commandLine[lineLast];
         if ("result".equals(lineEnd)) {
-          commandLine[lineLast] = "$R" + resultsCounter++;
+          commandLine[lineLast] = "$V" + resultsCounter++;
         }
         tCell.lineSet(commandLine);
         if (command.startsWith("if") && !command.contains("ifElse")) {
@@ -809,6 +815,9 @@ public class Script implements TableModelListener {
     commandTemplates.put("clickRight", new String[]{"", "@?", "result"});
     commandTemplates.put("clickDouble", new String[]{"", "@?", "result"});
     commandTemplates.put("hover", new String[]{"", "@?", "result"});
+    commandTemplates.put("write", new String[]{"", "keys"});
+    commandTemplates.put("hotkey", new String[]{"", "keys"});
+    commandTemplates.put("focus", new String[]{"", "appname"});
 
     commandTemplates.put("if", new String[]{"", "{condition}", "{block}"});
     commandTemplates.put("ifNot", new String[]{"", "{condition}", "{block}"});
@@ -820,7 +829,7 @@ public class Script implements TableModelListener {
 
     commandTemplates.put("loop", new String[]{"", "{condition}", "{block}"});
     commandTemplates.put("loopWith", new String[]{"", "$?listVariable", "{block}"});
-    commandTemplates.put("loopFor", new String[]{"", "$?count $?step $?from", "{block}"});
+    commandTemplates.put("loopFor", new String[]{"", "count step from", "{block}"});
     commandTemplates.put("endloop", new String[]{""});
 
     commandTemplates.put("print", new String[]{"", "variable..."});
@@ -828,10 +837,12 @@ public class Script implements TableModelListener {
     commandTemplates.put("log", new String[]{"", "template", "variable..."});
     commandTemplates.put("pop", new String[]{"", "message", "result"});
 
-    commandTemplates.put("image", new String[]{"", "@?", "$?similar", "$?offset"});
-    commandTemplates.put("variable", new String[]{"", "$V?", "{block}"});
-    commandTemplates.put("listVariable", new String[]{"", "$L?", "$?item..."});
-    commandTemplates.put("function", new String[]{"", "$F?", "{block}", "$?parameter..."});
+    commandTemplates.put("image", new String[]{"", "@?", "similar", "offset"});
+    commandTemplates.put("variable", new String[]{"", "$?", "{block}"});
+    commandTemplates.put("region", new String[]{"", "$R?", "x y w h"});
+    commandTemplates.put("location", new String[]{"", "$L?", "x y"});
+    commandTemplates.put("listVariable", new String[]{"", "$[?", "item..."});
+    commandTemplates.put("function", new String[]{"", "$F?", "{block}", "parameter..."});
     commandTemplates.put("endfunction", new String[]{""});
     commandTemplates.put("/", new String[]{"continuation"});
     commandTemplates.put("#", new String[]{"comment"});

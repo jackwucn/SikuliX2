@@ -7,7 +7,6 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.KeyEvent;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
@@ -155,7 +154,10 @@ public class PopUpMenus {
       this.cell = cell;
       Rectangle cellRectangle = cell.getRect();
       this.x = cellRectangle.x;
-      this.y = cellRectangle.y + cellRectangle.height;
+      this.y = cellRectangle.y;
+      if (!cell.isHeader()) {
+        this.y += cellRectangle.height;
+      }
       show(comp, x, y);
     }
 
@@ -217,7 +219,7 @@ public class PopUpMenus {
       add(createMenuItem(new Window(this)));
       createMenuSeperator();
       add(createMenuItem(new Blocks(this)));
-      add(createMenuItem(new Scripts(this)));
+      add(createMenuItem(new Scripting(this)));
       add(createMenuItem(new Testing(this)));
     }
   }
@@ -294,7 +296,6 @@ public class PopUpMenus {
       add(createMenuItem("IfNot", this));
       if (isCommand) {
         add(createMenuItem("Else", this));
-        add(createMenuItem("IfElse", this));
         createMenuSeperator();
         add(createMenuItem("Elif", this));
         add(createMenuItem("ElifNot", this));
@@ -303,6 +304,8 @@ public class PopUpMenus {
       add(createMenuItem("Loop", this));
       add(createMenuItem("LoopFor", this));
       add(createMenuItem("LoopWith", this));
+      createMenuSeperator();
+      add(createMenuItem("Function", this));
     }
 
     public void addCommand(String menuItem) {
@@ -311,15 +314,19 @@ public class PopUpMenus {
 
   }
 
-  private class Scripts extends PopUpMenu {
+  private class Scripting extends PopUpMenu {
 
-    public Scripts(PopUpMenu parentMenu) {
+    public Scripting(PopUpMenu parentMenu) {
       parent = parentMenu;
       parentSub = this;
       add(createMenuItem("Image", this));
+      add(createMenuItem("Region", this));
+      add(createMenuItem("Location", this));
+      createMenuSeperator();
       add(createMenuItem("Variable", this));
       add(createMenuItem("ListVariable", this));
-      add(createMenuItem("Function", this));
+      createMenuSeperator();
+      add(createMenuItem("IfElse", this));
       createMenuSeperator();
       add(createMenuItem("Import", this));
     }
@@ -345,27 +352,33 @@ public class PopUpMenus {
   }
 
   protected void action(TableCell cell) {
-    new Action().pop(table, cell);
+    new Action(cell).pop(table, cell);
   }
 
   private class Action extends PopUpMenu {
 
-    public Action() {
+    public Action(TableCell cell) {
       selectedRows = table.getSelectedRows();
       add(createMenuItem(new Global(this)));
       createMenuSeperator();
       add(createMenuItem("NewLines +", this));
-      add(createMenuItem("DeleteLines -", this));
-      add(createMenuItem("EmptyLines e", this));
-      add(createMenuItem("CopyLines c", this));
-      add(createMenuItem("InsertLines i", this));
-      createMenuSeperator();
-      add(createMenuItem("HideUnhide h", this));
-      if (selectedRows.length > 0) {
-        add(createMenuItem(new Blocks(this), "Surround"));
+      if (!cell.isHeader()) {
+        add(createMenuItem("DeleteLines -", this));
+        add(createMenuItem("EmptyLines e", this));
+        add(createMenuItem("CopyLines c", this));
       }
-      createMenuSeperator();
-      add(createMenuItem("RunLines r", this));
+      add(createMenuItem("InsertLines i", this));
+        createMenuSeperator();
+      if (cell.isHeader()) {
+        add(createMenuItem("UnhideAll u", this));
+      } else {
+        add(createMenuItem("HideUnhide h", this));
+      }
+      if (!cell.isHeader()) {
+        add(createMenuItem(new Blocks(this), "Surround"));
+        createMenuSeperator();
+        add(createMenuItem("RunLines r", this));
+      }
     }
 
     public void newLines(ActionEvent ae) {
@@ -390,6 +403,10 @@ public class PopUpMenus {
 
     public void hideUnhide(ActionEvent ae) {
       getDataCell().lineHide(selectedRows);
+    }
+
+    public void unhideAll(ActionEvent ae) {
+      getDataCell().lineUnhideAll();
     }
 
     public void runLines(ActionEvent ae) {
