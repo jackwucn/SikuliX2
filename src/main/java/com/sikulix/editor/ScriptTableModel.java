@@ -44,7 +44,6 @@ class ScriptTableModel extends AbstractTableModel {
     if (SX.isNull(cell)) {
       return "";
     }
-//    int dataRow = script.lines.get(tableRow);
     int dataRow = tableRow;
     ScriptCell commandCell = script.dataCell(dataRow, Script.commandCol - 1);
     if (tableCol == Script.numberCol) {

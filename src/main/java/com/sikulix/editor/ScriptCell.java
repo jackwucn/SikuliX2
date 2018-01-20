@@ -26,6 +26,7 @@ class ScriptCell {
   private int indentLevel = 0;
   private int indentIfLevel = 0;
   private int indentLoopLevel = 0;
+  private int indentFunctionLevel = 0;
   private boolean inError = false;
 
   protected ScriptCell() {
@@ -79,7 +80,7 @@ class ScriptCell {
     value = "";
   }
 
-  protected void setIndent(int level, int ifLevel, int loopLevel) {
+  protected void setIndent(int level, int ifLevel, int loopLevel, int functionLevel) {
     if (level > -1) {
       indentLevel = level;
     }
@@ -88,6 +89,9 @@ class ScriptCell {
     }
     if (loopLevel > -1) {
       indentLoopLevel = loopLevel;
+    }
+    if (functionLevel > -1) {
+      indentFunctionLevel = loopLevel;
     }
   }
 
@@ -101,6 +105,10 @@ class ScriptCell {
 
   protected int getLoopIndent() {
     return indentLoopLevel;
+  }
+
+  protected int getFunctionIndent() {
+    return indentFunctionLevel;
   }
 
   protected ScriptCell asImage() {
@@ -290,20 +298,24 @@ class ScriptCell {
   protected void lineHide(int[] selectedRows) {
     int currentDataRow = selectedRows[0];
     ScriptCell firstCell = script.dataCell(currentDataRow, Script.commandCol - 1);
+    int shouldSelectFirst = currentDataRow;
+    int shouldSelectLast = currentDataRow;
     if (selectedRows.length == 1) {
       if (firstCell.isFirstHidden()) {
+        int hCount = firstCell.getHidden();
         firstCell.setHidden(0);
         for (List<ScriptCell> line : firstCell.getHiddenData()) {
           script.data.add(++currentDataRow, line);
         }
         firstCell.setHiddenData(null);
+        shouldSelectLast = shouldSelectFirst + hCount - 1;
       }
     } else {
       firstCell.setHidden(selectedRows.length);
       firstCell.setHiddenData(script.createData(currentDataRow + 1, currentDataRow + selectedRows.length - 1));
     }
     script.table.tableCheckContent();
-    select(selectedRows[0] + 1, Script.numberCol);
+    script.table.setLineSelection(shouldSelectFirst, shouldSelectLast);
   }
 
   private int hiddenCount = 0;

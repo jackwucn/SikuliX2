@@ -115,4 +115,12 @@ public class TableCell {
     lineSet(dataRow, items);
     return addedBefore;
   }
+
+  boolean isFirstHidden() {
+    return getDataCell().isFirstHidden();
+  }
+
+  ScriptCell getDataCell() {
+    return script.data.get(row).get(Math.max(0, col - 1));
+  }
 }

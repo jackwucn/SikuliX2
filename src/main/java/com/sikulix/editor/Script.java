@@ -11,10 +11,8 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
 
 public class Script implements TableModelListener {
 
@@ -48,6 +46,7 @@ public class Script implements TableModelListener {
 
   List<Integer> lines = new ArrayList<>();
   List<List<ScriptCell>> allData = new ArrayList<>();
+  Stack<List<ScriptCell>> lineStack = new Stack<>();
 
   List<List<ScriptCell>> data = new ArrayList<>();
   List<List<ScriptCell>> savedLines = new ArrayList<>();
@@ -290,10 +289,15 @@ public class Script implements TableModelListener {
     table.setSelection(cell.row, cell.col);
   }
 
-  private TableCell findNextForLoop(TableCell tCell) {
+  private TableCell findNext(TableCell tCell) {
     ScriptCell cell = evalDataCell(tCell);
     int indent = cell.getLoopIndent() - 1;
     int lastLine = getLastValidLine();
+    String cellText = cell.get();
+    String searchText = "endloop";
+    if (cellText.contains("function")) {
+      searchText = "endfunction";
+    }
     while (true) {
       tCell = tCell.nextRow();
       if (tCell.row > lastLine) {
@@ -301,9 +305,48 @@ public class Script implements TableModelListener {
         break;
       }
       cell = evalDataCell(tCell);
-      String cellText = cell.get();
-      if (cellText.contains("endloop")) {
+      cellText = cell.get();
+      if (cellText.contains(searchText)) {
         if (indent == cell.getLoopIndent()) {
+          break;
+        }
+      }
+    }
+    return tCell;
+  }
+
+  private TableCell findPrevious(TableCell tCell) {
+    ScriptCell cell = evalDataCell(tCell);
+    int indent = cell.getIndent();
+    String cellText = cell.get();
+    String searchText = "if ifNot";
+    boolean isIf = true;
+    if (cellText.contains("loop")) {
+      searchText = "loop";
+      isIf = false;
+    } else if (cellText.contains("function")) {
+      searchText = "function";
+      isIf = false;
+    }
+    while (true) {
+      tCell = tCell.previousRow();
+      if (tCell.isFirstHidden()) {
+        continue;
+      }
+      if (tCell.row < 0) {
+        tCell = new TableCell(this, 0);
+        break;
+      }
+      cell = evalDataCell(tCell);
+      cellText = cell.get().trim();
+      if (isIf) {
+        if (searchText.contains(cellText)) {
+          if (indent == cell.getIndent()) {
+            break;
+          }
+        }
+      } else if (cellText.contains(searchText)) {
+        if (indent == cell.getIndent()) {
           break;
         }
       }
@@ -369,12 +412,17 @@ public class Script implements TableModelListener {
       if (!cell.isFirstHidden()) {
         TableCell firstCell = new TableCell(this, tCell.row, commandCol);
         TableCell lastCell = null;
-        if (cell.get().startsWith("loop")) {
-          lastCell = findNextForLoop(firstCell);
+        if (cell.get().startsWith("loop") || cell.get().startsWith("function")) {
+          lastCell = findNext(firstCell);
+        } else if (cell.get().startsWith("endloop") || cell.get().startsWith("endfunction")) {
+          lastCell = findPrevious(firstCell);
         } else {
           if (tCell.isLineNumber()) {
             if (cell.get().startsWith("if")) {
               lastCell = findNextForIf(firstCell, "endif");
+            }
+            if (cell.get().startsWith("endif")) {
+              lastCell = findPrevious(firstCell);
             }
           } else {
             if (cell.get().startsWith("if") || cell.get().startsWith("elif") || cell.get().startsWith("else")) {
@@ -394,6 +442,8 @@ public class Script implements TableModelListener {
           }
         }
         return;
+      } else {
+        cell.lineHide(selectedRows);
       }
     }
     cell = evalDataCell(tCell);
@@ -472,9 +522,12 @@ public class Script implements TableModelListener {
         }
         row++;
       }
-      for (Integer hrow : firstHideLines) {
-        ScriptCell firstCell = data.get(hrow).get(0);
-        firstCell.setHiddenData(createData(hrow + 1, hrow + firstCell.getHidden() - 1));
+      int actualHidden = 0;
+      while (firstHideLines.size() > 0) {
+        Integer hrow = firstHideLines.get(actualHidden);
+        ScriptCell firstHiddenCell = data.get(hrow).get(0);
+        firstHiddenCell.setHiddenData(createData(hrow + 1, hrow + firstHiddenCell.getHidden() - 1));
+        firstHideLines.remove(actualHidden);
       }
     }
     if (SX.isNotNull(table)) {
@@ -588,6 +641,8 @@ public class Script implements TableModelListener {
           tCell.lineAdd("endif");
         } else if (command.startsWith("loop")) {
           tCell.lineAdd("endloop");
+        } else if (command.startsWith("function")) {
+          tCell.lineAdd("endfunction");
         } else {
         }
         table.setSelection(tCell.row, 2);
@@ -610,11 +665,33 @@ public class Script implements TableModelListener {
     int nextDataLine = 0;
     lines.clear();
     allData.clear();
+    boolean someHidden = false;
+    int first = 0;
     for (List<ScriptCell> line : data) {
       ScriptCell cell = line.get(0);
       lines.add(nextDataLine++);
+      allData.add(line);
       if (cell.isFirstHidden()) {
+        if (!someHidden) {
+          someHidden = true;
+        }
         nextDataLine += cell.getHidden() - 1;
+      }
+      if (!someHidden) {
+        first++;
+      }
+    }
+    while (someHidden) {
+      for (int n = first; n < allData.size(); n++) {
+        someHidden = false;
+        List<ScriptCell> line = allData.get(n);
+        ScriptCell cell = line.get(0);
+        if (cell.isFirstHidden()) {
+          someHidden = true;
+          allData.addAll(n + 1, cell.getHiddenData());
+          first = n + 1;
+          break;
+        }
       }
     }
   }
@@ -635,6 +712,7 @@ public class Script implements TableModelListener {
     int currentIndent = 0;
     int currentIfIndent = 0;
     int currentLoopIndent = 0;
+    int currentFunctionIndent = 0;
     boolean hasElse = false;
     resetLines();
     for (List<ScriptCell> line : allData) {
@@ -647,12 +725,12 @@ public class Script implements TableModelListener {
       if (SX.isNotNull(commandTemplates.get(command))) {
         if (command.startsWith("if") && !command.contains("ifElse")) {
           currentIfIndent++;
-          cell.setIndent(currentIndent, currentIfIndent, -1);
+          cell.setIndent(currentIndent, currentIfIndent, -1, -1);
           currentIndent++;
         } else if (command.startsWith("elif")) {
           if (currentIfIndent > 0 && !hasElse) {
             currentIndent--;
-            cell.setIndent(currentIndent, currentIfIndent, -1);
+            cell.setIndent(currentIndent, currentIfIndent, -1, -1);
             currentIndent++;
           } else {
             cell.setError();
@@ -661,7 +739,7 @@ public class Script implements TableModelListener {
           if (currentIfIndent > 0) {
             hasElse = true;
             currentIndent--;
-            cell.setIndent(currentIndent, currentIfIndent, -1);
+            cell.setIndent(currentIndent, currentIfIndent, -1, -1);
             currentIndent++;
           } else {
             cell.setError();
@@ -671,33 +749,44 @@ public class Script implements TableModelListener {
             hasElse = false;
             currentIndent--;
             currentIfIndent--;
-            cell.setIndent(currentIndent, currentIfIndent, -1);
+            cell.setIndent(currentIndent, currentIfIndent, -1, -1);
           } else {
             cell.setError();
           }
         } else if (command.startsWith("loop")) {
           currentLoopIndent++;
-          cell.setIndent(currentIndent, -1, currentLoopIndent);
+          cell.setIndent(currentIndent, -1, currentLoopIndent, -1);
           currentIndent++;
         } else if (command.startsWith("endloop")) {
           if (currentLoopIndent > 0) {
             currentIndent--;
             currentLoopIndent--;
-            cell.setIndent(currentIndent, -1, currentLoopIndent);
+            cell.setIndent(currentIndent, -1, currentLoopIndent, -1);
+          } else {
+            cell.setError();
+          }
+        } else if (command.startsWith("function")) {
+          currentFunctionIndent++;
+          cell.setIndent(currentIndent, -1, -1, currentFunctionIndent);
+          currentIndent++;
+        } else if (command.startsWith("endfunction")) {
+          if (currentFunctionIndent > 0) {
+            currentIndent--;
+            currentFunctionIndent--;
+            cell.setIndent(currentIndent, -1, -1, currentFunctionIndent);
           } else {
             cell.setError();
           }
         } else {
-          cell.setIndent(currentIndent, currentIfIndent, currentLoopIndent);
+          cell.setIndent(currentIndent, currentIfIndent, currentLoopIndent, currentFunctionIndent);
         }
-      }
-      if (cell.get().startsWith("@")) {
+      } else if (cell.get().startsWith("@")) {
 
-      }
-      if (cell.get().startsWith("$")) {
+      } else if (cell.get().startsWith("$")) {
 
+      } else {
+        log.error("checkContent: %s", cell);
       }
-      //log.trace("checkContent: %s", cell);
     }
     table.tableHasChanged();
     String sLines = "";
@@ -743,6 +832,7 @@ public class Script implements TableModelListener {
     commandTemplates.put("variable", new String[]{"", "$V?", "{block}"});
     commandTemplates.put("listVariable", new String[]{"", "$L?", "$?item..."});
     commandTemplates.put("function", new String[]{"", "$F?", "{block}", "$?parameter..."});
+    commandTemplates.put("endfunction", new String[]{""});
     commandTemplates.put("/", new String[]{"continuation"});
     commandTemplates.put("#", new String[]{"comment"});
   }
