@@ -20,6 +20,7 @@ class ScriptCell {
 
   private Script script;
   private String value = "";
+  private String initialValue = "";
   private CellType cellType = CellType.TEXT;
 //  private int row = -1;
   private int col = -1;
@@ -40,6 +41,7 @@ class ScriptCell {
   private void init(Script script, String value, int col) {
     this.script = script;
     this.value = value.trim();
+    initialValue = this.value;
     this.col = col;
   }
 
@@ -290,6 +292,15 @@ class ScriptCell {
     return this;
   }
 
+  protected ScriptCell setInitial(String value) {
+    initialValue = value;
+    return this;
+  }
+
+  protected String getInitial() {
+    return initialValue;
+  }
+
   protected ScriptCell setValue(String value, int tableRow, int tableCol) {
     if (SX.isNotNull(value)) {
       this.value = value;
@@ -386,7 +397,7 @@ class ScriptCell {
         script.resetLines();
         boolean success = script.addCommandTemplate(token, new TableCell(script, firstNewLine, Script.commandCol), null);
         if (success) {
-          selectCol = Script.commandCol + 1;
+          selectCol = Script.commandCol + (token.startsWith("{") ? 0 : 1);
           break;
         } else {
           token = null;

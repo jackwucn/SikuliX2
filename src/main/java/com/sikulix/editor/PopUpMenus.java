@@ -320,11 +320,13 @@ public class PopUpMenus {
       parent = parentMenu;
       parentSub = this;
       add(createMenuItem("Image", this));
+      add(createMenuItem("ImageList", this));
       add(createMenuItem("Region", this));
       add(createMenuItem("Location", this));
       createMenuSeperator();
       add(createMenuItem("Variable", this));
-      add(createMenuItem("ListVariable", this));
+      add(createMenuItem("Array", this));
+      add(createMenuItem("Option", this));
       createMenuSeperator();
       add(createMenuItem("IfElse", this));
       createMenuSeperator();

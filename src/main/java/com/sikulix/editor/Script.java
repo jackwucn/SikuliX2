@@ -29,6 +29,7 @@ public class Script implements TableModelListener {
 
   private Font customFont = new Font("Helvetica Bold", Font.PLAIN, 18);
   PopUpMenus popUpMenus = null;
+  PopUpWindow popUpWindow = null;
 
   ScriptTable table = null;
   public Rectangle rectTable = null;
@@ -150,6 +151,8 @@ public class Script implements TableModelListener {
     table.setSelection(0, 0);
 
     popUpMenus = new PopUpMenus(this);
+
+    popUpWindow = new PopUpWindow();
   }
 
 //  @Override
@@ -288,6 +291,9 @@ public class Script implements TableModelListener {
       }
     }
     line.get(dataCol).set(item);
+    if (dataCol > 0 && SX.isSet(item)) {
+      line.get(dataCol).setInitial(item);
+    }
   }
 
   protected void setValueAt(String text, TableCell cell) {
@@ -484,11 +490,12 @@ public class Script implements TableModelListener {
       List<ScriptCell> aLine = new ArrayList<>();
       int colCount = 1;
       for (String cellText : line.split("\\t")) {
-        String resultTarget = "$R";
+        String resultTarget = "$V";
         if (cellText.contains(resultTarget)) {
           int resultCount = -1;
           try {
-            resultCount = Integer.parseInt(cellText.replace(resultTarget, "").trim());
+            resultCount = Integer.parseInt(cellText
+                    .replace(resultTarget, "").replace("$", "").trim());
           } catch (Exception ex) {
             cellText += "?";
           }
@@ -615,56 +622,6 @@ public class Script implements TableModelListener {
         }
       }
     }
-  }
-
-  protected boolean addCommandTemplate(String command, TableCell tCell, int[] selectedRows) {
-    command = command.trim();
-    String[] commandLine = commandTemplates.get(command);
-    commandLine = commandLine.clone();
-    commandLine[0] = command + commandLine[0];
-    boolean success = false;
-    TableCell tCellFirst = null;
-    TableCell tCellLast = null;
-    if (SX.isNotNull(selectedRows) && tCell.col == numberCol) {
-      log.trace("addCommandTemplate: should surround with: %s", command);
-      tCellFirst = new TableCell(this, selectedRows[0]);
-      boolean addedBefore = tCellFirst.previousRow().lineAdd(commandLine);
-      if (addedBefore) {
-        tCellFirst.row += 1;
-      }
-      tCellLast = new TableCell(this, selectedRows[selectedRows.length - 1]);
-      tCellLast.nextRow().lineAdd(command.startsWith("if") ? "endif" : "endloop");
-      success = true;
-    } else if (tCell.isLineEmpty()) {
-      if (SX.isNotNull(commandLine)) {
-        int lineLast = commandLine.length - 1;
-        String lineEnd = commandLine[lineLast];
-        if ("result".equals(lineEnd)) {
-          commandLine[lineLast] = "$V" + resultsCounter++;
-        }
-        tCell.lineSet(commandLine);
-        if (command.startsWith("if") && !command.contains("ifElse")) {
-          tCell.lineAdd("endif");
-        } else if (command.startsWith("loop")) {
-          tCell.lineAdd("endloop");
-        } else if (command.startsWith("function")) {
-          tCell.lineAdd("endfunction");
-        } else {
-        }
-        table.setSelection(tCell.row, 2);
-      } else {
-        tCell.lineSet(new String[]{command + "?"});
-        table.setSelection(tCell.row, 1);
-      }
-      success = true;
-    }
-    if (success) {
-      checkContent();
-      if (SX.allNotNull(tCellFirst, tCellLast)) {
-        table.setLineSelection(tCellFirst.row, tCellLast.row);
-      }
-    }
-    return success;
   }
 
   protected void resetLines() {
@@ -808,48 +765,138 @@ public class Script implements TableModelListener {
     commandTemplates.put("find", new String[]{"", "@?", "result"});
     commandTemplates.put("wait", new String[]{"", "wait-time", "@?", "result"});
     commandTemplates.put("vanish", new String[]{"", "wait-time", "@?", "result"});
-    commandTemplates.put("findAll", new String[]{"", "@?", "result"});
-    commandTemplates.put("findBest", new String[]{"", "$?listVariable", "result"});
-    commandTemplates.put("findAny", new String[]{"", "$?listVariable", "result"});
+    commandTemplates.put("findAll", new String[]{"", "@?", "result-list"});
+    commandTemplates.put("findBest", new String[]{"", "@@?", "result"});
+    commandTemplates.put("findAny", new String[]{"", "@@?", "result-list"});
     commandTemplates.put("click", new String[]{"", "@?", "result"});
     commandTemplates.put("clickRight", new String[]{"", "@?", "result"});
     commandTemplates.put("clickDouble", new String[]{"", "@?", "result"});
     commandTemplates.put("hover", new String[]{"", "@?", "result"});
-    commandTemplates.put("write", new String[]{"", "keys"});
-    commandTemplates.put("hotkey", new String[]{"", "keys"});
+    commandTemplates.put("write", new String[]{"", "{keys}"});
+    commandTemplates.put("hotkey", new String[]{"", "{keys}", "{function}"});
     commandTemplates.put("focus", new String[]{"", "appname"});
 
-    commandTemplates.put("if", new String[]{"", "{condition}", "{block}"});
-    commandTemplates.put("ifNot", new String[]{"", "{condition}", "{block}"});
+    commandTemplates.put("if", new String[]{"", "{condition}", "{script}"});
+    commandTemplates.put("ifNot", new String[]{"", "{condition}", "{script}"});
     commandTemplates.put("endif", new String[]{""});
-    commandTemplates.put("else", new String[]{"", "{block}"});
-    commandTemplates.put("elif", new String[]{"", "{condition}", "{block}"});
-    commandTemplates.put("elifNot", new String[]{"", "{condition}", "{block}"});
-    commandTemplates.put("ifElse", new String[]{"", "{condition}", "{block}", "{block}", "result"});
+    commandTemplates.put("else", new String[]{"", "{script}"});
+    commandTemplates.put("elif", new String[]{"", "{condition}", "{script}"});
+    commandTemplates.put("elifNot", new String[]{"", "{condition}", "{script}"});
+    commandTemplates.put("ifElse", new String[]{"", "{condition}", "{script}", "{script}", "result"});
 
-    commandTemplates.put("loop", new String[]{"", "{condition}", "{block}"});
-    commandTemplates.put("loopWith", new String[]{"", "$?listVariable", "{block}"});
-    commandTemplates.put("loopFor", new String[]{"", "count step from", "{block}"});
+    commandTemplates.put("loop", new String[]{"", "{condition}", "{script}"});
+    commandTemplates.put("loopWith", new String[]{"", "$$?", "{script}"});
+    commandTemplates.put("loopFor", new String[]{"", "{count step from}", "{script}"});
     commandTemplates.put("endloop", new String[]{""});
 
     commandTemplates.put("print", new String[]{"", "variable..."});
-    commandTemplates.put("printf", new String[]{"", "template", "variable..."});
-    commandTemplates.put("log", new String[]{"", "template", "variable..."});
+    commandTemplates.put("printf", new String[]{"", "{template}", "variable..."});
+    commandTemplates.put("log", new String[]{"", "{template}", "variable..."});
     commandTemplates.put("pop", new String[]{"", "message", "result"});
 
-    commandTemplates.put("image", new String[]{"", "@?", "similar", "offset"});
-    commandTemplates.put("variable", new String[]{"", "$?", "{block}"});
-    commandTemplates.put("region", new String[]{"", "$R?", "x y w h"});
-    commandTemplates.put("location", new String[]{"", "$L?", "x y"});
-    commandTemplates.put("listVariable", new String[]{"", "$[?", "item..."});
-    commandTemplates.put("function", new String[]{"", "$F?", "{block}", "parameter..."});
+    commandTemplates.put("import", new String[]{"", "scriptname", "parameter..."});
+
+    commandTemplates.put("image", new String[]{"", "@?", "similar", "{offset [x,y]}"});
+    commandTemplates.put("$I", new String[]{"=@?", "similar", "{offset [x,y]}"});
+    commandTemplates.put("$$I", new String[]{"=imageList", "@@?", "{[image,image,...]}"});
+    commandTemplates.put("imageList", new String[]{"", "@@?", "{[image,image,...]}"});
+    commandTemplates.put("variable", new String[]{"", "$?", "{script}"});
+    commandTemplates.put("$", new String[]{"?", "{script}"});
+    commandTemplates.put("option", new String[]{"", "key", "{value}"});
+    commandTemplates.put("$O", new String[]{"=option", "key", "{value}"});
+    commandTemplates.put("region", new String[]{"", "$R?", "{[x,y,w,h]}"});
+    commandTemplates.put("$R", new String[]{"?", "{[x,y,w,h]}"});
+    commandTemplates.put("location", new String[]{"", "$L?", "{[x,y]}"});
+    commandTemplates.put("$L", new String[]{"?", "{[x,y]}"});
+    commandTemplates.put("array", new String[]{"", "$$?", "{[item,item,...]}"});
+    commandTemplates.put("$$", new String[]{"=array", "$$?", "item..."});
+    commandTemplates.put("function", new String[]{"", "$F?", "{script}", "parameter..."});
+    commandTemplates.put("$F", new String[]{"?", "{function}"});
     commandTemplates.put("endfunction", new String[]{""});
     commandTemplates.put("/", new String[]{"continuation"});
     commandTemplates.put("#", new String[]{"comment"});
+    commandTemplates.put("{", new String[]{"={script}", "result"});
   }
 
-  protected void editBox(ScriptCell cell) {
-    Script.log.trace("EditBox: should open");
+  protected boolean addCommandTemplate(String command, TableCell tCell, int[] selectedRows) {
+    command = command.trim();
+    if (command.length() == 2 && command.startsWith("$") || command.length() == 3 && command.startsWith("$$")) {
+      command = command.substring(0, command.length() - 1) + command.substring(command.length() - 1).toUpperCase();
+    }
+    String[] commandLine = commandTemplates.get(command);
+    if (SX.isNotNull(commandLine)) {
+      commandLine = commandLine.clone();
+      if (commandLine[0].startsWith("=")) {
+        commandLine[0] = commandLine[0].substring(1);
+      } else {
+        commandLine[0] = command + commandLine[0];
+      }
+    }
+    boolean success = false;
+    TableCell tCellFirst = null;
+    TableCell tCellLast = null;
+    if (SX.isNotNull(selectedRows) && tCell.col == numberCol) {
+      log.trace("addCommandTemplate: should surround with: %s", command);
+      tCellFirst = new TableCell(this, selectedRows[0]);
+      boolean addedBefore = tCellFirst.previousRow().lineAdd(commandLine);
+      if (addedBefore) {
+        tCellFirst.row += 1;
+      }
+      tCellLast = new TableCell(this, selectedRows[selectedRows.length - 1]);
+      tCellLast.nextRow().lineAdd(command.startsWith("if") ? "endif" : "endloop");
+      success = true;
+    } else if (tCell.isLineEmpty()) {
+      if (SX.isNotNull(commandLine)) {
+        int lineLast = commandLine.length - 1;
+        String lineEnd = commandLine[lineLast];
+        if (lineEnd.startsWith("result")) {
+          commandLine[lineLast] = (lineEnd.contains("-list") ? "$$V" : "$V") + resultsCounter++;
+        }
+        tCell.lineSet(commandLine);
+        if (command.startsWith("if") && !command.contains("ifElse")) {
+          tCell.lineAdd("endif");
+        } else if (command.startsWith("loop")) {
+          tCell.lineAdd("endloop");
+        } else if (command.startsWith("function")) {
+          tCell.lineAdd("endfunction");
+        } else {
+        }
+      } else {
+        tCell.lineSet(new String[]{command + "?"});
+      }
+      tCell = new TableCell(this, tCell.row, 0);
+      success = true;
+    }
+    if (success) {
+      checkContent();
+      if (SX.allNotNull(tCellFirst, tCellLast)) {
+        table.setLineSelection(tCellFirst.row, tCellLast.row);
+      } else {
+        table.setSelection(tCell.row, tCell.col);
+      }
+    }
+    return success;
+  }
+
+  protected void editBox(TableCell cell) {
+    String initialText = cell.getDataCell().getInitial();
+    String[] text = new String[]{cell.getDataCell().get(), initialText};
+    boolean shouldEdit = false;
+    if (text[0].startsWith("{")) {
+      String token = text[0].substring(1, text[0].length() - 1);
+      text[0] = "//--- enter a valid JavaScript " + token + "\n";
+      text[0] += "//--- CTRL-ESC to save - ESC to cancel\n";
+      shouldEdit = true;
+    } else if (!text[0].startsWith("$") &&  !text[0].startsWith("@") && initialText.startsWith("{")) {
+      shouldEdit = true;
+    }
+    if (shouldEdit) {
+      SwingUtilities.invokeLater(new Runnable() {
+        public void run() {
+          popUpWindow.showCell(cell, text);
+        }
+      });
+    }
   }
 }
 

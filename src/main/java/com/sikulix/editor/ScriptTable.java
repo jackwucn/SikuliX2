@@ -30,14 +30,24 @@ class ScriptTable extends JTable {
     if (SX.isNotNull(currentCell)) {
       if (e instanceof KeyEvent) {
         keyCode = ((KeyEvent) e).getExtendedKeyCode();
-//        if (keyCode == 0 || keyCode == KeyEvent.VK_ESCAPE || keyCode == KeyEvent.VK_META) {
+        if (keyCode == 0) {
+          keyCode = ((KeyEvent) e).getExtendedKeyCode();
+        }
         if (keyCode == 0 || keyCode == KeyEvent.VK_META) {
           return false;
         }
         boolean isCtrl = false;
+        boolean isAlt = false;
+        boolean isShift = false;
         int modifier = ((KeyEvent) e).getModifiers();
         if (modifier == KeyEvent.CTRL_MASK) {
           isCtrl = true;
+        }
+        if (modifier == KeyEvent.ALT_MASK) {
+          isAlt = true;
+        }
+        if (modifier == KeyEvent.SHIFT_MASK) {
+          isShift = true;
         }
         if (isLineNumber) {
           if (keyCode == KeyEvent.VK_ESCAPE) {
@@ -68,8 +78,10 @@ class ScriptTable extends JTable {
             setSelection(tableRow, Script.commandCol);
             return false;
           }
-          if (keyCode == KeyEvent.VK_SLASH || keyCode == KeyEvent.VK_NUMBER_SIGN) {
-            String token = keyCode == KeyEvent.VK_SLASH ? "/" : "#";
+          if (keyCode == KeyEvent.VK_SLASH || keyCode == KeyEvent.VK_NUMBER_SIGN ||
+                  keyCode == KeyEvent.VK_BRACELEFT) {
+            String token = keyCode == KeyEvent.VK_SLASH ? "/" :
+                    (keyCode == KeyEvent.VK_NUMBER_SIGN ? "#" : "{");
             currentCell.lineNew(new int[]{tableRow}, token);
             return false;
           }
@@ -98,7 +110,14 @@ class ScriptTable extends JTable {
           script.popUpMenus.command(tCell);
           return false;
         } else if (keyCode == KeyEvent.VK_SPACE) {
-          script.editBox(currentCell);
+          if (!isCommand) {
+            if (isShift) {
+              setSelection(tCell.row, 0);
+              script.popUpMenus.action(new TableCell(script, tCell.row, 0));
+            } else {
+              script.editBox(tCell);
+            }
+          }
           return false;
         } else if (keyCode == KeyEvent.VK_BACK_SPACE && currentCell.isEmpty()) {
           if (isCommand) {
@@ -106,6 +125,9 @@ class ScriptTable extends JTable {
           } else {
             currentCell.setValue(script.savedCellText, tableRow, tableCol);
           }
+          return false;
+        } else if (keyCode == KeyEvent.VK_ESCAPE) {
+          setSelection(tCell.row, 0);
           return false;
         } else if (keyCode == KeyEvent.VK_F1) {
           script.assist(tCell);
