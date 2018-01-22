@@ -229,12 +229,12 @@ public class PopUpMenus {
     public Finding(PopUpMenu parentMenu) {
       parent = parentMenu;
       parentSub = this;
-      add(createMenuItem("Find", this));
-      add(createMenuItem("Wait", this));
-      add(createMenuItem("FindAll", this));
-      add(createMenuItem("FindBest", this));
-      add(createMenuItem("FindAny", this));
-      add(createMenuItem("Vanish", this));
+      add(createMenuItem("Find f", this));
+      add(createMenuItem("Wait w", this));
+      add(createMenuItem("FindAll fa", this));
+      add(createMenuItem("FindBest fb", this));
+      add(createMenuItem("FindAny fy", this));
+      add(createMenuItem("Vanish v", this));
     }
 
     public void addCommand(String menuItem) {
@@ -247,10 +247,10 @@ public class PopUpMenus {
     public Mouse(PopUpMenu parentMenu) {
       parent = parentMenu;
       parentSub = this;
-      add(createMenuItem("Click", this));
-      add(createMenuItem("ClickRight", this));
-      add(createMenuItem("ClickDouble", this));
-      add(createMenuItem("Hover", this));
+      add(createMenuItem("Click c", this));
+      add(createMenuItem("ClickRight cr", this));
+      add(createMenuItem("ClickDouble cd", this));
+      add(createMenuItem("Hover h", this));
     }
 
     public void addCommand(String menuItem) {
@@ -263,8 +263,8 @@ public class PopUpMenus {
     public Keyboard(PopUpMenu parentMenu) {
       parent = parentMenu;
       parentSub = this;
-      add(createMenuItem("Write", this));
-      add(createMenuItem("Hotkey", this));
+      add(createMenuItem("Write wr", this));
+      add(createMenuItem("Hotkey hk", this));
     }
 
     public void addCommand(String menuItem) {
@@ -277,7 +277,7 @@ public class PopUpMenus {
     public Window(PopUpMenu parentMenu) {
       parent = parentMenu;
       parentSub = this;
-      add(createMenuItem("Focus", this));
+      add(createMenuItem("Focus fo", this));
     }
 
     public void addCommand(String menuItem) {
@@ -293,21 +293,23 @@ public class PopUpMenus {
       String parentName = parent.getClass().getSimpleName();
       Boolean isCommand = "Command".equals(parentName);
       add(createMenuItem("If", this));
-      add(createMenuItem("IfNot", this));
+      add(createMenuItem("IfNot in", this));
       if (isCommand) {
-        add(createMenuItem("Else", this));
+        add(createMenuItem("Else e", this));
         createMenuSeperator();
-        add(createMenuItem("Elif", this));
-        add(createMenuItem("ElifNot", this));
+        add(createMenuItem("Elif ei", this));
+        add(createMenuItem("ElifNot en", this));
       }
       createMenuSeperator();
-      add(createMenuItem("Loop", this));
-      add(createMenuItem("LoopFor", this));
-      add(createMenuItem("LoopWith", this));
-      add(createMenuItem("Break", this));
-      add(createMenuItem("Continue", this));
+      add(createMenuItem("Loop l", this));
+      add(createMenuItem("LoopFor lf", this));
+      add(createMenuItem("LoopWith lw", this));
+      add(createMenuItem("Break br", this));
+      add(createMenuItem("BreakIf bi", this));
+      add(createMenuItem("Continue co", this));
+      add(createMenuItem("ContinueIf ci", this));
       createMenuSeperator();
-      add(createMenuItem("Function", this));
+      add(createMenuItem("Function $F", this));
     }
 
     public void addCommand(String menuItem) {
@@ -321,18 +323,20 @@ public class PopUpMenus {
     public Scripting(PopUpMenu parentMenu) {
       parent = parentMenu;
       parentSub = this;
-      add(createMenuItem("Image", this));
-      add(createMenuItem("ImageList", this));
-      add(createMenuItem("Region", this));
-      add(createMenuItem("Location", this));
+      add(createMenuItem("Image $i", this));
+      add(createMenuItem("ImageList $$I", this));
+      add(createMenuItem("Region $R", this));
+      add(createMenuItem("Location $L", this));
       createMenuSeperator();
-      add(createMenuItem("Variable", this));
-      add(createMenuItem("Array", this));
-      add(createMenuItem("Option", this));
+      add(createMenuItem("Variable $", this));
+      add(createMenuItem("Array $$", this));
+      add(createMenuItem("Option $o", this));
       createMenuSeperator();
-      add(createMenuItem("IfElse", this));
+      add(createMenuItem("SetIf si", this));
+      add(createMenuItem("SetIfNot sn", this));
+      add(createMenuItem("IfElse ie", this));
       createMenuSeperator();
-      add(createMenuItem("Import", this));
+      add(createMenuItem("Import im", this));
     }
 
     public void addCommand(String menuItem) {

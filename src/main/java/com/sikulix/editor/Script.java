@@ -800,6 +800,10 @@ public class Script implements TableModelListener {
     commandTemplates.put("en", new String[]{"elifNot"});
     commandTemplates.put("ifElse", new String[]{"", "{condition}", "{script}", "{script}", "result"});
     commandTemplates.put("ie", new String[]{"ifElse"});
+    commandTemplates.put("setIf", new String[]{"", "{condition}", "$?", "{script}"});
+    commandTemplates.put("si", new String[]{"setIf"});
+    commandTemplates.put("setIfNot", new String[]{"", "{condition}", "$?", "{script}"});
+    commandTemplates.put("sn", new String[]{"setIfNot"});
 
     commandTemplates.put("loop", new String[]{"", "{condition}", "{script}"});
     commandTemplates.put("l", new String[]{"loop"});
