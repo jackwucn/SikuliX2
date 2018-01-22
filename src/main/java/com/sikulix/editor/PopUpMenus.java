@@ -304,6 +304,8 @@ public class PopUpMenus {
       add(createMenuItem("Loop", this));
       add(createMenuItem("LoopFor", this));
       add(createMenuItem("LoopWith", this));
+      add(createMenuItem("Break", this));
+      add(createMenuItem("Continue", this));
       createMenuSeperator();
       add(createMenuItem("Function", this));
     }

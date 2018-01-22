@@ -578,13 +578,12 @@ public class Script implements TableModelListener {
 
   protected void runScript(int lineFrom, int lineTo) {
     window.setVisible(false);
-    if (lineFrom < 0) {
-      lineTo = data.size() - 1;
-    }
+    lineFrom = 0; //lines.get(lineFrom);
+    lineTo = allData.size() -1; //lines.get(lineTo);
     for (int n = lineFrom; n <= lineTo; n++) {
       String sLine = "";
       String sep = "";
-      for (ScriptCell cell : data.get(n)) {
+      for (ScriptCell cell : allData.get(n)) {
         sLine += sep + cell.get().trim();
         sep = " | ";
       }
@@ -762,35 +761,66 @@ public class Script implements TableModelListener {
   Map<String, String[]> commandTemplates = new HashMap<>();
 
   private void initTemplates() {
-    commandTemplates.put("find", new String[]{"", "@?", "result"});
-    commandTemplates.put("wait", new String[]{"", "wait-time", "@?", "result"});
-    commandTemplates.put("vanish", new String[]{"", "wait-time", "@?", "result"});
-    commandTemplates.put("findAll", new String[]{"", "@?", "result-list"});
-    commandTemplates.put("findBest", new String[]{"", "@@?", "result"});
-    commandTemplates.put("findAny", new String[]{"", "@@?", "result-list"});
-    commandTemplates.put("click", new String[]{"", "@?", "result"});
-    commandTemplates.put("clickRight", new String[]{"", "@?", "result"});
-    commandTemplates.put("clickDouble", new String[]{"", "@?", "result"});
-    commandTemplates.put("hover", new String[]{"", "@?", "result"});
-    commandTemplates.put("write", new String[]{"", "{keys}"});
+    commandTemplates.put("find", new String[]{"", "@?", "{region}", "result"});
+    commandTemplates.put("f", new String[]{"find"});
+    commandTemplates.put("wait", new String[]{"", "wait-time", "@?", "{region}", "result"});
+    commandTemplates.put("w", new String[]{"wait"});
+    commandTemplates.put("vanish", new String[]{"", "wait-time", "@?", "{region}", "result"});
+    commandTemplates.put("v", new String[]{"vanish"});
+    commandTemplates.put("findAll", new String[]{"", "@?", "{region}", "result-list"});
+    commandTemplates.put("fa", new String[]{"findAll"});
+    commandTemplates.put("findBest", new String[]{"", "@@?", "{region}", "result"});
+    commandTemplates.put("fb", new String[]{"findBest"});
+    commandTemplates.put("findAny", new String[]{"", "@@?", "{region}", "result-list"});
+    commandTemplates.put("fy", new String[]{"findAny"});
+    commandTemplates.put("click", new String[]{"", "@?", "{region}", "result"});
+    commandTemplates.put("c", new String[]{"click"});
+    commandTemplates.put("clickRight", new String[]{"", "@?", "{region}", "result"});
+    commandTemplates.put("cr", new String[]{"clickRight"});
+    commandTemplates.put("clickDouble", new String[]{"", "@?", "{region}", "result"});
+    commandTemplates.put("cd", new String[]{"clickDouble"});
+    commandTemplates.put("hover", new String[]{"", "@?", "{region}", "result"});
+    commandTemplates.put("h", new String[]{"hover"});
+    commandTemplates.put("write", new String[]{"", "@?", "{region}", "{keys}"});
+    commandTemplates.put("wr", new String[]{"write"});
     commandTemplates.put("hotkey", new String[]{"", "{keys}", "{function}"});
+    commandTemplates.put("hk", new String[]{"hotkey"});
     commandTemplates.put("focus", new String[]{"", "appname"});
+    commandTemplates.put("fo", new String[]{"focus"});
 
     commandTemplates.put("if", new String[]{"", "{condition}", "{script}"});
     commandTemplates.put("ifNot", new String[]{"", "{condition}", "{script}"});
+    commandTemplates.put("in", new String[]{"ifNot"});
     commandTemplates.put("endif", new String[]{""});
     commandTemplates.put("else", new String[]{"", "{script}"});
+    commandTemplates.put("e", new String[]{"else"});
     commandTemplates.put("elif", new String[]{"", "{condition}", "{script}"});
+    commandTemplates.put("ei", new String[]{"elif"});
     commandTemplates.put("elifNot", new String[]{"", "{condition}", "{script}"});
+    commandTemplates.put("en", new String[]{"elifNot"});
     commandTemplates.put("ifElse", new String[]{"", "{condition}", "{script}", "{script}", "result"});
+    commandTemplates.put("ie", new String[]{"ifElse"});
 
     commandTemplates.put("loop", new String[]{"", "{condition}", "{script}"});
+    commandTemplates.put("l", new String[]{"loop"});
     commandTemplates.put("loopWith", new String[]{"", "$$?", "{script}"});
+    commandTemplates.put("lw", new String[]{"loopWith"});
     commandTemplates.put("loopFor", new String[]{"", "{count step from}", "{script}"});
+    commandTemplates.put("lf", new String[]{"loopFor"});
     commandTemplates.put("endloop", new String[]{""});
+    commandTemplates.put("break", new String[]{"", ""});
+    commandTemplates.put("br", new String[]{"break"});
+    commandTemplates.put("breakIf", new String[]{"", "{condition}"});
+    commandTemplates.put("bi", new String[]{"breakIf"});
+    commandTemplates.put("continue", new String[]{"", ""});
+    commandTemplates.put("co", new String[]{"continue"});
+    commandTemplates.put("ContinueIf", new String[]{"", "{condition}"});
+    commandTemplates.put("ci", new String[]{"ContinueIf"});
 
     commandTemplates.put("print", new String[]{"", "variable..."});
+    commandTemplates.put("p", new String[]{"print"});
     commandTemplates.put("printf", new String[]{"", "{template}", "variable..."});
+    commandTemplates.put("pf", new String[]{"printf"});
     commandTemplates.put("log", new String[]{"", "{template}", "variable..."});
     commandTemplates.put("pop", new String[]{"", "message", "result"});
 
@@ -800,8 +830,8 @@ public class Script implements TableModelListener {
     commandTemplates.put("$I", new String[]{"=@?", "similar", "{offset [x,y]}"});
     commandTemplates.put("$$I", new String[]{"=imageList", "@@?", "{[image,image,...]}"});
     commandTemplates.put("imageList", new String[]{"", "@@?", "{[image,image,...]}"});
-    commandTemplates.put("variable", new String[]{"", "$?", "{script}"});
-    commandTemplates.put("$", new String[]{"?", "{script}"});
+    commandTemplates.put("variable", new String[]{"", "$?", "{expression}"});
+    commandTemplates.put("$", new String[]{"?", "{expression}"});
     commandTemplates.put("option", new String[]{"", "key", "{value}"});
     commandTemplates.put("$O", new String[]{"=option", "key", "{value}"});
     commandTemplates.put("region", new String[]{"", "$R?", "{[x,y,w,h]}"});
@@ -809,7 +839,7 @@ public class Script implements TableModelListener {
     commandTemplates.put("location", new String[]{"", "$L?", "{[x,y]}"});
     commandTemplates.put("$L", new String[]{"?", "{[x,y]}"});
     commandTemplates.put("array", new String[]{"", "$$?", "{[item,item,...]}"});
-    commandTemplates.put("$$", new String[]{"=array", "$$?", "item..."});
+    commandTemplates.put("$$", new String[]{"=array", "$$?", "{[item,item,...]}"});
     commandTemplates.put("function", new String[]{"", "$F?", "{script}", "parameter..."});
     commandTemplates.put("$F", new String[]{"?", "{function}"});
     commandTemplates.put("endfunction", new String[]{""});
@@ -825,6 +855,10 @@ public class Script implements TableModelListener {
     }
     String[] commandLine = commandTemplates.get(command);
     if (SX.isNotNull(commandLine)) {
+      if (commandLine.length == 1) {
+        command = commandLine[0];
+        commandLine = commandTemplates.get(command);
+      }
       commandLine = commandLine.clone();
       if (commandLine[0].startsWith("=")) {
         commandLine[0] = commandLine[0].substring(1);
