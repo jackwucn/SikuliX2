@@ -327,6 +327,7 @@ public class PopUpMenus {
       add(createMenuItem("ImageList $$I", this));
       add(createMenuItem("Region $R", this));
       add(createMenuItem("Location $L", this));
+      add(createMenuItem("Use ", this));
       createMenuSeperator();
       add(createMenuItem("Variable $", this));
       add(createMenuItem("Array $$", this));
@@ -376,7 +377,7 @@ public class PopUpMenus {
         add(createMenuItem("CopyLines c", this));
       }
       add(createMenuItem("InsertLines i", this));
-        createMenuSeperator();
+      createMenuSeperator();
       if (cell.isHeader()) {
         add(createMenuItem("UnhideAll u", this));
       } else {
@@ -384,9 +385,9 @@ public class PopUpMenus {
       }
       if (!cell.isHeader()) {
         add(createMenuItem(new Blocks(this), "Surround"));
-        createMenuSeperator();
-        add(createMenuItem("RunLines r", this));
       }
+      createMenuSeperator();
+      add(createMenuItem("RunLines r", this));
     }
 
     public void newLines(ActionEvent ae) {

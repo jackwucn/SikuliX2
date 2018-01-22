@@ -1156,6 +1156,8 @@ public class Do {
   }
 
   /**
+   * arg0: what - picture, element, ...
+   * arg1: where - element, picture - not given or null means screen in use
    * @param args
    * @return
    */

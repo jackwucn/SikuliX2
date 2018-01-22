@@ -2,6 +2,7 @@ package com.sikulix.editor;
 
 import com.sikulix.core.SX;
 import com.sikulix.core.SXLog;
+import com.sikulix.run.Runner;
 
 import javax.swing.*;
 import javax.swing.event.TableModelEvent;
@@ -589,8 +590,13 @@ public class Script implements TableModelListener {
       }
       log.trace("runscript: (%4d) %s", n, sLine);
     }
-    //SX.pause(2);
+    Runner.run(Runner.ScriptType.JAVASCRIPT, convertScript(Runner.ScriptType.JAVASCRIPT, allData));
     window.setVisible(true);
+  }
+
+  private String convertScript(Runner.ScriptType type, List<List<ScriptCell>> scriptData) {
+    String script = "";
+    return script;
   }
 
   int resultsCounter = 0;
@@ -827,6 +833,7 @@ public class Script implements TableModelListener {
     commandTemplates.put("pf", new String[]{"printf"});
     commandTemplates.put("log", new String[]{"", "{template}", "variable..."});
     commandTemplates.put("pop", new String[]{"", "message", "result"});
+    commandTemplates.put("use", new String[]{"", "{region}", "result"});
 
     commandTemplates.put("import", new String[]{"", "scriptname", "parameter..."});
 
@@ -847,8 +854,8 @@ public class Script implements TableModelListener {
     commandTemplates.put("function", new String[]{"", "$F?", "{script}", "parameter..."});
     commandTemplates.put("$F", new String[]{"?", "{function}"});
     commandTemplates.put("endfunction", new String[]{""});
-    commandTemplates.put("/", new String[]{"continuation"});
-    commandTemplates.put("#", new String[]{"comment"});
+    commandTemplates.put("/", new String[]{"continuation", ""});
+    commandTemplates.put("#", new String[]{"comment", ""});
     commandTemplates.put("{", new String[]{"={script}", "result"});
   }
 
