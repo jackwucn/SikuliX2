@@ -130,8 +130,9 @@ public abstract class ScriptTemplate {
       if (createMethods.contains("create" + command)) {
         Object[] parameters = new Object[]{line, lineNumber};
         try {
-          ScriptTemplate.class.getMethod("create" + command, new Class[]{new ArrayList<ScriptCell>().getClass(), Integer.class});
-        } catch (NoSuchMethodException e) {
+          ScriptTemplate.class.getMethod("create" + command, new Class[]{new ArrayList<ScriptCell>().getClass(), Integer.class})
+                  .invoke(null, line, lineNumber);
+        } catch (Exception e) {
           script.log.error("convertScript: command not implemented: (%d) %s", lineNumber, command);
         }
       } else {
