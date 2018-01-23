@@ -8,6 +8,7 @@ import com.sikulix.api.Do;
 import com.sikulix.api.Element;
 import com.sikulix.api.Picture;
 import com.sikulix.api.Target;
+import jdk.nashorn.api.scripting.ScriptObjectMirror;
 import org.opencv.core.*;
 import org.opencv.core.Point;
 import org.opencv.imgproc.Imgproc;
@@ -989,15 +990,24 @@ public class Finder {
     }
 
     public Element get(Object... args) {
+      Object args0, args1;
+      boolean isListWhat = false;
+      if (args.length > 0 ) {
+        if (args[0] instanceof ScriptObjectMirror) {
+          ScriptObjectMirror arguments = (ScriptObjectMirror) args[0];
+          args = new Object[arguments.size()];
+          for (Integer n = 0; n < arguments.size(); n++) {
+            args[n] = arguments.get(n.toString());
+          }
+        }
+      }
       String form = "EvaluateTarget: ";
       for (Object arg : args) {
         form += "%s, ";
       }
       log.trace(form, args);
-      Object args0, args1;
-      args0 = args[0];
-      boolean isListWhat = false;
-      if (args.length > 0) {
+      if (args.length > 0 && SX.isNotNull(args[0])) {
+        args0 = args[0];
         if (Type.ANY.equals(type)) {
           if (whatsGiven.getClass().isAssignableFrom(args0.getClass())) {
             isListWhat = true;
@@ -1030,7 +1040,7 @@ public class Finder {
                 return new Element();
               }
             }
-            log.error("EvaluateTarget: args0 invalid: %s", args0);
+            log.error("EvaluateTarget: args0 (what) invalid: %s", args0);
             what = new Element();
           }
         }
@@ -1043,12 +1053,14 @@ public class Finder {
             }
           } else if (args1 instanceof Element) {
             where = (Element) args1;
+          } else if (SX.isNull(args1)) {
+            where = null;
           } else if (args1 instanceof Double) {
             waitTime = (int) (1000 * (Double) args1);
           } else if (args1 instanceof Integer) {
             waitTime = 1000 * (Integer) args1;
           } else {
-            log.error("EvaluateTarget: args1 invalid: %s", args0);
+            log.error("EvaluateTarget: args1 (where) invalid: %s", args0);
           }
           if (args.length > 2) {
             Object args2 = args[2];
@@ -1057,7 +1069,7 @@ public class Finder {
             } else if (args2 instanceof Integer) {
               waitTime = 1000 * (Integer) args2;
             } else {
-              log.error("EvaluateTarget: args2 invalid: %s", args0);
+              log.error("EvaluateTarget: args2 (waitTime) invalid: %s", args0);
             }
           }
         }
@@ -1091,6 +1103,8 @@ public class Finder {
             target = what;
           }
         }
+      } else {
+        log.error("EvaluateTarget: args invalid: no args or args0 (what) null");
       }
       return target;
     }

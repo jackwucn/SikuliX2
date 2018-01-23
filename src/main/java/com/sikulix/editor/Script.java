@@ -40,7 +40,8 @@ public class Script implements TableModelListener {
     return table;
   }
 
-  private File fScript = new File(SX.getSXSTORE(), "scripteditor/script.txt");
+  private File fScriptFolder = new File(SX.getSXSTORE(), "scripteditor");
+  private File fScript = new File(fScriptFolder, "script.txt");
 
   protected File getScriptPath() {
     return fScript;
@@ -588,9 +589,13 @@ public class Script implements TableModelListener {
         sLine += sep + cell.get().trim();
         sep = " | ";
       }
-      log.trace("runscript: (%4d) %s", n, sLine);
+//      log.trace("runscript: (%4d) %s", n, sLine);
     }
-    Runner.run(Runner.ScriptType.JAVASCRIPT, ScriptTemplate.convertScript(this, allData));
+    String snippet = ScriptTemplate.convertScript(this, allData, fScriptFolder);
+    log.globalOn(SXLog.TRACE);
+    Runner.run(Runner.ScriptType.JAVASCRIPT, snippet, Runner.ScriptOption.WITHTRACE);
+    log.globalOn(SXLog.OFF);
+//    Runner.run(Runner.ScriptType.JAVASCRIPT, snippet);
     window.setVisible(true);
   }
 
