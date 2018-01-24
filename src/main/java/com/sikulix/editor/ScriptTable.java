@@ -9,6 +9,7 @@ import com.sikulix.core.SX;
 import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
 import java.awt.event.KeyEvent;
+import java.awt.event.MouseEvent;
 import java.util.EventObject;
 
 class ScriptTable extends JTable {
@@ -173,6 +174,9 @@ class ScriptTable extends JTable {
     return false;
   }
 
+  public String getToolTipText(MouseEvent e) {
+    return ScriptTemplate.createTip(rowAtPoint(e.getPoint()), columnAtPoint(e.getPoint()));
+  }
   protected void setSelection(int row, int col) {
     setRowSelectionInterval(row, row);
     setColumnSelectionInterval(col, col);

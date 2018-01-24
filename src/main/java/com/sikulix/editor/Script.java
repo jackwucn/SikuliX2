@@ -75,6 +75,8 @@ public class Script implements TableModelListener {
       shouldTrace = true;
     }
 
+    ToolTipManager.sharedInstance().setEnabled(false);
+    
     window = new JFrame("SikuliX - ScriptEditor");
     window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
@@ -581,7 +583,8 @@ public class Script implements TableModelListener {
   protected void runScript(int lineFrom, int lineTo) {
     window.setVisible(false);
     lineFrom = 0; //lines.get(lineFrom);
-    lineTo = allData.size() -1; //lines.get(lineTo);
+    lineTo = allData.size() - 1; //lines.get(lineTo);
+    List<ScriptCell> line = allData.get(0);
     for (int n = lineFrom; n <= lineTo; n++) {
       String sLine = "";
       String sep = "";
@@ -591,9 +594,12 @@ public class Script implements TableModelListener {
       }
 //      log.trace("runscript: (%4d) %s", n, sLine);
     }
-    String snippet = ScriptTemplate.convertScript(this, allData, fScriptFolder);
-    Runner.run(Runner.ScriptType.JAVASCRIPT, snippet, Runner.ScriptOption.WITHTRACE);
-//    Runner.run(Runner.ScriptType.JAVASCRIPT, snippet);
+    String snippet = ScriptTemplate.convertScript(this, allData, fScriptFolder, shouldTrace);
+    if (shouldTrace) {
+      Runner.run(Runner.ScriptType.JAVASCRIPT, snippet, Runner.ScriptOption.WITHTRACE);
+    } else {
+      Runner.run(Runner.ScriptType.JAVASCRIPT, snippet);
+    }
     window.setVisible(true);
   }
 
@@ -835,7 +841,7 @@ public class Script implements TableModelListener {
       text[0] = "//--- enter a valid JavaScript " + token + "\n";
       text[0] += "//--- CTRL-ESC to save - ESC to cancel\n";
       shouldEdit = true;
-    } else if (!text[0].startsWith("$") &&  !text[0].startsWith("@") && initialText.startsWith("{")) {
+    } else if (!text[0].startsWith("$") && !text[0].startsWith("@") && initialText.startsWith("{")) {
       shouldEdit = true;
     }
     if (shouldEdit) {

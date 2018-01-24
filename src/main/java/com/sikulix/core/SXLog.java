@@ -22,6 +22,11 @@ public class SXLog {
   public static final int OFF = 0;
   public static final int ERROR = -1;
   public static final int FATAL = -2;
+  public static final int USER = 5;
+  public static final int USERINFO = 5;
+  public static final int USERERROR = 6;
+  public static final int USERTRACE = 7;
+  public static final int SHOT = 8;
 
   int initLevel = -1;
   int currentLevel = -1;
@@ -30,6 +35,11 @@ public class SXLog {
   static int globalLevelSaved = -1;
 
   boolean logError = true;
+
+  boolean logUser = false;
+  int userLevel = 5;
+
+  boolean logShot = false;
 
   Logger logger = null;
 
