@@ -592,9 +592,7 @@ public class Script implements TableModelListener {
 //      log.trace("runscript: (%4d) %s", n, sLine);
     }
     String snippet = ScriptTemplate.convertScript(this, allData, fScriptFolder);
-    log.globalOn(SXLog.TRACE);
     Runner.run(Runner.ScriptType.JAVASCRIPT, snippet, Runner.ScriptOption.WITHTRACE);
-    log.globalOn(SXLog.OFF);
 //    Runner.run(Runner.ScriptType.JAVASCRIPT, snippet);
     window.setVisible(true);
   }

@@ -149,10 +149,12 @@ public class Runner {
     URL scriptURL = null;
     String script = "";
     ReturnObject returnObject = null;
+    boolean withTrace = false;
 
     public RunBox(Object[] args) {
       this.args = args;
       if (ScriptOption.WITHTRACE.equals(args[args.length - 1])) {
+        withTrace = true;
         log.on(SXLog.TRACE);
       }
       init();
@@ -307,14 +309,15 @@ public class Runner {
       ScriptEngine engine = new ScriptEngineManager().getEngineByName("nashorn");
       String scriptBefore =
               "var Do = Java.type('com.sikulix.api.Do');\n" +
-              "var SX = Java.type('com.sikulix.core.SX');\n";
-      if (log.isLevel(SXLog.TRACE)) {
-        scriptBefore += "print('Hello from JavaScript: SikuliX support loaded');\n";
+              "var SX = Java.type('com.sikulix.core.SX');\n" +
+              "log = SX.getSXLog(\"SX.JAVASCRIPTRUNNER\");\n";
+      if (withTrace) {
+        scriptBefore += "log.on(SX.TRACE);\n";
       }
       String scriptText = scriptBefore;
       scriptText += script;
       log.trace("%s: running script %s", ScriptType.JAVASCRIPT, scriptName);
-      if (log.isLevel(SXLog.TRACE)) {
+      if (withTrace) {
         log.p(script);
         log.p("---------- end of script");
       }

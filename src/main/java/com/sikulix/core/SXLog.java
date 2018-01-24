@@ -169,7 +169,11 @@ public class SXLog {
   }
 
   public void p(String msg, Object... args) {
-    System.out.println(String.format(msg, args));
+    if (args.length == 0) {
+      System.out.println(msg);
+    } else {
+      System.out.println(String.format(msg, args));
+    }
   }
 
   public void p() {
