@@ -63,14 +63,6 @@ public class Script implements TableModelListener {
     return data;
   }
 
-  protected List<List<ScriptCell>> createData(int firstLine, int lastLine) {
-    List<List<ScriptCell>> newData = new ArrayList<>();
-    for (int n = firstLine; n <= lastLine; n++) {
-      newData.add(dataRowRemove(firstLine));
-    }
-    return newData;
-  }
-
   boolean shouldTrace = false;
 
   protected Script getScript() {
@@ -110,7 +102,7 @@ public class Script implements TableModelListener {
     int tableW = (int) (monitor.width * 0.8);
     int tableH = (int) (monitor.height * 0.8);
     if (shouldTrace) {
-      tableH = (int) (monitor.height * 0.5);
+      tableH = (int) (monitor.height * 0.4);
     }
     Dimension tableDim = new Dimension(tableW, tableH);
     rectTable = new Rectangle();
@@ -623,6 +615,14 @@ public class Script implements TableModelListener {
     }
   }
 
+  protected List<List<ScriptCell>> createData(int firstLine, int lastLine) {
+    List<List<ScriptCell>> newData = new ArrayList<>();
+    for (int n = firstLine; n <= lastLine; n++) {
+      newData.add(dataRowRemove(firstLine));
+    }
+    return newData;
+  }
+
   protected void saveScript() {
     String theScript = "";
     resetLines();
@@ -654,16 +654,6 @@ public class Script implements TableModelListener {
     window.setVisible(false);
     lineFrom = 0; //lines.get(lineFrom);
     lineTo = allData.size() - 1; //lines.get(lineTo);
-    List<ScriptCell> line = allData.get(0);
-    for (int n = lineFrom; n <= lineTo; n++) {
-      String sLine = "";
-      String sep = "";
-      for (ScriptCell cell : allData.get(n)) {
-        sLine += sep + cell.get().trim();
-        sep = " | ";
-      }
-//      log.trace("runscript: (%4d) %s", n, sLine);
-    }
     String snippet = ScriptTemplate.convertScript(this, allData, fScriptFolder, shouldTrace);
     if (shouldTrace) {
       Runner.run(Runner.ScriptType.JAVASCRIPT, snippet, Runner.ScriptOption.WITHTRACE);
@@ -730,7 +720,14 @@ public class Script implements TableModelListener {
         ScriptCell cell = line.get(0);
         if (cell.isFirstHidden()) {
           someHidden = true;
-          allData.addAll(n + 1, cell.getHiddenData());
+          List<List<ScriptCell>> hiddenData = cell.getHiddenData();
+          int hiddenLines = hiddenData.size();
+          allData.addAll(n + 1, hiddenData);
+          for (int nLines = 0; nLines < lines.size(); nLines++) {
+            if (lines.get(nLines) > n) {
+              lines.set(nLines, lines.get(nLines) + hiddenLines - 1);
+            }
+          }
           first = n + 1;
           break;
         }

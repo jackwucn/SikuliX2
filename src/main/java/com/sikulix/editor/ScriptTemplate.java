@@ -92,6 +92,8 @@ public abstract class ScriptTemplate {
     commandTemplates.put("co", new String[]{"continue"});
     commandTemplates.put("ContinueIf", new String[]{"", "{condition}"});
     commandTemplates.put("ci", new String[]{"ContinueIf"});
+    commandTemplates.put("Exit", new String[]{"", "{value}"});
+    commandTemplates.put("ex", new String[]{"Exit"});
 
     commandTemplates.put("print", new String[]{"", "variable..."});
     commandTemplates.put("p", new String[]{"print"});
@@ -159,24 +161,42 @@ public abstract class ScriptTemplate {
         try {
           Object snippetLine = ScriptTemplate.class.getMethod("create" + command, new Class[]{new ArrayList<ScriptCell>().getClass(), Integer.class})
                   .invoke(null, line, lineNumber);
-          snippet += String.format(msgAutogen, lineNumber - 1, snippetLine);
+          if (!((String) snippetLine).startsWith("//ERROR")) {
+            snippet += String.format(msgAutogen, lineNumber, snippetLine);
+          } else {
+            snippet += snippetLine;
+          }
         } catch (Exception e) {
-          script.log.error("convertScript: command not implemented: (%d) %s", lineNumber, command);
+          script.log.error("convertScript: command error: (%d) %s (%s)", lineNumber, command, e.getMessage());
+          snippet += createErrorLine((ArrayList<ScriptCell>) line, lineNumber, "command error: " + e.getMessage());
         }
       } else {
-        script.log.error("convertScript: invalid command: (%d) %s", lineNumber, command);
-        break;
+        snippet += createErrorLine((ArrayList<ScriptCell>) line, lineNumber, "command invalid");
       }
     }
     return snippet;
   }
 
+  public static String createErrorLine(ArrayList<ScriptCell> line, Integer lineNumber, String reason) {
+    String snippet = String.format("//ERROR (%d): ", lineNumber);
+    String sep = "";
+    String sLine = "";
+    for (ScriptCell cell : line) {
+      sLine += sep + cell.get().trim();
+      sep = " | ";
+    }
+    return snippet + sLine + " (" + reason + ")" + "\n";
+  }
+
   public static String createfind(ArrayList<ScriptCell> line, Integer lineNumber) {
     String snippet = "$LINENUMBER = " + lineNumber + ";";
     String what = evalWhat(line, 1);
+    if (SX.isNull(what)) {
+      return createErrorLine(line, lineNumber, "no image");
+    }
     String where = evalWhere(line, 2);
     String result = line.get(3).get();
-    String template = " %s = find(\"%s\", %s);";
+    String template = " %s = find(%s, %s);";
     snippet += String.format(template, result, what, where);
     return createFinal(snippet, " log.trace(\"(#d) find: #s\", %s, %s);", lineNumber, result);
   }
@@ -195,10 +215,13 @@ public abstract class ScriptTemplate {
   public static String createwait(ArrayList<ScriptCell> line, Integer lineNumber) {
     String snippet = "$LINENUMBER = " + lineNumber + ";";
     String what = evalWhat(line, 2);
+    if (SX.isNull(what)) {
+      return createErrorLine(line, lineNumber, "no image");
+    }
     String where = evalWhere(line, 3);
     int waitTime = evalWaitTime(line, 1);
     String result = line.get(4).get();
-    String template = " %s = wait(\"%s\", %s, %d);";
+    String template = " %s = wait(%s, %s, %d);";
     snippet += String.format(template, result, what, where, waitTime, result);
     return createFinal(snippet, " log.trace(\"(#d) wait: #s\", %s, %s);", lineNumber, result);
   }
@@ -214,14 +237,14 @@ public abstract class ScriptTemplate {
     if (what.contains("?")) {
       what = null;
     } else {
-      what = what.replace("@", "");
+      what = "\"" + what.replace("@", "") + "\"";
     }
     return what;
   }
 
   private static String evalWhere(List<ScriptCell> line, int col) {
     String where = line.get(col).get();
-    if (where.contains("{region}")) {
+    if (where.contains("{where}")) {
       where = null;
     }
     return where;
