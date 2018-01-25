@@ -5,6 +5,7 @@ import com.sikulix.core.SXLog;
 import com.sikulix.run.Runner;
 
 import javax.swing.*;
+import javax.swing.border.LineBorder;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.JTableHeader;
@@ -34,11 +35,15 @@ public class Script implements TableModelListener {
 
   ScriptTable table = null;
   public Rectangle rectTable = null;
-  int maxCol = 6;
+  int maxCol = 7;
 
   protected ScriptTable getTable() {
     return table;
   }
+
+  JTextField status = new JTextField();
+
+  String statusText = "";
 
   private File fScriptFolder = new File(SX.getSXSTORE(), "scripteditor");
   private File fScript = new File(fScriptFolder, "script.txt");
@@ -68,6 +73,10 @@ public class Script implements TableModelListener {
 
   boolean shouldTrace = false;
 
+  protected Script getScript() {
+    return this;
+  }
+
   public Script(String[] args) {
 
     if (args.length > 0 && "trace".equals(args[0])) {
@@ -76,11 +85,12 @@ public class Script implements TableModelListener {
     }
 
     ToolTipManager.sharedInstance().setEnabled(false);
-    
+
     window = new JFrame("SikuliX - ScriptEditor");
     window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-    JPanel panel = new JPanel(new GridLayout(1, 0));
+    JPanel panel = new JPanel();
+    panel.setLayout(new BoxLayout(panel,BoxLayout.Y_AXIS));
     panel.setOpaque(true);
 
     ScriptTemplate.initTemplates();
@@ -97,10 +107,16 @@ public class Script implements TableModelListener {
     table.setCellSelectionEnabled(true);
 
     Rectangle monitor = SX.getSXLOCALDEVICE().getMonitor();
-    Dimension tableDim = new Dimension((int) (monitor.width * 0.8), (int) (monitor.height * 0.8));
+    int tableW = (int) (monitor.width * 0.8);
+    int tableH = (int) (monitor.height * 0.8);
+    if (shouldTrace) {
+      tableH = (int) (monitor.height * 0.5);
+    }
+    Dimension tableDim = new Dimension(tableW, tableH);
     rectTable = new Rectangle();
     rectTable.setSize(tableDim);
-    rectTable.setLocation(tableDim.width / 8, tableDim.height / 9);
+//    rectTable.setLocation(monitor.width / 8, monitor.height / 9);
+    rectTable.setLocation(50, 80);
 
     table.setTableHeader(new JTableHeader(table.getColumnModel()) {
       @Override
@@ -113,7 +129,6 @@ public class Script implements TableModelListener {
 
     table.getTableHeader().setBackground(new Color(230, 230, 230));
 
-    int tableW = tableDim.width;
     int tableCols = table.getColumnCount();
     int col0W = 70;
     int col1W = 150;
@@ -147,6 +162,13 @@ public class Script implements TableModelListener {
     JScrollPane scrollPane = new JScrollPane(table);
     panel.add(scrollPane);
 
+    status.setText("statusline");
+    status.setEditable(false);
+    status.setMinimumSize(new Dimension(tableW, 30));
+    status.setMaximumSize(new Dimension(tableW, 30));
+    status.setPreferredSize(new Dimension(tableW, 30));
+    panel.add(status);
+
     window.setContentPane(panel);
 
     window.pack();
@@ -157,6 +179,50 @@ public class Script implements TableModelListener {
     popUpMenus = new PopUpMenus(this);
 
     popUpWindow = new PopUpWindow();
+
+
+
+    new Thread(new Runnable() {
+      int selectedRow = -1;
+      int selectedCol = -1;
+
+      @Override
+      public void run() {
+        while (true) {
+          int row = table.getSelectedRow();
+          int col = table.getSelectedColumn();
+          if (row != selectedRow || col != selectedCol || !statusText.isEmpty()) {
+            selectedRow = row;
+            selectedCol = col;
+            String text = "";
+            TableCell tCell = new TableCell(getScript(), row, 1);
+            ScriptCell dCell = null;
+            if (tCell.isFirstHidden()) {
+              text += " hidden:" + tCell.getDataCell().getHidden();
+            }
+            if (col > 0) {
+              dCell = evalDataCell(row, col);
+              String cellText = dCell.get();
+              if (cellText.startsWith("@")) {
+                if (!cellText.startsWith("@@")) {
+                  text += " IMAGE:" + cellText;
+                  if (cellText.contains("?")) {
+                    text += " - needs capture - use F1";
+                  } else {
+                    text += " - F1 to show - F5 to find - SPACE to recapture";
+                  }
+                }
+              } else if (dCell.getInitial().startsWith("{")) {
+                text += " press SPACE to edit script snippet";
+              }
+            }
+            status.setText(String.format("(%d, %d)%s%s", lines.get(row) + 1, col, text, " " + statusText));
+            statusText = "";
+          }
+          SX.pause(0.5);
+        }
+      }
+    }).start();
   }
 
 //  @Override
@@ -201,8 +267,8 @@ public class Script implements TableModelListener {
       int button = me.getButton();
       int[] selectedRows = table.getSelectedRows();
       if (inBody()) {
-        log.trace("clicked: R%d C%d B%d {%d ... %d}",
-                row, col, button, selectedRows[0], selectedRows[selectedRows.length - 1]);
+//        log.trace("clicked: R%d C%d B%d {%d ... %d}",
+//                row, col, button, selectedRows[0], selectedRows[selectedRows.length - 1]);
       } else {
         log.trace("clicked: Header C%d B%d", col, button);
       }
@@ -464,17 +530,17 @@ public class Script implements TableModelListener {
     }
     cell = evalDataCell(tCell);
     cellText = cell.get();
-    Script.log.trace("F1: (%d,%d) %s (%d, %d, %d)",
-            tCell.row, tCell.col, cellText,
-            cell.getIndent(), cell.getIfIndent(), cell.getLoopIndent());
-    if (cellText.startsWith("@")) {
-      if (cellText.startsWith("@?")) {
+    if (cell.isImage()) {
+      if (cellText.contains("?")) {
         cell.capture(tCell);
       } else {
         cell.show(tCell);
       }
       return;
     }
+    log.trace("F1: (%d,%d) %s (%d, %d, %d)",
+            tCell.row + 1, tCell.col, cellText,
+            cell.getIndent(), cell.getIfIndent(), cell.getLoopIndent());
     if (cellText.startsWith("$")) {
       if (cellText.startsWith("$?")) {
         // set value/block
@@ -483,6 +549,10 @@ public class Script implements TableModelListener {
       }
       return;
     }
+  }
+
+  protected void setStatus(String msg, Object... args) {
+    statusText = String.format(msg, args);
   }
 
   protected void loadScript() {

@@ -114,7 +114,7 @@ class ScriptCell {
   }
 
   protected ScriptCell asImage() {
-    if (CellType.IMAGE.equals(cellType)) {
+    if (isImage()) {
       return this;
     }
     if (isEmpty() || "@".equals(value)) {
@@ -122,7 +122,7 @@ class ScriptCell {
       imagename = "";
     } else if (!value.startsWith("@") && !value.startsWith("$")) {
       imagename = value;
-      value = "@?" + value;
+      value = "@" + value + "?";
     } else {
       imagename = value.replace("@", "").replace("?", "").trim();
     }
@@ -131,16 +131,17 @@ class ScriptCell {
   }
 
   protected boolean isImage() {
-    return CellType.IMAGE.equals(cellType);
+    return SX.isSet(value) && value.startsWith("@") && !value.startsWith("@@");
   }
 
   String imagename = "";
   Picture picture = null;
 
   protected void capture(TableCell tCell) {
-    if (isEmpty() || value.startsWith("@")) {
+    if (isEmpty() || isImage()) {
       asImage();
       imagename = value.replace("@", "").replace("?", "");
+      if ("what".equals(imagename)) imagename = "";
       imagename = Do.input("Image Capture", "... enter a name", imagename);
       if (SX.isNotNull(imagename)) {
         if (SX.isNotSet(imagename)) {
@@ -160,7 +161,7 @@ class ScriptCell {
               ScriptCell.this.picture = null;
             } else {
               if (!existsPicture()) {
-                imagename = "?" + imagename;
+                imagename = imagename + "?";
               }
             }
             value = "@" + imagename;
@@ -175,7 +176,7 @@ class ScriptCell {
 
   protected void show(TableCell tCell) {
     if (!isEmpty()) {
-      if (asImage().isValid()) {
+      if (isImage() && isValid()) {
         loadPicture();
         if (SX.isNotNull(picture)) {
           new Thread(new Runnable() {
@@ -188,7 +189,7 @@ class ScriptCell {
             }
           }).start();
         } else {
-          value = "@?" + imagename;
+          value = "@" + imagename + "?";
         }
       }
     }
@@ -210,7 +211,7 @@ class ScriptCell {
             }
           }).start();
         } else {
-          value = "@?" + imagename;
+          value = "@" + imagename + "?";
         }
       }
     }
@@ -261,11 +262,7 @@ class ScriptCell {
   }
 
   protected boolean isValid() {
-    boolean valid = SX.isSet(value);
-    if (valid && isImage()) {
-      valid &= !value.contains("?");
-    }
-    return valid;
+    return SX.isSet(value) && !value.contains("?");
   }
 
   private boolean header = false;

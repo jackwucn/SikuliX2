@@ -1102,6 +1102,16 @@ public class Do {
     return clicked;
   }
 
+  public static Element clickWith(int modifier, Object... args) {
+    log.trace("clickWith: start");
+    Element target = findForClick(Finder.CLICK, args);
+    //TODO clickWith keyDown modifier
+    Element clicked = target.click();
+    //TODO clickWith keyUp modifier
+    log.trace("clickWith: end");
+    return clicked;
+  }
+
   public static Element doubleClick(Object... args) {
     log.trace("doubleClick: start");
     Element target = findForClick(Finder.DOUBLECLICK, args);

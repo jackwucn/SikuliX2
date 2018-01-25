@@ -79,7 +79,9 @@ public class PopUpWindow extends JFrame {
     for (int n = 0; n < lines.length; n++) {
       if (lines[n].startsWith("//---")) continue;
       String line = lines[n].trim();
-      if (SX.isSet(line)) shouldReset = false;
+      if (SX.isSet(line)) {
+        shouldReset = false;
+      }
       saveText += line + "\n";
     }
     if (!shouldReset) {

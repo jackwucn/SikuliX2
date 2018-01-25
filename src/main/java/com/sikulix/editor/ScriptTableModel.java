@@ -35,8 +35,8 @@ class ScriptTableModel extends AbstractTableModel {
 
   public String getColumnName(int col) {
     if (col == 0) return "    Line";
-    if (col == 1) return "Command";
-    return String.format("Item%d", col - 1);
+    if (col == 1) return "1 - Command";
+    return String.format("%d - Item", col);
   }
 
   public Object getValueAt(int tableRow, int tableCol) {

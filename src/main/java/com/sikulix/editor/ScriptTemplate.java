@@ -23,34 +23,37 @@ public abstract class ScriptTemplate {
   static List<String> createMethods = new ArrayList<>();
 
   static void initTemplates() {
+    createTemplates();
     Method[] methods = ScriptTemplate.class.getMethods();
     for (Method method : methods) {
       if (method.getName().startsWith("create")) {
         createMethods.add(method.getName());
       }
     }
+  }
 
-    commandTemplates.put("find", new String[]{"", "@?", "{region}", "result"});
+  private static void createTemplates() {
+    commandTemplates.put("find", new String[]{"", "@what?", "{where}", "result"});
     commandTemplates.put("f", new String[]{"find"});
-    commandTemplates.put("wait", new String[]{"", "wait-time", "@?", "{region}", "result"});
+    commandTemplates.put("wait", new String[]{"", "wait-time", "@what?", "{where}", "result"});
     commandTemplates.put("w", new String[]{"wait"});
-    commandTemplates.put("vanish", new String[]{"", "wait-time", "@?", "{region}", "result"});
+    commandTemplates.put("vanish", new String[]{"", "wait-time", "@what?", "{where}", "result"});
     commandTemplates.put("v", new String[]{"vanish"});
-    commandTemplates.put("findAll", new String[]{"", "@?", "{region}", "result-list"});
+    commandTemplates.put("findAll", new String[]{"", "@what?", "{where}", "result-list"});
     commandTemplates.put("fa", new String[]{"findAll"});
-    commandTemplates.put("findBest", new String[]{"", "@@?", "{region}", "result"});
+    commandTemplates.put("findBest", new String[]{"", "@@what?", "{where}", "result"});
     commandTemplates.put("fb", new String[]{"findBest"});
-    commandTemplates.put("findAny", new String[]{"", "@@?", "{region}", "result-list"});
+    commandTemplates.put("findAny", new String[]{"", "@@what?", "{where}", "result-list"});
     commandTemplates.put("fy", new String[]{"findAny"});
-    commandTemplates.put("click", new String[]{"", "@?", "{region}", "{offset [x,y]}", "result"});
+    commandTemplates.put("click", new String[]{"", "@what?", "{where}", "{offset [x,y]}", "{keys}", "result"});
     commandTemplates.put("c", new String[]{"click"});
-    commandTemplates.put("clickRight", new String[]{"", "@?", "{region}", "{offset [x,y]}", "result"});
+    commandTemplates.put("clickRight", new String[]{"", "@what?", "{where}", "{offset [x,y]}", "result"});
     commandTemplates.put("cr", new String[]{"clickRight"});
-    commandTemplates.put("clickDouble", new String[]{"", "@?", "{region}", "{offset [x,y]}", "result"});
+    commandTemplates.put("clickDouble", new String[]{"", "@what?", "{where}", "{offset [x,y]}", "result"});
     commandTemplates.put("cd", new String[]{"clickDouble"});
-    commandTemplates.put("hover", new String[]{"", "@?", "{region}", "{offset [x,y]}", "result"});
+    commandTemplates.put("hover", new String[]{"", "@what?", "{where}", "{offset [x,y]}", "result"});
     commandTemplates.put("h", new String[]{"hover"});
-    commandTemplates.put("write", new String[]{"", "@?", "{region}", "{offset [x,y]}", "{keys}"});
+    commandTemplates.put("write", new String[]{"", "@what?", "{where}", "{offset [x,y]}", "{keys}"});
     commandTemplates.put("wr", new String[]{"write"});
     commandTemplates.put("hotkey", new String[]{"", "{keys}", "{function}"});
     commandTemplates.put("hk", new String[]{"hotkey"});
@@ -96,19 +99,19 @@ public abstract class ScriptTemplate {
     commandTemplates.put("pf", new String[]{"printf"});
     commandTemplates.put("log", new String[]{"", "{template}", "variable..."});
     commandTemplates.put("pop", new String[]{"", "message", "result"});
-    commandTemplates.put("use", new String[]{"", "{region}", "result"});
+    commandTemplates.put("use", new String[]{"", "{element}", "result"});
 
     commandTemplates.put("import", new String[]{"", "scriptname", "parameter..."});
 
-    commandTemplates.put("image", new String[]{"", "@?", "similar", "{offset [x,y]}"});
-    commandTemplates.put("$I", new String[]{"=@?", "similar", "{offset [x,y]}"});
+    commandTemplates.put("image", new String[]{"", "@?", "similar", "{offset [x,y]}", "result"});
+    commandTemplates.put("$I", new String[]{"=@?", "similar", "{offset [x,y]}", "result"});
     commandTemplates.put("$$I", new String[]{"=imageList", "@@?", "{[image,image,...]}"});
     commandTemplates.put("imageList", new String[]{"", "@@?", "{[image,image,...]}"});
     commandTemplates.put("variable", new String[]{"", "$?", "{expression}"});
     commandTemplates.put("$", new String[]{"?", "{expression}"});
     commandTemplates.put("option", new String[]{"", "key", "{value}"});
     commandTemplates.put("$O", new String[]{"=option", "key", "{value}"});
-    commandTemplates.put("region", new String[]{"", "$R?", "{[x,y,w,h]}"});
+    commandTemplates.put("where", new String[]{"", "$R?", "{[x,y,w,h]}"});
     commandTemplates.put("$R", new String[]{"?", "{[x,y,w,h]}"});
     commandTemplates.put("location", new String[]{"", "$L?", "{[x,y]}"});
     commandTemplates.put("$L", new String[]{"?", "{[x,y]}"});
@@ -137,7 +140,7 @@ public abstract class ScriptTemplate {
 
   static String convertScript(Script script, Runner.ScriptType type,
                               List<List<ScriptCell>> scriptData, File scriptFolder, boolean shouldTrace) {
-    String linePostfix = "%s //*** (%d) autogenerated\n";
+    String msgAutogen = "//*** (%d) autogenerated\n%s\n";
     String snippet = Content.extractResourceToString("Javascript", "sikulix.js");
     snippet += "Do.setBundlePath(\"" + scriptFolder.getAbsolutePath() + "\");\n";
     Integer lineNumber = 0;
@@ -156,7 +159,7 @@ public abstract class ScriptTemplate {
         try {
           Object snippetLine = ScriptTemplate.class.getMethod("create" + command, new Class[]{new ArrayList<ScriptCell>().getClass(), Integer.class})
                   .invoke(null, line, lineNumber);
-          snippet += String.format(linePostfix, snippetLine, lineNumber - 1);
+          snippet += String.format(msgAutogen, lineNumber - 1, snippetLine);
         } catch (Exception e) {
           script.log.error("convertScript: command not implemented: (%d) %s", lineNumber, command);
         }
@@ -240,10 +243,11 @@ public abstract class ScriptTemplate {
     String key = line.get(1).get();
     String value = line.get(2).get();
     if ("log".equals(key) && "trace".equals(value)) {
-      if (!shouldTrace)
+      if (!shouldTrace) {
         snippet += " log.on(SX.TRACE);\n";
-        snippet += String.format(" log.trace(\"(%d) option: log = trace\");\n", lineNumber);
+        snippet += String.format(" log.trace(\"(%d) option: log = trace\");", lineNumber);
         return snippet;
+      }
     }
     snippet += String.format(" //option: %s = %s", key, value);
     return snippet;
