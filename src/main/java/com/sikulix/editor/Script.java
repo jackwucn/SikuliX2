@@ -15,6 +15,7 @@ import java.awt.event.MouseEvent;
 import java.io.File;
 import java.util.*;
 import java.util.List;
+import java.util.function.Predicate;
 
 public class Script implements TableModelListener {
 
@@ -82,7 +83,7 @@ public class Script implements TableModelListener {
     window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
     JPanel panel = new JPanel();
-    panel.setLayout(new BoxLayout(panel,BoxLayout.Y_AXIS));
+    panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
     panel.setOpaque(true);
 
     ScriptTemplate.initTemplates();
@@ -100,7 +101,7 @@ public class Script implements TableModelListener {
 
     Rectangle monitor = SX.getSXLOCALDEVICE().getMonitor();
     int tableW = (int) (monitor.width * 0.8);
-    int tableH = (int) (monitor.height * 0.8);
+    int tableH = (int) (monitor.height * 0.7);
     if (shouldTrace) {
       tableH = (int) (monitor.height * 0.4);
     }
@@ -173,7 +174,6 @@ public class Script implements TableModelListener {
     popUpWindow = new PopUpWindow();
 
 
-
     new Thread(new Runnable() {
       int selectedRow = -1;
       int selectedCol = -1;
@@ -194,18 +194,22 @@ public class Script implements TableModelListener {
             }
             if (col > 0) {
               dCell = evalDataCell(row, col);
-              String cellText = dCell.get();
-              if (cellText.startsWith("@")) {
-                if (!cellText.startsWith("@@")) {
-                  text += " IMAGE:" + cellText;
-                  if (cellText.contains("?")) {
-                    text += " - needs capture - use F1";
-                  } else {
-                    text += " - F1 to show - F5 to find - SPACE to recapture";
+              if (SX.isNotNull(dCell)) {
+                String cellText = dCell.get();
+                if (cellText.startsWith("@")) {
+                  if (!cellText.startsWith("@@")) {
+                    text += " IMAGE:" + cellText;
+                    if (cellText.contains("?")) {
+                      text += " - needs capture - use F1";
+                    } else {
+                      text += " - F1 to show - F5 to find - SPACE to recapture";
+                    }
                   }
+                } else if (dCell.getInitial().startsWith("{")) {
+                  text += " press SPACE to edit script snippet";
                 }
-              } else if (dCell.getInitial().startsWith("{")) {
-                text += " press SPACE to edit script snippet";
+              } else {
+                text += " empty - start typing to fill";
               }
             }
             status.setText(String.format("(%d, %d)%s%s", lines.get(row) + 1, col, text, " " + statusText));
@@ -655,7 +659,7 @@ public class Script implements TableModelListener {
     lineFrom = 0; //lines.get(lineFrom);
     lineTo = allData.size() - 1; //lines.get(lineTo);
     String snippet = ScriptTemplate.convertScript(this, allData, fScriptFolder, shouldTrace);
-    if (shouldTrace) {
+    if (shouldTrace || snippet.contains("option: log = trace")) {
       Runner.run(Runner.ScriptType.JAVASCRIPT, snippet, Runner.ScriptOption.WITHTRACE);
     } else {
       Runner.run(Runner.ScriptType.JAVASCRIPT, snippet);
@@ -704,13 +708,11 @@ public class Script implements TableModelListener {
       lines.add(nextDataLine++);
       allData.add(line);
       if (cell.isFirstHidden()) {
+        nextDataLine += cell.getHidden() - 1;
         if (!someHidden) {
           someHidden = true;
+          first++;
         }
-        nextDataLine += cell.getHidden() - 1;
-      }
-      if (!someHidden) {
-        first++;
       }
     }
     while (someHidden) {
@@ -723,16 +725,14 @@ public class Script implements TableModelListener {
           List<List<ScriptCell>> hiddenData = cell.getHiddenData();
           int hiddenLines = hiddenData.size();
           allData.addAll(n + 1, hiddenData);
-          for (int nLines = 0; nLines < lines.size(); nLines++) {
-            if (lines.get(nLines) > n) {
-              lines.set(nLines, lines.get(nLines) + hiddenLines - 1);
-            }
-          }
+          lines.addAll(n + 1, Arrays.asList(new Integer[hiddenLines]));
           first = n + 1;
           break;
         }
       }
     }
+    Predicate<Integer> removeNull = nLine -> nLine == null;
+    lines.removeIf(removeNull);
   }
 
   protected int getLastValidLine() {
@@ -822,6 +822,8 @@ public class Script implements TableModelListener {
       } else if (cell.get().startsWith("@")) {
 
       } else if (cell.get().startsWith("$")) {
+
+      } else if (cell.get().contains("#")) {
 
       } else {
         log.error("checkContent: %s", cell);
