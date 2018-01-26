@@ -72,7 +72,7 @@ class ScriptTable extends JTable {
           }
           if (keyCode == KeyEvent.VK_BACK_SPACE) {
             if (isCtrl) {
-              script.log.trace("editCellAt: CTRL Backspace");
+              currentCell.lineReset(getSelectedRows());
             } else {
               currentCell.lineEmpty(getSelectedRows());
             }

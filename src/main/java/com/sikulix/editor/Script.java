@@ -731,6 +731,12 @@ public class Script implements TableModelListener {
         }
       }
     }
+    for (int n = first; n < lines.size(); n++) {
+      if (SX.isNull(lines.get(n))) {
+        continue;
+      }
+      lines.set(n, n);
+    }
     Predicate<Integer> removeNull = nLine -> nLine == null;
     lines.removeIf(removeNull);
   }

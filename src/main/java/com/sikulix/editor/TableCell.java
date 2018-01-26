@@ -75,7 +75,6 @@ public class TableCell {
   }
 
   protected void lineSet(String... items) {
-//    lineSet(script.lines.get(row), items);
     lineSet(row, items);
   }
 

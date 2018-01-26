@@ -443,6 +443,15 @@ class ScriptCell {
     select(currentRow, Script.commandCol);
   }
 
+  protected void lineReset(int[] selectedRows) {
+    int currentRow = selectedRows[0];
+    String command = script.data.get(currentRow).get(0).get();
+    lineDelete(new int[]{currentRow});
+    lineNew(new int[]{currentRow - 1}, command);
+    script.table.tableCheckContent();
+    select(currentRow, Script.commandCol);
+  }
+
   protected void lineCopy(int[] selectedRows) {
     saveLines(selectedRows);
   }
