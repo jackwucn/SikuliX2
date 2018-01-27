@@ -659,7 +659,7 @@ public class Script implements TableModelListener {
     lineFrom = 0; //lines.get(lineFrom);
     lineTo = allData.size() - 1; //lines.get(lineTo);
     String snippet = ScriptTemplate.convertScript(this, allData, fScriptFolder, shouldTrace);
-    if (shouldTrace || snippet.contains("option: log = trace")) {
+    if (shouldTrace) {
       Runner.run(Runner.ScriptType.JAVASCRIPT, snippet, Runner.ScriptOption.WITHTRACE);
     } else {
       Runner.run(Runner.ScriptType.JAVASCRIPT, snippet);

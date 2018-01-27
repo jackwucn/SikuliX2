@@ -1060,7 +1060,7 @@ public class Finder {
           } else if (args1 instanceof Integer) {
             waitTime = 1000 * (Integer) args1;
           } else {
-            log.error("EvaluateTarget: args1 (where) invalid: %s", args0);
+            log.error("EvaluateTarget: args1 (where) invalid: %s", args1);
           }
           if (args.length > 2) {
             Object args2 = args[2];
@@ -1069,7 +1069,7 @@ public class Finder {
             } else if (args2 instanceof Integer) {
               waitTime = 1000 * (Integer) args2;
             } else {
-              log.error("EvaluateTarget: args2 (waitTime) invalid: %s", args0);
+              log.error("EvaluateTarget: args2 (waitTime) invalid: %s", args2);
             }
           }
         }
