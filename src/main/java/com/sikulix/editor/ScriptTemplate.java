@@ -136,6 +136,8 @@ public abstract class ScriptTemplate {
     return tip;
   }
 
+  static String lastResult = "";
+
   static String convertScript(Script script, List<List<ScriptCell>> scriptData,
                               File scriptFolder, boolean shouldTrace) {
     String snippet = Content.extractResourceToString("Javascript", "sikulix.js");
@@ -197,8 +199,9 @@ public abstract class ScriptTemplate {
     }
     int where = 2;
     int result = 3;
+    lastResult = line.get(result).get();
     return String.format("%s = find(%s, %s); //line(%d)",
-            line.get(result).get(), what, evalWhere(line, where), lineNumber);
+            lastResult, what, evalWhere(line, where), lineNumber);
   }
 
   public static String createfindAll(ArrayList<ScriptCell> line, Integer lineNumber) {
@@ -215,8 +218,9 @@ public abstract class ScriptTemplate {
     int where = 3;
     int result = 4;
     int waitTime = evalWaitTime(line, 1);
-    return String.format("%s = wait(%s, %s, %d); //line(%d)", line.get(result).get(),
-            what, evalWhere(line, where), waitTime, lineNumber);
+    lastResult = line.get(result).get();
+    return String.format("%s = wait(%s, %s, %d); //line(%d)",
+            lastResult, what, evalWhere(line, where), waitTime, lineNumber);
   }
 
   public static String createvanish(ArrayList<ScriptCell> line, Integer lineNumber) {
@@ -225,8 +229,16 @@ public abstract class ScriptTemplate {
             .replace(") wait:", ") waitVanish:");
   }
 
+  private static String evalCondition(List<ScriptCell> line) {
+    String condition = line.get(1).get();
+    if (condition.contains("{condition}")) {
+      condition = lastResult;
+    }
+    return condition;
+  }
+
   public static String createif(ArrayList<ScriptCell> line, Integer lineNumber) {
-    return String.format("if () { //line(%d)", lineNumber);
+    return String.format("if (%s) { //line(%d)", evalCondition(line), lineNumber);
   }
 
   public static String createendif(ArrayList<ScriptCell> line, Integer lineNumber) {
@@ -234,7 +246,7 @@ public abstract class ScriptTemplate {
   }
 
   public static String createloop(ArrayList<ScriptCell> line, Integer lineNumber) {
-    return String.format("while () { //line(%d)", lineNumber);
+    return String.format("while (%s) { //line(%d)", evalCondition(line), lineNumber);
   }
 
   public static String createendloop(ArrayList<ScriptCell> line, Integer lineNumber) {
