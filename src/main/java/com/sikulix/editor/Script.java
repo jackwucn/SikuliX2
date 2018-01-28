@@ -43,8 +43,8 @@ public class Script implements TableModelListener {
   }
 
   JTextField status = new JTextField();
-
   String statusText = "";
+  boolean statusPause = false;
 
   private File fScriptFolder = new File(SX.getSXSTORE(), "scripteditor");
   private File fScript = new File(fScriptFolder, "script.txt");
@@ -55,10 +55,15 @@ public class Script implements TableModelListener {
 
   List<Integer> lines = new ArrayList<>();
   List<List<ScriptCell>> allData = new ArrayList<>();
-  Stack<List<ScriptCell>> lineStack = new Stack<>();
 
   List<List<ScriptCell>> data = new ArrayList<>();
+  List<List<ScriptCell>> savedData = new ArrayList<>();
   List<List<ScriptCell>> savedLines = new ArrayList<>();
+  int[] savedHiddenCount = new int[0];
+
+  protected boolean isUnhidden() {
+    return savedData.size() > 0;
+  }
 
   protected List<List<ScriptCell>> getData() {
     return data;
@@ -173,7 +178,6 @@ public class Script implements TableModelListener {
 
     popUpWindow = new PopUpWindow();
 
-
     new Thread(new Runnable() {
       int selectedRow = -1;
       int selectedCol = -1;
@@ -216,6 +220,9 @@ public class Script implements TableModelListener {
             statusText = "";
           }
           SX.pause(0.5);
+          while (statusPause) {
+            SX.pause(0.5);
+          }
         }
       }
     }).start();

@@ -22,7 +22,7 @@ class ScriptCell {
   private String value = "";
   private String initialValue = "";
   private CellType cellType = CellType.TEXT;
-//  private int row = -1;
+  //  private int row = -1;
   private int col = -1;
   private int indentLevel = 0;
   private int indentIfLevel = 0;
@@ -211,21 +211,28 @@ class ScriptCell {
             }
           }).start();
         } else {
-          value = "@" + imagename + "?";
+          value += "?";
         }
       }
     }
   }
 
+  private String getImageName() {
+    if (value.startsWith("@")) {
+      return value.substring(1).replace("?", "");
+    }
+    return "";
+  }
+
   private void loadPicture() {
-    File fPicture = new File(script.getScriptPath().getParentFile(), imagename + ".png");
+    File fPicture = new File(script.getScriptPath().getParentFile(), getImageName() + ".png");
     if (fPicture.exists()) {
       picture = new Picture(fPicture.getAbsolutePath());
     }
   }
 
   private boolean existsPicture() {
-    File fPicture = new File(script.getScriptPath().getParentFile(), imagename + ".png");
+    File fPicture = new File(script.getScriptPath().getParentFile(), getImageName() + ".png");
     return fPicture.exists();
   }
 
@@ -337,7 +344,38 @@ class ScriptCell {
   }
 
   protected void lineUnhideAll() {
-    script.log.error("lineUnhideAll: not implemented");
+    if (!script.isUnhidden()) {
+      if (script.data.size() < script.allData.size()) {
+        script.savedData.addAll(script.data);
+        script.statusPause = true;
+        SX.pause(0.5);
+        script.data.clear();
+        script.data.addAll(script.allData);
+        script.savedHiddenCount = new int[script.data.size()];
+        for (int n = 0; n < script.data.size(); n++) {
+          script.savedHiddenCount[n] = 0;
+          if (script.data.get(n).get(0).getHidden() > 0) {
+            script.savedHiddenCount[n] = script.data.get(n).get(0).getHidden();
+            script.data.get(n).get(0).setHidden(0);
+          }
+        }
+      }
+    } else {
+      script.statusPause = true;
+      SX.pause(0.5);
+      for (int n = 0; n < script.data.size(); n++) {
+        if (script.savedHiddenCount[n] > 0) {
+          script.data.get(n).get(0).setHidden(script.savedHiddenCount[n]);
+        }
+      }
+      script.data.clear();
+      script.data.addAll(script.savedData);
+      script.savedData.clear();
+    }
+    script.checkContent();
+    script.table.tableHasChanged();
+    script.table.setSelection(0, 0);
+    script.statusPause = false;
   }
 
   private int hiddenCount = 0;
@@ -375,7 +413,7 @@ class ScriptCell {
   protected void lineNew(int[] selectedRows, String token) {
     if (isHeader()) {
       for (int n : selectedRows) {
-        new TableCell(script,-1, 0).lineAdd();
+        new TableCell(script, -1, 0).lineAdd();
       }
       script.table.tableCheckContent();
       select(0, 0);

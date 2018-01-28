@@ -309,7 +309,7 @@ public class PopUpMenus {
       add(createMenuItem("Continue co", this));
       add(createMenuItem("ContinueIf ci", this));
       createMenuSeperator();
-      add(createMenuItem("Function $F", this));
+      add(createMenuItem("Function $f", this));
     }
 
     public void addCommand(String menuItem) {
@@ -379,7 +379,11 @@ public class PopUpMenus {
       add(createMenuItem("InsertLines i", this));
       createMenuSeperator();
       if (cell.isHeader()) {
-        add(createMenuItem("UnhideAll u", this));
+        if (script.isUnhidden()) {
+          add(createMenuItem("HideAll", this));
+        } else {
+          add(createMenuItem("UnhideAll", this));
+        }
       } else {
         add(createMenuItem("HideUnhide h", this));
       }
@@ -415,6 +419,10 @@ public class PopUpMenus {
     }
 
     public void unhideAll(ActionEvent ae) {
+      getDataCell().lineUnhideAll();
+    }
+
+    public void hideAll(ActionEvent ae) {
       getDataCell().lineUnhideAll();
     }
 

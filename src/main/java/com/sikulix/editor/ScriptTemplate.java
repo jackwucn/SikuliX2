@@ -63,7 +63,7 @@ public abstract class ScriptTemplate {
     commandTemplates.put("if", new String[]{"", "{condition}", "{script}"});
     commandTemplates.put("ifNot", new String[]{"", "{condition}", "{script}"});
     commandTemplates.put("in", new String[]{"ifNot"});
-    commandTemplates.put("endif", new String[]{""});
+    commandTemplates.put("endif", new String[]{"", ""});
     commandTemplates.put("else", new String[]{"", "{script}"});
     commandTemplates.put("e", new String[]{"else"});
     commandTemplates.put("elif", new String[]{"", "{condition}", "{script}"});
@@ -83,7 +83,7 @@ public abstract class ScriptTemplate {
     commandTemplates.put("lw", new String[]{"loopWith"});
     commandTemplates.put("loopFor", new String[]{"", "{count step from}", "{script}"});
     commandTemplates.put("lf", new String[]{"loopFor"});
-    commandTemplates.put("endloop", new String[]{""});
+    commandTemplates.put("endloop", new String[]{"", ""});
     commandTemplates.put("break", new String[]{"", ""});
     commandTemplates.put("br", new String[]{"break"});
     commandTemplates.put("breakIf", new String[]{"", "{condition}"});
