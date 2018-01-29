@@ -404,7 +404,6 @@ class ScriptCell {
   }
 
   protected void lineUnhideAll() {
-    SX.pause(0.5);
     script.data.clear();
     script.lines.clear();
     int lineNumber = 0;
@@ -422,7 +421,6 @@ class ScriptCell {
   }
 
   protected void lineHideAll() {
-    SX.pause(0.5);
     String theScript = script.scriptToString();
     script.data.clear();
     script.allData.clear();
@@ -497,14 +495,14 @@ class ScriptCell {
   }
 
   private List<Integer> getDataLines(int[] selectedRows) {
-    List<Integer> lines = new ArrayList<>();
-    lines.add(lines.get(selectedRows[0]));
-    int lastLine = lines.get(selectedRows[selectedRows.length - 1]);
+    List<Integer> rows = new ArrayList<>();
+    rows.add(script.lines.get(selectedRows[0]));
+    int lastLine = script.lines.get(selectedRows[selectedRows.length - 1]);
     if (lineIsFirstCollapsed(lastLine)) {
       lastLine = script.allData.size() - 1;
     }
-    lines.add(lastLine);
-    return lines;
+    rows.add(lastLine);
+    return rows;
   }
 
   private boolean lineIsFirstCollapsed(int row) {
@@ -532,9 +530,11 @@ class ScriptCell {
       script.lines.remove(selectedRows[0]);
     }
     int dataLine = rows.get(0);
+    int deleteLine = dataLine;
     script.allData.remove(dataLine);
     while (dataLine < rows.get(1)) {
-      script.allData.remove(++dataLine);
+      script.allData.remove(deleteLine);
+      dataLine++;
     }
     int lineCount = rows.get(1) - rows.get(0) + 1;
     for (int row = selectedRows[0]; row < script.lines.size(); row++) {
