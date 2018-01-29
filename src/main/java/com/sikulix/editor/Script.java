@@ -44,7 +44,6 @@ public class Script implements TableModelListener {
 
   JTextField status = new JTextField();
   String statusText = "";
-  boolean statusPause = false;
 
   private File fScriptFolder = new File(SX.getSXSTORE(), "scripteditor");
   private File fScript = new File(fScriptFolder, "script.txt");
@@ -59,11 +58,6 @@ public class Script implements TableModelListener {
   List<List<ScriptCell>> data = new ArrayList<>();
   List<List<ScriptCell>> savedData = new ArrayList<>();
   List<List<ScriptCell>> savedLines = new ArrayList<>();
-  int[] savedHiddenCount = new int[0];
-
-  protected boolean isUnhidden() {
-    return savedData.size() > 0;
-  }
 
   protected List<List<ScriptCell>> getData() {
     return data;
@@ -179,17 +173,15 @@ public class Script implements TableModelListener {
     popUpWindow = new PopUpWindow();
 
     new Thread(new Runnable() {
-      int selectedRow = -1;
-      int selectedCol = -1;
+      boolean statusPause = false;
+      String currentText = "";
 
       @Override
       public void run() {
         while (true) {
           int row = table.getSelectedRow();
           int col = table.getSelectedColumn();
-          if (row != selectedRow || col != selectedCol || !statusText.isEmpty()) {
-            selectedRow = row;
-            selectedCol = col;
+          try {
             String text = "";
             TableCell tCell = new TableCell(getScript(), row, 1);
             ScriptCell dCell = null;
@@ -216,12 +208,20 @@ public class Script implements TableModelListener {
                 text += " empty - start typing to fill";
               }
             }
-            status.setText(String.format("(%d, %d)%s%s", lines.get(row) + 1, col, text, " " + statusText));
+            String newText = String.format("(%d, %d)%s%s", lines.get(row) + 1, col, text, " " + statusText);
+            if (!currentText.equals(newText)) {
+              status.setText(newText);
+              currentText = newText;
+            }
             statusText = "";
+          } catch (Exception ex) {
+            log.trace("STATUS-ERROR: %s", ex.getMessage());
+            statusPause = true;
           }
           SX.pause(0.5);
-          while (statusPause) {
-            SX.pause(0.5);
+          if (statusPause) {
+            statusPause = false;
+            SX.pause(1);
           }
         }
       }
@@ -261,6 +261,7 @@ public class Script implements TableModelListener {
 
     public void mouseReleased(MouseEvent me) {
       Point where = me.getPoint();
+      int clickCount = me.getClickCount();
       int row = table.rowAtPoint(where);
       int col = table.columnAtPoint(where);
       TableCell cell = new TableCell(script, row, col);
@@ -273,7 +274,7 @@ public class Script implements TableModelListener {
 //        log.trace("clicked: R%d C%d B%d {%d ... %d}",
 //                row, col, button, selectedRows[0], selectedRows[selectedRows.length - 1]);
       } else {
-        log.trace("clicked: Header C%d B%d", col, button);
+        log.trace("clicked: Header C%d B%d #%d", col, button, clickCount);
       }
       if (inHeader() && col == Script.numberCol && button == 1) {
         if (table.getSelectedRows().length > 1) {
@@ -304,8 +305,12 @@ public class Script implements TableModelListener {
         }
         return;
       }
+      if (inBody() && col == 0 && button == 1 && clickCount > 1) {
+        if (cell.isFirstHidden()) {
+          cell.getDataCell().lineHide(new int[]{row});
+        }
+      }
     }
-
   }
 
 //  public void tableChanged(TableModelEvent e) {
@@ -558,17 +563,29 @@ public class Script implements TableModelListener {
     statusText = String.format(msg, args);
   }
 
-  protected void loadScript() {
-    allData.clear();
-    data.clear();
-    lines.clear();
-    resultsCounter = 0;
-    int hiddenCount = 0;
-    String theScript = com.sikulix.core.Content.readFileToString(fScript);
+  protected void logLine(List<ScriptCell> line, String command, int lineNumber) {
+    ScriptCell commandCell = line.get(0);
+    String hidden = "";
+    if (commandCell.isFirstHidden()) {
+      int hiddenCount = commandCell.getHidden();
+      if (hiddenCount > 0) {
+        hidden = "+" + hiddenCount;
+      } else {
+        hidden += hiddenCount;
+      }
+    }
+    log.trace("%3d%3s %s", lineNumber, hidden, command);
+  }
+
+  protected void stringToScript(String theScript) {
+    int lineNumber = 0;
     for (String line : theScript.split("\\n")) {
       List<ScriptCell> aLine = new ArrayList<>();
       int colCount = 1;
-      for (String cellText : line.trim().split("\\t")) {
+      String[] cells = line.split("\\t");
+      String command = cells[0];
+      for (String cellText : cells) {
+        cellText = cellText.trim();
         String resultTarget = "$V";
         if (cellText.contains(resultTarget)) {
           int resultCount = -1;
@@ -584,10 +601,7 @@ public class Script implements TableModelListener {
         } else if (cellText.startsWith("#")) {
           if (cellText.startsWith("# h ")) {
             try {
-              hiddenCount = Integer.parseInt(cellText.split(" ")[2]);
-              if (hiddenCount > 1) {
-                aLine.get(0).setHidden(hiddenCount);
-              }
+              aLine.get(0).setHidden(Integer.parseInt(cellText.split(" ")[2]));
             } catch (Exception ex) {
             }
           }
@@ -602,6 +616,7 @@ public class Script implements TableModelListener {
       }
       if (aLine.size() > 0) {
         allData.add(aLine);
+        logLine(aLine, command, lineNumber++);
       }
     }
     if (allData.size() > 0) {
@@ -611,14 +626,13 @@ public class Script implements TableModelListener {
         data.add(line);
         lines.add(row);
         ScriptCell cell = line.get(0);
-        if (cell.isFirstHidden()) {
+        if (cell.isFirstHidden() && cell.getHidden() > 0) {
           firstHideLines.add(0, row);
         }
         row++;
       }
-      int actualHidden = 0;
       while (firstHideLines.size() > 0) {
-        Integer hrow = firstHideLines.get(actualHidden);
+        Integer hrow = firstHideLines.get(0);
         ScriptCell firstHiddenCell = data.get(hrow).get(0);
         int firstLine = hrow + 1;
         int lastLine = hrow + firstHiddenCell.getHidden();
@@ -626,40 +640,46 @@ public class Script implements TableModelListener {
           data.remove(firstLine);
           lines.remove(firstLine);
         }
-        firstHideLines.remove(actualHidden);
+        firstHideLines.remove(0);
       }
     }
+  }
+
+  protected void loadScript() {
+    allData.clear();
+    data.clear();
+    lines.clear();
+    resultsCounter = 0;
+    stringToScript(com.sikulix.core.Content.readFileToString(fScript));
     if (SX.isNotNull(table)) {
       checkContent();
       table.setSelection(0, 1);
     }
   }
 
-  protected List<List<ScriptCell>> createData(int firstLine, int lastLine) {
-    List<List<ScriptCell>> newData = new ArrayList<>();
-    for (int n = firstLine; n <= lastLine; n++) {
-      newData.add(dataRowRemove(firstLine));
-    }
-    return newData;
-  }
-
-  protected void saveScript() {
+  protected String scriptToString() {
     String theScript = "";
-    resetLines();
     for (List<ScriptCell> line : allData) {
       String sLine = "";
       String sTab = "";
+      String indent = line.get(0).getIndent() > 0 ?
+              String.join("", Collections.nCopies(line.get(0).getIndent(), " ")) : "";
       for (ScriptCell cell : line) {
         sLine += sTab + cell.get();
         sTab = "\t";
       }
       if (SX.isSet(sLine)) {
         if (line.get(0).isFirstHidden()) {
-          sLine += sTab + "# h " + line.get(0).getHidden();
+          sLine += sTab + "# h " + Math.abs(line.get(0).getHidden());
         }
-        theScript += sLine + "\n";
+        theScript += indent + sLine + "\n";
       }
     }
+    return theScript;
+  }
+
+  protected void saveScript() {
+    String theScript = scriptToString();
     if (SX.isSet(theScript)) {
       fScript.getParentFile().mkdirs();
       com.sikulix.core.Content.writeStringToFile(theScript, fScript);
@@ -711,50 +731,6 @@ public class Script implements TableModelListener {
         }
       }
     }
-  }
-
-  protected void resetLines() {
-    int nextDataLine = 0;
-    lines.clear();
-    allData.clear();
-    boolean someHidden = false;
-    int first = 0;
-    for (List<ScriptCell> line : data) {
-      ScriptCell cell = line.get(0);
-      lines.add(nextDataLine++);
-      allData.add(line);
-      if (cell.isFirstHidden()) {
-        nextDataLine += cell.getHidden() - 1;
-        if (!someHidden) {
-          someHidden = true;
-          first++;
-        }
-      }
-    }
-    while (someHidden) {
-      for (int n = first; n < allData.size(); n++) {
-        someHidden = false;
-        List<ScriptCell> line = allData.get(n);
-        ScriptCell cell = line.get(0);
-        if (cell.isFirstHidden()) {
-          someHidden = true;
-          List<List<ScriptCell>> hiddenData = cell.getHiddenData();
-          int hiddenLines = hiddenData.size();
-          allData.addAll(n + 1, hiddenData);
-          lines.addAll(n + 1, Arrays.asList(new Integer[hiddenLines]));
-          first = n + 1;
-          break;
-        }
-      }
-    }
-    for (int n = first; n < lines.size(); n++) {
-      if (SX.isNull(lines.get(n))) {
-        continue;
-      }
-      lines.set(n, n);
-    }
-    Predicate<Integer> removeNull = nLine -> nLine == null;
-    lines.removeIf(removeNull);
   }
 
   protected int getLastValidLine() {

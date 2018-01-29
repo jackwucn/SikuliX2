@@ -320,11 +320,33 @@ class ScriptCell {
     inError = true;
   }
 
+  private int countInnerHidden(int hiddenCount, int currentDataLine) {
+    hiddenCount--;
+    int hiddenLinesCount = 0;
+    while (hiddenCount > 0) {
+      int count = getLineHiddenCount(currentDataLine);
+      currentDataLine += count;
+      hiddenLinesCount += count;
+      hiddenCount--;
+    }
+    return hiddenLinesCount;
+  }
+
+  private int getLineHiddenCount(int lineNumber) {
+    ScriptCell cell = script.allData.get(lineNumber).get(0);
+    int hiddenCount = cell.getHidden();
+    if (cell.isFirstHidden() && hiddenCount > 0) {
+      return countInnerHidden(hiddenCount, lineNumber + 1) + 1;
+    } else {
+      return 1;
+    }
+  }
+
   protected void lineHide(int[] selectedRows) {
-    int currentDataRow = selectedRows[0];
-    ScriptCell firstCell = script.dataCell(currentDataRow, Script.commandCol - 1);
-    int shouldSelectFirst = currentDataRow;
-    int shouldSelectLast = currentDataRow;
+    int currentTableRow = selectedRows[0];
+    ScriptCell firstCell = script.dataCell(currentTableRow, Script.commandCol - 1);
+    int shouldSelectFirst = currentTableRow;
+    int shouldSelectLast = currentTableRow;
     boolean shouldHide = false;
     int selectedCount = selectedRows.length;
     if (selectedCount == 1) {
@@ -332,23 +354,24 @@ class ScriptCell {
         int hCount = firstCell.getHidden();
         firstCell.setHidden(-hCount);
         if (hCount > 0) {
-          int currentDataLine = script.lines.get(currentDataRow) + 1;
-          shouldSelectLast = shouldSelectFirst + hCount - 1;
-          while (hCount > 1) {
+          hCount -= 1;
+          int currentDataLine = script.lines.get(currentTableRow) + 1;
+          shouldSelectLast = shouldSelectFirst + hCount;
+          while (hCount > 0) {
             List<ScriptCell> line = script.allData.get(currentDataLine);
-            script.data.add(currentDataRow + 1, line);
-            script.lines.add(++currentDataRow, currentDataLine);
+            currentTableRow++;
+            script.data.add(currentTableRow, line);
+            script.lines.add(currentTableRow, currentDataLine);
             hCount--;
+            currentDataLine++;
+            int hiddenCount = line.get(0).getHidden();
             if (line.get(0).isFirstHidden()) {
-              if (line.get(0).getHidden() > 0) {
-                currentDataLine += line.get(0).getHidden();
+              if (hiddenCount > 0) {
+                currentDataLine += countInnerHidden(hiddenCount, currentDataLine);
               } else {
-                hCount += (-line.get(0).getHidden()) - 1;
-                shouldSelectLast += (-line.get(0).getHidden()) - 1;
-                currentDataLine++;
+                hCount += (-hiddenCount) - 1;
+                shouldSelectLast += (-hiddenCount) - 1;
               }
-            } else {
-              currentDataLine++;
             }
           }
         } else {
@@ -360,11 +383,11 @@ class ScriptCell {
       shouldHide = true;
     }
     if (shouldHide) {
-      currentDataRow++;
+      currentTableRow++;
       int hiddenLinesCount = 1;
       while (selectedCount > 1) {
-        List<ScriptCell> line = script.data.remove(currentDataRow);
-        script.lines.remove(currentDataRow);
+        List<ScriptCell> line = script.data.remove(currentTableRow);
+        script.lines.remove(currentTableRow);
         hiddenLinesCount++;
         if (line.get(0).isFirstHidden()) {
           if (line.get(0).getHidden() < 0) {
@@ -381,54 +404,39 @@ class ScriptCell {
   }
 
   protected void lineUnhideAll() {
-    if (!script.isUnhidden()) {
-      if (script.data.size() < script.allData.size()) {
-        script.savedData.addAll(script.data);
-        script.statusPause = true;
-        SX.pause(0.5);
-        script.data.clear();
-        script.data.addAll(script.allData);
-        script.savedHiddenCount = new int[script.data.size()];
-        for (int n = 0; n < script.data.size(); n++) {
-          script.savedHiddenCount[n] = 0;
-          if (script.data.get(n).get(0).getHidden() > 0) {
-            script.savedHiddenCount[n] = script.data.get(n).get(0).getHidden();
-            script.data.get(n).get(0).setHidden(0);
-          }
-        }
+    SX.pause(0.5);
+    script.data.clear();
+    script.lines.clear();
+    int lineNumber = 0;
+    for (List<ScriptCell> line : script.allData) {
+      int hiddenCount = line.get(0).getHidden();
+      if (hiddenCount > 0) {
+        line.get(0).setHidden(-hiddenCount);
       }
-    } else {
-      script.statusPause = true;
-      SX.pause(0.5);
-      for (int n = 0; n < script.data.size(); n++) {
-        if (script.savedHiddenCount[n] > 0) {
-          script.data.get(n).get(0).setHidden(script.savedHiddenCount[n]);
-        }
-      }
-      script.data.clear();
-      script.data.addAll(script.savedData);
-      script.savedData.clear();
+      script.data.add(line);
+      script.lines.add(lineNumber++);
     }
     script.checkContent();
     script.table.tableHasChanged();
     script.table.setSelection(0, 0);
-    script.statusPause = false;
+  }
+
+  protected void lineHideAll() {
+    SX.pause(0.5);
+    String theScript = script.scriptToString();
+    script.data.clear();
+    script.allData.clear();
+    script.lines.clear();
+    script.stringToScript(theScript);
+    script.checkContent();
+    script.table.tableHasChanged();
+    script.table.setSelection(0, 0);
   }
 
   private int hiddenCount = 0;
 
-  private List<List<ScriptCell>> hiddenData = null;
-
   protected void setHidden(int count) {
     hiddenCount = count;
-  }
-
-  protected void setHiddenData(List<List<ScriptCell>> hiddenData) {
-    this.hiddenData = hiddenData;
-  }
-
-  protected List<List<ScriptCell>> getHiddenData() {
-    return hiddenData;
   }
 
   protected int getHidden() {
@@ -437,6 +445,19 @@ class ScriptCell {
 
   protected boolean isFirstHidden() {
     return hiddenCount != 0;
+  }
+
+  protected boolean isFirstCollapsed() {
+    return hiddenCount > 0;
+  }
+
+  private void select(int row, int col) {
+    new Thread(new Runnable() {
+      @Override
+      public void run() {
+        script.table.setSelection(Math.max(0, row), col);
+      }
+    }).start();
   }
 
   protected void lineNew(int[] selectedRows) {
@@ -462,7 +483,6 @@ class ScriptCell {
       line.add(new ScriptCell(script, "", Script.commandCol));
       script.data.add(lineAdded, line);
       if (SX.isSet(token)) {
-        script.resetLines();
         boolean success = script.addCommandTemplate(token, new TableCell(script, firstNewLine, Script.commandCol), null);
         if (success) {
           selectCol = Script.commandCol + (token.startsWith("{") ? 0 : 1);
@@ -476,55 +496,79 @@ class ScriptCell {
     select(firstNewLine, selectCol);
   }
 
+  private List<Integer> getDataLines(int[] selectedRows) {
+    List<Integer> lines = new ArrayList<>();
+    lines.add(lines.get(selectedRows[0]));
+    int lastLine = lines.get(selectedRows[selectedRows.length - 1]);
+    if (lineIsFirstCollapsed(lastLine)) {
+      lastLine = script.allData.size() - 1;
+    }
+    lines.add(lastLine);
+    return lines;
+  }
+
+  private boolean lineIsFirstCollapsed(int row) {
+    return script.allData.get(row).get(0).isFirstCollapsed();
+  }
+
+  private List<Integer> saveLines(List<Integer> lines) {
+    script.savedLines.clear();
+    int dataLine = lines.get(0);
+    script.savedLines.add(script.allData.get(dataLine));
+    while (dataLine < lines.get(1)) {
+      script.savedLines.add(script.allData.get(++dataLine));
+    }
+    return lines;
+  }
+
+  protected void lineCopy(int[] selectedRows) {
+    saveLines(getDataLines(selectedRows));
+  }
+
   protected void lineDelete(int[] selectedRows) {
-    saveLines(selectedRows);
-    int currentRow = selectedRows[0];
+    List<Integer> rows = saveLines(getDataLines(selectedRows));
     for (int delRow : selectedRows) {
-      script.data.remove(currentRow);
+      script.data.remove(selectedRows[0]);
+      script.lines.remove(selectedRows[0]);
+    }
+    int dataLine = rows.get(0);
+    script.allData.remove(dataLine);
+    while (dataLine < rows.get(1)) {
+      script.allData.remove(++dataLine);
+    }
+    int lineCount = rows.get(1) - rows.get(0) + 1;
+    for (int row = selectedRows[0]; row < script.lines.size(); row++) {
+      script.lines.set(row, script.lines.get(row) - lineCount);
     }
     script.table.tableCheckContent();
     select(selectedRows[0] - 1, Script.numberCol);
   }
 
-  void select(int row, int col) {
-    new Thread(new Runnable() {
-      @Override
-      public void run() {
-        script.table.setSelection(Math.max(0, row), col);
-      }
-    }).start();
-  }
-
-  private void saveLines(int[] rows) {
-    script.savedLines.clear();
-    for (int sourceRow : rows) {
-      script.savedLines.add(script.data.get(sourceRow));
-    }
-  }
-
   protected void lineEmpty(int[] selectedRows) {
-    int currentRow = selectedRows[0];
-    saveLines(selectedRows);
-    for (int sourceRow : selectedRows) {
-      for (ScriptCell cell : script.data.get(sourceRow)) {
-        cell.resetAll();
-      }
+    List<Integer> lines = saveLines(getDataLines(selectedRows));
+    int dataLine = lines.get(0);
+    resetCells(script.allData.get(dataLine));
+    while (dataLine < lines.get(1)) {
+      resetCells(script.allData.get(++dataLine));
     }
     script.table.tableCheckContent();
-    select(currentRow, Script.commandCol);
+    select(selectedRows[0], Script.commandCol);
+  }
+
+  private void resetCells(List<ScriptCell> line) {
+    for (ScriptCell cell : line) {
+      cell.resetAll();
+    }
   }
 
   protected void lineReset(int[] selectedRows) {
+    saveLines(getDataLines(selectedRows));
     int currentRow = selectedRows[0];
     String command = script.data.get(currentRow).get(0).get();
     lineDelete(new int[]{currentRow});
     lineNew(new int[]{currentRow - 1}, command);
     script.table.tableCheckContent();
     select(currentRow, Script.commandCol);
-  }
-
-  protected void lineCopy(int[] selectedRows) {
-    saveLines(selectedRows);
   }
 
   protected void lineRun(int[] selectedRows) {

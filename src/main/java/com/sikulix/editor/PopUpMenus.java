@@ -379,11 +379,8 @@ public class PopUpMenus {
       add(createMenuItem("InsertLines i", this));
       createMenuSeperator();
       if (cell.isHeader()) {
-        if (script.isUnhidden()) {
-          add(createMenuItem("HideAll", this));
-        } else {
-          add(createMenuItem("UnhideAll", this));
-        }
+        add(createMenuItem("UnhideAll", this));
+        add(createMenuItem("HideAll", this));
       } else {
         add(createMenuItem("HideUnhide h", this));
       }
@@ -423,7 +420,7 @@ public class PopUpMenus {
     }
 
     public void hideAll(ActionEvent ae) {
-      getDataCell().lineUnhideAll();
+      getDataCell().lineHideAll();
     }
 
     public void runLines(ActionEvent ae) {
