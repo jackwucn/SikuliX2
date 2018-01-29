@@ -47,11 +47,12 @@ class ScriptTableModel extends AbstractTableModel {
     int dataRow = tableRow;
     ScriptCell commandCell = script.dataCell(dataRow, Script.commandCol - 1);
     if (tableCol == Script.numberCol) {
-      String sHidden = "%6d %s";
+      String format = "%6d%s %s";
+      String sHidden = "";
       if (commandCell.isFirstHidden()) {
-        sHidden ="%4d... %s";
+        sHidden = commandCell.getHidden() > 0 ? "+" : "-";
       }
-      return String.format(sHidden, script.lines.get(tableRow) + 1, commandCell.getMarker());
+      return String.format(format, script.lines.get(tableRow) + 1, sHidden, commandCell.getMarker());
     }
     String indentSpace = "";
     if (tableCol == Script.commandCol) {

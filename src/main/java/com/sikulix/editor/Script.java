@@ -559,14 +559,16 @@ public class Script implements TableModelListener {
   }
 
   protected void loadScript() {
+    allData.clear();
     data.clear();
+    lines.clear();
     resultsCounter = 0;
     int hiddenCount = 0;
     String theScript = com.sikulix.core.Content.readFileToString(fScript);
     for (String line : theScript.split("\\n")) {
       List<ScriptCell> aLine = new ArrayList<>();
       int colCount = 1;
-      for (String cellText : line.split("\\t")) {
+      for (String cellText : line.trim().split("\\t")) {
         String resultTarget = "$V";
         if (cellText.contains(resultTarget)) {
           int resultCount = -1;
@@ -599,13 +601,15 @@ public class Script implements TableModelListener {
         }
       }
       if (aLine.size() > 0) {
-        data.add(aLine);
+        allData.add(aLine);
       }
     }
-    if (data.size() > 0) {
+    if (allData.size() > 0) {
       List<Integer> firstHideLines = new ArrayList<>();
       Integer row = 0;
-      for (List<ScriptCell> line : data) {
+      for (List<ScriptCell> line : allData) {
+        data.add(line);
+        lines.add(row);
         ScriptCell cell = line.get(0);
         if (cell.isFirstHidden()) {
           firstHideLines.add(0, row);
@@ -616,7 +620,12 @@ public class Script implements TableModelListener {
       while (firstHideLines.size() > 0) {
         Integer hrow = firstHideLines.get(actualHidden);
         ScriptCell firstHiddenCell = data.get(hrow).get(0);
-        firstHiddenCell.setHiddenData(createData(hrow + 1, hrow + firstHiddenCell.getHidden() - 1));
+        int firstLine = hrow + 1;
+        int lastLine = hrow + firstHiddenCell.getHidden();
+        for (int n = firstLine; n < lastLine; n++) {
+          data.remove(firstLine);
+          lines.remove(firstLine);
+        }
         firstHideLines.remove(actualHidden);
       }
     }
@@ -766,7 +775,6 @@ public class Script implements TableModelListener {
     int currentLoopIndent = 0;
     int currentFunctionIndent = 0;
     boolean hasElse = false;
-    resetLines();
     for (List<ScriptCell> line : allData) {
       ScriptCell cell = line.get(0);
       if (line.size() == 0) {

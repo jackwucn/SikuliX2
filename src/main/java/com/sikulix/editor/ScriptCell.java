@@ -325,19 +325,56 @@ class ScriptCell {
     ScriptCell firstCell = script.dataCell(currentDataRow, Script.commandCol - 1);
     int shouldSelectFirst = currentDataRow;
     int shouldSelectLast = currentDataRow;
-    if (selectedRows.length == 1) {
+    boolean shouldHide = false;
+    int selectedCount = selectedRows.length;
+    if (selectedCount == 1) {
       if (firstCell.isFirstHidden()) {
         int hCount = firstCell.getHidden();
-        firstCell.setHidden(0);
-        for (List<ScriptCell> line : firstCell.getHiddenData()) {
-          script.data.add(++currentDataRow, line);
+        firstCell.setHidden(-hCount);
+        if (hCount > 0) {
+          int currentDataLine = script.lines.get(currentDataRow) + 1;
+          shouldSelectLast = shouldSelectFirst + hCount - 1;
+          while (hCount > 1) {
+            List<ScriptCell> line = script.allData.get(currentDataLine);
+            script.data.add(currentDataRow + 1, line);
+            script.lines.add(++currentDataRow, currentDataLine);
+            hCount--;
+            if (line.get(0).isFirstHidden()) {
+              if (line.get(0).getHidden() > 0) {
+                currentDataLine += line.get(0).getHidden();
+              } else {
+                hCount += (-line.get(0).getHidden()) - 1;
+                shouldSelectLast += (-line.get(0).getHidden()) - 1;
+                currentDataLine++;
+              }
+            } else {
+              currentDataLine++;
+            }
+          }
+        } else {
+          shouldHide = true;
+          selectedCount = -hCount;
         }
-        firstCell.setHiddenData(null);
-        shouldSelectLast = shouldSelectFirst + hCount - 1;
       }
     } else {
-      firstCell.setHidden(selectedRows.length);
-      firstCell.setHiddenData(script.createData(currentDataRow + 1, currentDataRow + selectedRows.length - 1));
+      shouldHide = true;
+    }
+    if (shouldHide) {
+      currentDataRow++;
+      int hiddenLinesCount = 1;
+      while (selectedCount > 1) {
+        List<ScriptCell> line = script.data.remove(currentDataRow);
+        script.lines.remove(currentDataRow);
+        hiddenLinesCount++;
+        if (line.get(0).isFirstHidden()) {
+          if (line.get(0).getHidden() < 0) {
+            selectedCount += (-line.get(0).getHidden()) - 1;
+            hiddenLinesCount -= (-line.get(0).getHidden()) - 1;
+          }
+        }
+        selectedCount--;
+      }
+      firstCell.setHidden(hiddenLinesCount);
     }
     script.table.tableCheckContent();
     script.table.setLineSelection(shouldSelectFirst, shouldSelectLast);
@@ -399,11 +436,7 @@ class ScriptCell {
   }
 
   protected boolean isFirstHidden() {
-    return hiddenCount > 0;
-  }
-
-  protected boolean isHiddenBody() {
-    return hiddenCount < 0;
+    return hiddenCount != 0;
   }
 
   protected void lineNew(int[] selectedRows) {
