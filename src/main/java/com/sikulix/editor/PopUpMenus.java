@@ -21,10 +21,15 @@ public class PopUpMenus {
     PopUpMenu parent = null;
     PopUpMenu parentSub = null;
     Component comp = null;
-    ScriptCell cell = null;
+    int row;
+    int col;
     int x;
     int y;
     int[] selectedRows = new int[0];
+
+    boolean isHeader() {
+      return row < 0;
+    }
 
     public JMenuItem createMenuItem(String name, Object ref) {
       int index = name.indexOf("!");
@@ -150,33 +155,17 @@ public class PopUpMenus {
       }
     }
 
-    void pop(Component comp, ScriptCell cell) {
+    void pop(Component comp, int row, int col) {
       this.comp = comp;
-      this.cell = cell;
-      Rectangle cellRectangle = script.table.getCellRect(cell.getTableRow(), cell.getCol(), false);
+      this.row = row;
+      this.col = col;
+      Rectangle cellRectangle = script.table.getCellRect(row, col, false);
       this.x = cellRectangle.x;
       this.y = cellRectangle.y;
-      if (!cell.isHeader()) {
+      if (!isHeader()) {
         this.y += cellRectangle.height;
       }
       show(comp, x, y);
-    }
-
-    public void pop() {
-      if (SX.isNotNull(parent)) {
-        parentSub.show(parent.comp, parent.x, parent.y);
-      }
-    }
-
-    ScriptCell getCell() {
-      if (SX.isNotNull(cell)) {
-        return cell;
-      }
-      if (SX.isNotNull(parent)) {
-        return parent.getCell();
-      }
-      log.error("no cell nor parent");
-      return null;
     }
 
     int[] getSelectedRows() {
@@ -201,8 +190,8 @@ public class PopUpMenus {
   List<List<ScriptCell>> data;
   List<ScriptCell> savedLine = new ArrayList<>();
 
-  protected void command(ScriptCell cell) {
-    new Command().pop(table, cell);
+  protected void command(int row, int col) {
+    new Command().pop(table, row, col);
   }
 
   private class Command extends PopUpMenu {
@@ -235,7 +224,7 @@ public class PopUpMenus {
     }
 
     public void addCommand(String menuItem) {
-      script.addCommandTemplate(menuItem, getCell(), null);
+      script.addCommandTemplate(menuItem, row, null);
     }
   }
 
@@ -251,7 +240,7 @@ public class PopUpMenus {
     }
 
     public void addCommand(String menuItem) {
-      script.addCommandTemplate(menuItem, getCell(), null);
+      script.addCommandTemplate(menuItem, row, null);
     }
   }
 
@@ -265,7 +254,7 @@ public class PopUpMenus {
     }
 
     public void addCommand(String menuItem) {
-      script.addCommandTemplate(menuItem, getCell(), null);
+      script.addCommandTemplate(menuItem, row, null);
     }
   }
 
@@ -278,7 +267,7 @@ public class PopUpMenus {
     }
 
     public void addCommand(String menuItem) {
-      script.addCommandTemplate(menuItem, getCell(), null);
+      script.addCommandTemplate(menuItem, row, null);
     }
   }
 
@@ -310,7 +299,7 @@ public class PopUpMenus {
     }
 
     public void addCommand(String menuItem) {
-      script.addCommandTemplate(menuItem, getCell(), getSelectedRows());
+      script.addCommandTemplate(menuItem, row, getSelectedRows());
     }
 
   }
@@ -338,7 +327,7 @@ public class PopUpMenus {
     }
 
     public void addCommand(String menuItem) {
-      script.addCommandTemplate(menuItem, getCell(), null);
+      script.addCommandTemplate(menuItem, row, null);
     }
 
   }
@@ -352,40 +341,44 @@ public class PopUpMenus {
     }
 
     public void addCommand(String menuItem) {
-      script.addCommandTemplate(menuItem, getCell(), null);
+      script.addCommandTemplate(menuItem, row, null);
     }
 
   }
 
-  protected void action(ScriptCell cell) {
-    new Action(cell).pop(table, cell);
+  protected void action(int row, int col) {
+    new Action(row, col).pop(table, row, col);
   }
 
   private class Action extends PopUpMenu {
 
-    public Action(ScriptCell cell) {
+    public Action(int row, int col) {
       selectedRows = table.getSelectedRows();
       add(createMenuItem(new Global(this)));
       createMenuSeperator();
       add(createMenuItem("NewLines +", this));
-      if (!cell.isHeader()) {
+      if (!isHeader()) {
         add(createMenuItem("DeleteLines -", this));
         add(createMenuItem("EmptyLines e", this));
         add(createMenuItem("CopyLines c", this));
       }
       add(createMenuItem("InsertLines i", this));
       createMenuSeperator();
-      if (cell.isHeader()) {
+      if (isHeader()) {
         add(createMenuItem("UnhideAll", this));
         add(createMenuItem("HideAll", this));
       } else {
         add(createMenuItem("HideUnhide h", this));
       }
-      if (!cell.isHeader()) {
+      if (!isHeader()) {
         add(createMenuItem(new Blocks(this), "Surround"));
       }
       createMenuSeperator();
       add(createMenuItem("RunLines r", this));
+    }
+
+    ScriptCell getCell() {
+      return data.get(row).get(0);
     }
 
     public void newLines(ActionEvent ae) {
@@ -438,7 +431,7 @@ public class PopUpMenus {
     }
 
     public void assist(ActionEvent e) {
-      script.assist(getCell());
+      script.assist(row, col);
     }
 
     public void save(ActionEvent e) {
@@ -454,12 +447,12 @@ public class PopUpMenus {
     }
 
     public void find(ActionEvent e) {
-      getCell().find();
+      script.find(row, col);
     }
   }
 
-  protected void notimplemented(ScriptCell cell) {
-    new Notimplemented().pop(table, cell);
+  protected void notimplemented(int row, int col) {
+    new Notimplemented().pop(table, row, col);
   }
 
   private class Notimplemented extends PopUpMenu {

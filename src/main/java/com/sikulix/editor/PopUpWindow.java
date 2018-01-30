@@ -19,8 +19,8 @@ public class PopUpWindow extends JFrame {
   String cellText = "";
   String resetText = "";
 
-  public void showCell(TableCell cell, String[] text) {
-    this.cell = cell;
+  public void showCell(int row, int col, String[] text) {
+    this.cell = ;
     String editText = text[0];
     resetText = text[1];
     if (SX.isNotSet(text)) {

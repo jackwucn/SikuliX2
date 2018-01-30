@@ -22,10 +22,11 @@ class ScriptTable extends JTable {
   }
 
   @Override
-  public boolean editCellAt(int tableRow, int tableCol, EventObject e) {
-    ScriptCell cell = script.data.get(tableRow).get(tableCol - 1);
-    boolean isLineNumber = tableCol == Script.numberCol;
-    boolean isCommand = tableCol == Script.commandCol;
+  public boolean editCellAt(int row, int col, EventObject e) {
+    ScriptCell cell = script.data.get(row).get(Math.max(0,col - 1));
+    boolean isLineNumber = col == Script.numberCol;
+    boolean isCommand = col == Script.commandCol;
+    int dataCol = Math.max(0, col -1);
     int keyCode = 0;
     if (SX.isNotNull(cell)) {
       if (e instanceof KeyEvent) {
@@ -59,7 +60,7 @@ class ScriptTable extends JTable {
           }
           if (keyCode == KeyEvent.VK_SPACE) {
             //TODO popup in linenumber col
-            script.popUpMenus.action(cell);
+            script.popUpMenus.action(row, col);
             return false;
           }
           if (keyCode == KeyEvent.VK_PLUS) {
@@ -76,14 +77,14 @@ class ScriptTable extends JTable {
             } else {
               cell.lineEmpty(getSelectedRows());
             }
-            setSelection(tableRow, Script.commandCol);
+            setSelection(row, Script.commandCol);
             return false;
           }
           if (keyCode == KeyEvent.VK_SLASH || keyCode == KeyEvent.VK_NUMBER_SIGN ||
                   keyCode == KeyEvent.VK_BRACELEFT) {
             String token = keyCode == KeyEvent.VK_SLASH ? "/" :
                     (keyCode == KeyEvent.VK_NUMBER_SIGN ? "#" : "{");
-            cell.lineNew(new int[]{tableRow});
+            cell.lineNew(new int[]{row});
             //TODO add token
             return false;
           }
@@ -109,30 +110,27 @@ class ScriptTable extends JTable {
           }
         }
         if (isCommand && keyCode == KeyEvent.VK_SPACE && cell.isEmpty()) {
-          script.popUpMenus.command(tCell);
+          script.popUpMenus.command(row, col);
           return false;
         } else if (keyCode == KeyEvent.VK_SPACE) {
           if (!isCommand) {
             if (isShift) {
-              setSelection(tableRow, 0);
-              script.popUpMenus.action(new TableCell(script, tCell.row, 0));
+              setSelection(row, 0);
+              script.popUpMenus.action(row, 0);
             } else {
-              script.editBox(cell);
+              script.editBox(row, dataCol);
             }
           }
           return false;
         } else if (keyCode == KeyEvent.VK_BACK_SPACE && cell.isEmpty()) {
-          if (isCommand) {
-            script.setValueAt(script.savedCellText, cell);
-          } else {
-            cell.setValue(script.savedCellText, tableRow, tableCol);
-          }
+          getModel().setValueAt(script.savedCellText, row, col);
+          setSelection(row, col);
           return false;
         } else if (keyCode == KeyEvent.VK_ESCAPE) {
-          setSelection(tCell.row, 0);
+          setSelection(row, 0);
           return false;
         } else if (keyCode == KeyEvent.VK_F1) {
-          script.assist(tableRow);
+          script.assist(row, col);
           return false;
         } else if (keyCode == KeyEvent.VK_F2) {
           Script.log.trace("F2: save script");
@@ -147,7 +145,7 @@ class ScriptTable extends JTable {
           if (isLineNumber) {
             script.runScript(-1);
           } else {
-            script.runScript(tableRow);
+            script.runScript(row);
           }
           return false;
         } else if (keyCode == KeyEvent.VK_F5) {
@@ -160,7 +158,7 @@ class ScriptTable extends JTable {
           return false;
         } else if (keyCode == KeyEvent.VK_DELETE || keyCode == KeyEvent.VK_BACK_SPACE) {
           script.savedCellText = cell.get();
-          cell.setValue("", tableRow, tableCol);
+          cell.setValue("", row, col);
           return false;
         }
         Script.log.trace("keycode: %d %s", keyCode, KeyEvent.getKeyText(keyCode));
@@ -170,7 +168,7 @@ class ScriptTable extends JTable {
       if (e instanceof KeyEvent && keyCode == KeyEvent.VK_ESCAPE) {
         return false;
       }
-      return super.editCellAt(tableRow, tableCol, e);
+      return super.editCellAt(row, col, e);
     }
     return false;
   }

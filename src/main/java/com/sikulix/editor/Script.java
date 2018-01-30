@@ -438,7 +438,7 @@ public class Script implements TableModelListener {
     return tCell;
   }
 
-  protected void assist(ScriptCell cell) {
+  protected void assist(int row, int col) {
     String cellText;
     int[] selectedRows = table.getSelectedRows();
     if (selectedRows.length > 1) {
@@ -504,6 +504,10 @@ public class Script implements TableModelListener {
       }
       return;
     }
+  }
+
+  protected void find(int row, int col) {
+
   }
 
   protected void logLine(List<ScriptCell> line, String command, int lineNumber) {
@@ -768,7 +772,7 @@ public class Script implements TableModelListener {
     log.trace("checkContent finished (%s)", sLines);
   }
 
-  protected boolean addCommandTemplate(String command, ScriptCell tCell, int[] selectedRows) {
+  protected boolean addCommandTemplate(String command, int row, int[] selectedRows) {
     command = command.trim();
     if (command.length() == 2 && command.startsWith("$") || command.length() == 3 && command.startsWith("$$")) {
       command = command.substring(0, command.length() - 1) + command.substring(command.length() - 1).toUpperCase();
@@ -832,9 +836,10 @@ public class Script implements TableModelListener {
     return success;
   }
 
-  protected void editBox(TableCell cell) {
-    String initialText = cell.getDataCell().getInitial();
-    String[] text = new String[]{cell.getDataCell().get(), initialText};
+  protected void editBox(int row, int col) {
+    ScriptCell cell = data.get(row).get(col);
+    String initialText = cell.getInitial();
+    String[] text = new String[]{cell.get(), initialText};
     boolean shouldEdit = false;
     if (text[0].startsWith("{")) {
       String token = text[0].substring(1, text[0].length() - 1);
@@ -847,7 +852,7 @@ public class Script implements TableModelListener {
     if (shouldEdit) {
       SwingUtilities.invokeLater(new Runnable() {
         public void run() {
-          popUpWindow.showCell(cell, text);
+          popUpWindow.showCell(row, col, text);
         }
       });
     }
