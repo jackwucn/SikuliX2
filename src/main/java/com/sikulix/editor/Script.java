@@ -43,7 +43,6 @@ public class Script implements TableModelListener {
   }
 
   JTextField status = new JTextField();
-  String statusText = "";
 
   private File fScriptFolder = new File(SX.getSXSTORE(), "scripteditor");
   private File fScript = new File(fScriptFolder, "script.txt");
@@ -52,12 +51,11 @@ public class Script implements TableModelListener {
     return fScript;
   }
 
-  List<Integer> lines = new ArrayList<>();
+//  List<Integer> lines = new ArrayList<>();
   List<List<ScriptCell>> allData = new ArrayList<>();
-
   List<List<ScriptCell>> data = new ArrayList<>();
-  List<List<ScriptCell>> savedData = new ArrayList<>();
   List<List<ScriptCell>> savedLines = new ArrayList<>();
+  String savedCellText = "";
 
   protected List<List<ScriptCell>> getData() {
     return data;
@@ -183,13 +181,11 @@ public class Script implements TableModelListener {
           int col = table.getSelectedColumn();
           try {
             String text = "";
-            TableCell tCell = new TableCell(getScript(), row, 1);
-            ScriptCell dCell = null;
-            if (tCell.isFirstHidden()) {
-              text += " hidden:" + tCell.getDataCell().getHidden();
+            ScriptCell dCell = getScript().data.get(row).get(col);
+            if (dCell.isFirstHidden()) {
+              text += " hidden:" + dCell.getHidden();
             }
             if (col > 0) {
-              dCell = evalDataCell(row, col);
               if (SX.isNotNull(dCell)) {
                 String cellText = dCell.get();
                 if (cellText.startsWith("@")) {
@@ -208,12 +204,15 @@ public class Script implements TableModelListener {
                 text += " empty - start typing to fill";
               }
             }
-            String newText = String.format("(%d, %d)%s%s", lines.get(row) + 1, col, text, " " + statusText);
+            String statusText = "";
+            if (SX.isNotNull(dCell)) {
+              statusText = dCell.getStatus();
+            }
+            String newText = String.format("(%d, %d)%s%s", dCell.getRow() + 1, col, text, " " + statusText);
             if (!currentText.equals(newText)) {
               status.setText(newText);
               currentText = newText;
             }
-            statusText = "";
           } catch (Exception ex) {
             log.trace("STATUS-ERROR: %s", ex.getMessage());
             statusPause = true;
@@ -264,10 +263,11 @@ public class Script implements TableModelListener {
       int clickCount = me.getClickCount();
       int row = table.rowAtPoint(where);
       int col = table.columnAtPoint(where);
-      TableCell cell = new TableCell(script, row, col);
+      ScriptCell cell = script.data.get(row).get(col - 1);
       if (inHeader()) {
         cell.setHeader();
       }
+      cell.setTableRow(row);
       int button = me.getButton();
       int[] selectedRows = table.getSelectedRows();
       if (inBody()) {
@@ -280,7 +280,7 @@ public class Script implements TableModelListener {
         if (table.getSelectedRows().length > 1) {
           script.table.setSelection(0, 0);
         } else {
-          script.table.setLineSelection(0, script.getLastValidLine());
+          script.table.setLineSelection(0, script.data.size() - 1);
         }
         return;
       }
@@ -307,7 +307,7 @@ public class Script implements TableModelListener {
       }
       if (inBody() && col == 0 && button == 1 && clickCount > 1) {
         if (cell.isFirstHidden()) {
-          cell.getDataCell().lineHide(new int[]{row});
+          cell.lineHide(new int[]{row});
         }
       }
     }
@@ -317,72 +317,20 @@ public class Script implements TableModelListener {
 //      log.trace("tableChanged:");
 //  }
 
-  String savedCellText = "";
-
-  protected ScriptCell evalDataCell(TableCell tCell) {
-    ScriptCell cell = evalDataCell(tCell.row, tCell.col);
-    if (tCell.isHeader()) {
-      cell.setHeader();
-    }
-    return cell;
-  }
-
-  protected ScriptCell evalCommandCell(TableCell tCell) {
-    return evalDataCell(tCell.row, 1);
-  }
-
-  protected ScriptCell evalDataCell(int tableRow, int tableCol) {
-    int dataCol = tableCol == 0 ? 0 : tableCol - 1;
-    if (tableRow < 0) {
-      tableRow = 0;
-    }
-//    int dataRow = lines.get(tableRow);
-    int dataRow = tableRow;
-    if (dataRow < 0) {
-      return null;
-    }
-    if (tableCol > data.get(dataRow).size()) {
-      return null;
-    }
-    return dataCell(dataRow, dataCol);
-  }
-
-  protected ScriptCell dataCell(int dataRow, int dataCol) {
-    List<ScriptCell> line = data.get(dataRow);
-    return line.get(dataCol);
-  }
-
-  protected List<ScriptCell> dataRow(int dataRow) {
-    return data.get(dataRow);
-  }
-
-  protected List<ScriptCell> dataRowRemove(int dataRow) {
-    return data.remove(dataRow);
-  }
-
-  protected void dataCellSet(int dataRow, int tableCol, String item) {
-    int dataCol = tableCol == 0 ? 0 : tableCol - 1;
-    List<ScriptCell> line = data.get(dataRow);
-    if (dataCol > line.size() - 1) {
-      for (int n = line.size(); n <= dataCol; n++) {
-        line.add(new ScriptCell(this, "", n + 1));
-      }
-    }
-    line.get(dataCol).set(item);
-    if (dataCol > 0 && SX.isSet(item)) {
-      line.get(dataCol).setInitial(item);
-    }
-  }
-
   protected void setValueAt(String text, TableCell cell) {
     table.getModel().setValueAt(text, cell.row, cell.col);
     table.setSelection(cell.row, cell.col);
   }
 
+  private ScriptCell evalDataCell(TableCell tCell) {
+    //TODO evalDataCell
+    return null;
+  }
+
   private TableCell findNext(TableCell tCell) {
     ScriptCell cell = evalDataCell(tCell);
     int indent = cell.getLoopIndent() - 1;
-    int lastLine = getLastValidLine();
+    int lastLine = data.size() - 1;
     String cellText = cell.get();
     String searchText = "endloop";
     if (cellText.contains("function")) {
@@ -449,7 +397,7 @@ public class Script implements TableModelListener {
     int indent = cell.getIfIndent();
     int endIfIndent = indent - 1;
     boolean endIfOnly = command.contains("endif");
-    int lastLine = getLastValidLine();
+    int lastLine = data.size() - 1;
     while (true) {
       tCell = tCell.nextRow();
       if (tCell.row > lastLine) {
@@ -490,24 +438,23 @@ public class Script implements TableModelListener {
     return tCell;
   }
 
-  protected void assist(TableCell tCell) {
-    ScriptCell cell;
+  protected void assist(ScriptCell cell) {
     String cellText;
     int[] selectedRows = table.getSelectedRows();
     if (selectedRows.length > 1) {
-      tCell = new TableCell(this, selectedRows[0], numberCol);
+      cell = data.get(selectedRows[0]).get(numberCol);
     }
-    if (!tCell.isItemCol()) {
-      cell = evalCommandCell(tCell);
+    if (!cell.isItemCol()) {
+      cell = evalCommandCell(cell);
       if (!cell.isFirstHidden()) {
-        TableCell firstCell = new TableCell(this, tCell.row, commandCol);
+        TableCell firstCell = new TableCell(this, cell.row, commandCol);
         TableCell lastCell = null;
         if (cell.get().startsWith("loop") || cell.get().startsWith("function")) {
           lastCell = findNext(firstCell);
         } else if (cell.get().startsWith("endloop") || cell.get().startsWith("endfunction")) {
           lastCell = findPrevious(firstCell);
         } else {
-          if (tCell.isLineNumber()) {
+          if (cell.isLineNumber()) {
             if (cell.get().startsWith("if")) {
               lastCell = findNextForIf(firstCell, "endif");
             }
@@ -536,18 +483,18 @@ public class Script implements TableModelListener {
         cell.lineHide(selectedRows);
       }
     }
-    cell = evalDataCell(tCell);
+    cell = evalDataCell(cell);
     cellText = cell.get();
     if (cell.isImage()) {
       if (cellText.contains("?")) {
-        cell.capture(tCell);
+        cell.capture(cell);
       } else {
-        cell.show(tCell);
+        cell.show(cell);
       }
       return;
     }
     log.trace("F1: (%d,%d) %s (%d, %d, %d)",
-            tCell.row + 1, tCell.col, cellText,
+            cell.row + 1, cell.col, cellText,
             cell.getIndent(), cell.getIfIndent(), cell.getLoopIndent());
     if (cellText.startsWith("$")) {
       if (cellText.startsWith("$?")) {
@@ -557,10 +504,6 @@ public class Script implements TableModelListener {
       }
       return;
     }
-  }
-
-  protected void setStatus(String msg, Object... args) {
-    statusText = String.format(msg, args);
   }
 
   protected void logLine(List<ScriptCell> line, String command, int lineNumber) {
@@ -623,8 +566,7 @@ public class Script implements TableModelListener {
       List<Integer> firstHideLines = new ArrayList<>();
       Integer row = 0;
       for (List<ScriptCell> line : allData) {
-        data.add(line);
-        lines.add(row);
+        addData(line, row);
         ScriptCell cell = line.get(0);
         if (cell.isFirstHidden() && cell.getHidden() > 0) {
           firstHideLines.add(0, row);
@@ -638,17 +580,20 @@ public class Script implements TableModelListener {
         int lastLine = hrow + firstHiddenCell.getHidden();
         for (int n = firstLine; n < lastLine; n++) {
           data.remove(firstLine);
-          lines.remove(firstLine);
         }
         firstHideLines.remove(0);
       }
     }
   }
 
+  private void addData(List<ScriptCell> line, int row) {
+    data.add(line);
+    line.get(0).setRow(row);
+  }
+
   protected void loadScript() {
     allData.clear();
     data.clear();
-    lines.clear();
     resultsCounter = 0;
     stringToScript(com.sikulix.core.Content.readFileToString(fScript));
     if (SX.isNotNull(table)) {
@@ -731,17 +676,6 @@ public class Script implements TableModelListener {
         }
       }
     }
-  }
-
-  protected int getLastValidLine() {
-    int validLine = -1;
-    for (int line : lines) {
-      if (line < 0) {
-        break;
-      }
-      validLine++;
-    }
-    return validLine;
   }
 
   protected void checkContent() {
@@ -828,13 +762,13 @@ public class Script implements TableModelListener {
     }
     table.tableHasChanged();
     String sLines = "";
-    for (int ix : lines) {
-      sLines += ix + ",";
+    for (List<ScriptCell> line : data) {
+      sLines += line.get(0).getRow() + ",";
     }
     log.trace("checkContent finished (%s)", sLines);
   }
 
-  protected boolean addCommandTemplate(String command, TableCell tCell, int[] selectedRows) {
+  protected boolean addCommandTemplate(String command, ScriptCell tCell, int[] selectedRows) {
     command = command.trim();
     if (command.length() == 2 && command.startsWith("$") || command.length() == 3 && command.startsWith("$$")) {
       command = command.substring(0, command.length() - 1) + command.substring(command.length() - 1).toUpperCase();
@@ -853,17 +787,17 @@ public class Script implements TableModelListener {
       }
     }
     boolean success = false;
-    TableCell tCellFirst = null;
-    TableCell tCellLast = null;
+    ScriptCell cellFirst = null;
+    ScriptCell cellLast = null;
     if (SX.isNotNull(selectedRows) && tCell.col == numberCol) {
       log.trace("addCommandTemplate: should surround with: %s", command);
-      tCellFirst = new TableCell(this, selectedRows[0]);
-      boolean addedBefore = tCellFirst.previousRow().lineAdd(commandLine);
+      cellFirst = new TableCell(this, selectedRows[0]);
+      boolean addedBefore = cellFirst.previousRow().lineAdd(commandLine);
       if (addedBefore) {
-        tCellFirst.row += 1;
+        cellFirst.row += 1;
       }
-      tCellLast = new TableCell(this, selectedRows[selectedRows.length - 1]);
-      tCellLast.nextRow().lineAdd(command.startsWith("if") ? "endif" : "endloop");
+      cellLast = new TableCell(this, selectedRows[selectedRows.length - 1]);
+      cellLast.nextRow().lineAdd(command.startsWith("if") ? "endif" : "endloop");
       success = true;
     } else if (tCell.isLineEmpty()) {
       if (SX.isNotNull(commandLine)) {
@@ -889,8 +823,8 @@ public class Script implements TableModelListener {
     }
     if (success) {
       checkContent();
-      if (SX.allNotNull(tCellFirst, tCellLast)) {
-        table.setLineSelection(tCellFirst.row, tCellLast.row);
+      if (SX.allNotNull(cellFirst, cellLast)) {
+        table.setLineSelection(cellFirst.row, cellLast.row);
       } else {
         table.setSelection(tCell.row, tCell.col);
       }

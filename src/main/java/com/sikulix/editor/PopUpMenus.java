@@ -4,7 +4,8 @@ import com.sikulix.core.SX;
 import com.sikulix.core.SXLog;
 
 import javax.swing.*;
-import java.awt.*;
+import java.awt.Component;
+import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.lang.reflect.Method;
@@ -20,7 +21,7 @@ public class PopUpMenus {
     PopUpMenu parent = null;
     PopUpMenu parentSub = null;
     Component comp = null;
-    TableCell cell = null;
+    ScriptCell cell = null;
     int x;
     int y;
     int[] selectedRows = new int[0];
@@ -149,10 +150,10 @@ public class PopUpMenus {
       }
     }
 
-    void pop(Component comp, TableCell cell) {
+    void pop(Component comp, ScriptCell cell) {
       this.comp = comp;
       this.cell = cell;
-      Rectangle cellRectangle = cell.getRect();
+      Rectangle cellRectangle = script.table.getCellRect(cell.getTableRow(), cell.getCol(), false);
       this.x = cellRectangle.x;
       this.y = cellRectangle.y;
       if (!cell.isHeader()) {
@@ -167,7 +168,7 @@ public class PopUpMenus {
       }
     }
 
-    TableCell getCell() {
+    ScriptCell getCell() {
       if (SX.isNotNull(cell)) {
         return cell;
       }
@@ -176,10 +177,6 @@ public class PopUpMenus {
       }
       log.error("no cell nor parent");
       return null;
-    }
-
-    ScriptCell getDataCell() {
-      return script.evalDataCell(getCell());
     }
 
     int[] getSelectedRows() {
@@ -204,7 +201,7 @@ public class PopUpMenus {
   List<List<ScriptCell>> data;
   List<ScriptCell> savedLine = new ArrayList<>();
 
-  protected void command(TableCell cell) {
+  protected void command(ScriptCell cell) {
     new Command().pop(table, cell);
   }
 
@@ -360,13 +357,13 @@ public class PopUpMenus {
 
   }
 
-  protected void action(TableCell cell) {
+  protected void action(ScriptCell cell) {
     new Action(cell).pop(table, cell);
   }
 
   private class Action extends PopUpMenu {
 
-    public Action(TableCell cell) {
+    public Action(ScriptCell cell) {
       selectedRows = table.getSelectedRows();
       add(createMenuItem(new Global(this)));
       createMenuSeperator();
@@ -392,39 +389,39 @@ public class PopUpMenus {
     }
 
     public void newLines(ActionEvent ae) {
-      getDataCell().lineNew(selectedRows);
+      getCell().lineNew(selectedRows);
     }
 
     public void deleteLines(ActionEvent ae) {
-      getDataCell().lineDelete(selectedRows);
+      getCell().lineDelete(selectedRows);
     }
 
     public void emptyLines(ActionEvent ae) {
-      getDataCell().lineEmpty(selectedRows);
+      getCell().lineEmpty(selectedRows);
     }
 
     public void copyLines(ActionEvent ae) {
-      getDataCell().lineCopy(selectedRows);
+      getCell().lineCopy(selectedRows);
     }
 
     public void insertLines(ActionEvent ae) {
-      getDataCell().lineInsert(selectedRows);
+      getCell().lineInsert(selectedRows);
     }
 
     public void hideUnhide(ActionEvent ae) {
-      getDataCell().lineHide(selectedRows);
+      getCell().lineHide(selectedRows);
     }
 
     public void unhideAll(ActionEvent ae) {
-      getDataCell().lineUnhideAll();
+      getCell().lineUnhideAll();
     }
 
     public void hideAll(ActionEvent ae) {
-      getDataCell().lineHideAll();
+      getCell().lineHideAll();
     }
 
     public void runLines(ActionEvent ae) {
-      getDataCell().lineRun(selectedRows);
+      getCell().lineRun(selectedRows);
     }
   }
 
@@ -457,11 +454,11 @@ public class PopUpMenus {
     }
 
     public void find(ActionEvent e) {
-      getDataCell().find();
+      getCell().find();
     }
   }
 
-  protected void notimplemented(TableCell cell) {
+  protected void notimplemented(ScriptCell cell) {
     new Notimplemented().pop(table, cell);
   }
 

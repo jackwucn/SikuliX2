@@ -4,8 +4,8 @@
 
 package com.sikulix.editor;
 
-import java.awt.*;
 import java.util.ArrayList;
+import java.util.List;
 
 public class TableCell {
   int row = -1;
@@ -14,7 +14,8 @@ public class TableCell {
 
   Script script = null;
 
-  private TableCell() {}
+  private TableCell() {
+  }
 
   public TableCell(Script script, int row, int col) {
     this.row = row;
@@ -40,28 +41,20 @@ public class TableCell {
     return col == 0;
   }
 
-  public boolean isItemCol() {
-    return col > 1;
-  }
-
   public TableCell nextRow() {
-    return new TableCell(script,row + 1);
+    return new TableCell(script, row + 1);
   }
 
   public TableCell previousRow() {
-    return new TableCell(script,row - 1);
+    return new TableCell(script, row - 1);
   }
 
   public TableCell nextCol() {
-    return new TableCell(script,row, Math.min(script.maxCol, col + 1));
+    return new TableCell(script, row, Math.min(script.maxCol, col + 1));
   }
 
   public TableCell previousCol() {
-    return new TableCell(script,row, Math.max(0, col - 1));
-  }
-
-  protected Rectangle getRect() {
-    return script.table.getCellRect(row, col, false);
+    return new TableCell(script, row, Math.max(0, col - 1));
   }
 
   protected boolean isLineEmpty() {
@@ -72,47 +65,6 @@ public class TableCell {
       }
     }
     return true;
-  }
-
-  protected void lineSet(String... items) {
-    lineSet(row, items);
-  }
-
-  private void lineSet(int dataRow, String... items) {
-    if (items.length == 0) {
-      script.data.set(dataRow, new ArrayList<>());
-      script.data.get(dataRow).add(new ScriptCell(script, "", Script.commandCol));
-    } else {
-      int col = 1;
-      for (String item : items) {
-        script.dataCellSet(dataRow, col++, item);
-      }
-    }
-  }
-
-  protected boolean lineAdd(String... items) {
-    int dataRow;
-    boolean addedBefore = false;
-    if (row < 0) {
-      addedBefore = true;
-      dataRow = 0;
-      script.data.add(0, new ArrayList<>());
-    } else if (row > script.data.size() - 1) {
-      script.data.add(new ArrayList<>());
-      dataRow = script.data.size() -1;
-    } else {
-//      dataRow = script.lines.get(row);
-      dataRow = row;
-      if (dataRow < 0) {
-        script.data.add(new ArrayList<>());
-        dataRow = script.data.size() - 1;
-      } else {
-        script.data.add(dataRow + 1, new ArrayList<>());
-        dataRow++;
-      }
-    }
-    lineSet(dataRow, items);
-    return addedBefore;
   }
 
   boolean isFirstHidden() {

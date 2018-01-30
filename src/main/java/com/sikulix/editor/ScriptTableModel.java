@@ -52,7 +52,7 @@ class ScriptTableModel extends AbstractTableModel {
       if (commandCell.isFirstHidden()) {
         sHidden = commandCell.getHidden() > 0 ? "+" : "-";
       }
-      return String.format(format, script.lines.get(tableRow) + 1, sHidden, commandCell.getMarker());
+      return String.format(format, script.data.get(tableRow).get(0).getRow() + 1, sHidden, commandCell.getMarker());
     }
     String indentSpace = "";
     if (tableCol == Script.commandCol) {
@@ -80,51 +80,19 @@ class ScriptTableModel extends AbstractTableModel {
         fireTableDataChanged();
         return;
       }
-      row = -row - 1;
-      if ("DELETE".equals(value.toString())) {
-        fireTableRowsDeleted(row, col);
-        return;
-      }
-      if ("INSERT".equals(value.toString())) {
-        fireTableRowsInserted(row, col);
-        return;
-      }
-      if ("UPDATE".equals(value.toString())) {
-        fireTableRowsUpdated(row, col);
-        return;
-      }
     }
-
-    String given = ((String) value).trim();
     if (col == 0) {
       return;
     }
-    TableCell tCell = new TableCell(script, row, col);
-    ScriptCell cell = script.evalDataCell(tCell);
+    String given = ((String) value).trim();
+    ScriptCell cell = script.evalDataCell(row, col);
     if (SX.isNull(cell)) {
-      int dataRow = script.lines.get(row);
+      int dataRow = script.data.get(row).get(0).getRow();
       if (dataRow == -1) {
-        if (col != Script.commandCol) {
-          return;
-        }
-        int tableRow = 0;
-        Integer[] linesArray = script.lines.toArray(new Integer[0]);
-        for (int ref : linesArray) {
-          if (ref == -1) {
-            List<ScriptCell> newLine = new ArrayList<>();
-            newLine.add(new ScriptCell(script, "", Script.commandCol));
-            data.add(newLine);
-            script.lines.set(tableRow, data.size() - 1);
-          }
-          if (tableRow == row) {
-            break;
-          }
-          tableRow++;
-        }
+        script.log.error("TableModel.setValueAt: row %d no data", row);
       } else {
         script.dataCellSet(dataRow, col, "");
       }
-      cell = script.evalDataCell(row, col);
     }
     if (col == 1) {
       if (given.isEmpty()) {
@@ -132,11 +100,11 @@ class ScriptTableModel extends AbstractTableModel {
         script.checkContent();
         script.table.setSelection(row, col);
       } else {
-        if (!tCell.isLineEmpty()) {
+        if (cell.isLineEmpty()) {
+          script.addCommandTemplate(given, new TableCell(script, row, col), null);
+        } else {
           cell.set(given);
           script.checkContent();
-        } else {
-          script.addCommandTemplate(given, new TableCell(script, row, col), null);
         }
       }
     } else {

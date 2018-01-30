@@ -23,12 +23,11 @@ class ScriptTable extends JTable {
 
   @Override
   public boolean editCellAt(int tableRow, int tableCol, EventObject e) {
-    TableCell tCell = new TableCell(script, tableRow, tableCol);
-    ScriptCell currentCell = script.evalDataCell(tableRow, tableCol);
+    ScriptCell cell = script.data.get(tableRow).get(tableCol - 1);
     boolean isLineNumber = tableCol == Script.numberCol;
     boolean isCommand = tableCol == Script.commandCol;
     int keyCode = 0;
-    if (SX.isNotNull(currentCell)) {
+    if (SX.isNotNull(cell)) {
       if (e instanceof KeyEvent) {
         keyCode = ((KeyEvent) e).getExtendedKeyCode();
         if (keyCode == 0) {
@@ -59,22 +58,23 @@ class ScriptTable extends JTable {
             return false;
           }
           if (keyCode == KeyEvent.VK_SPACE) {
-            script.popUpMenus.action(tCell);
+            //TODO popup in linenumber col
+            script.popUpMenus.action(cell);
             return false;
           }
           if (keyCode == KeyEvent.VK_PLUS) {
-            currentCell.lineNew(getSelectedRows());
+            cell.lineNew(getSelectedRows());
             return false;
           }
           if (keyCode == KeyEvent.VK_MINUS) {
-            currentCell.lineDelete(getSelectedRows());
+            cell.lineDelete(getSelectedRows());
             return false;
           }
           if (keyCode == KeyEvent.VK_BACK_SPACE) {
             if (isCtrl) {
-              currentCell.lineReset(getSelectedRows());
+              cell.lineReset(getSelectedRows());
             } else {
-              currentCell.lineEmpty(getSelectedRows());
+              cell.lineEmpty(getSelectedRows());
             }
             setSelection(tableRow, Script.commandCol);
             return false;
@@ -83,55 +83,56 @@ class ScriptTable extends JTable {
                   keyCode == KeyEvent.VK_BRACELEFT) {
             String token = keyCode == KeyEvent.VK_SLASH ? "/" :
                     (keyCode == KeyEvent.VK_NUMBER_SIGN ? "#" : "{");
-            currentCell.lineNew(new int[]{tableRow}, token);
+            cell.lineNew(new int[]{tableRow});
+            //TODO add token
             return false;
           }
           if (keyCode == KeyEvent.VK_E) {
-            currentCell.lineEmpty(getSelectedRows());
+            cell.lineEmpty(getSelectedRows());
             return false;
           }
           if (keyCode == KeyEvent.VK_C) {
-            currentCell.lineCopy(getSelectedRows());
+            cell.lineCopy(getSelectedRows());
             return false;
           }
           if (keyCode == KeyEvent.VK_I) {
-            currentCell.lineInsert(getSelectedRows());
+            cell.lineInsert(getSelectedRows());
             return false;
           }
           if (keyCode == KeyEvent.VK_H) {
-            currentCell.lineHide(getSelectedRows());
+            cell.lineHide(getSelectedRows());
             return false;
           }
           if (keyCode == KeyEvent.VK_R) {
-            currentCell.lineRun(getSelectedRows());
+            cell.lineRun(getSelectedRows());
             return false;
           }
         }
-        if (isCommand && keyCode == KeyEvent.VK_SPACE && currentCell.isEmpty()) {
+        if (isCommand && keyCode == KeyEvent.VK_SPACE && cell.isEmpty()) {
           script.popUpMenus.command(tCell);
           return false;
         } else if (keyCode == KeyEvent.VK_SPACE) {
           if (!isCommand) {
             if (isShift) {
-              setSelection(tCell.row, 0);
+              setSelection(tableRow, 0);
               script.popUpMenus.action(new TableCell(script, tCell.row, 0));
             } else {
-              script.editBox(tCell);
+              script.editBox(cell);
             }
           }
           return false;
-        } else if (keyCode == KeyEvent.VK_BACK_SPACE && currentCell.isEmpty()) {
+        } else if (keyCode == KeyEvent.VK_BACK_SPACE && cell.isEmpty()) {
           if (isCommand) {
-            script.setValueAt(script.savedCellText, tCell);
+            script.setValueAt(script.savedCellText, cell);
           } else {
-            currentCell.setValue(script.savedCellText, tableRow, tableCol);
+            cell.setValue(script.savedCellText, tableRow, tableCol);
           }
           return false;
         } else if (keyCode == KeyEvent.VK_ESCAPE) {
           setSelection(tCell.row, 0);
           return false;
         } else if (keyCode == KeyEvent.VK_F1) {
-          script.assist(tCell);
+          script.assist(tableRow);
           return false;
         } else if (keyCode == KeyEvent.VK_F2) {
           Script.log.trace("F2: save script");
@@ -151,15 +152,15 @@ class ScriptTable extends JTable {
           return false;
         } else if (keyCode == KeyEvent.VK_F5) {
           Script.log.trace("F5: find");
-          currentCell.find();
+          cell.find();
           return false;
         } else if (keyCode == KeyEvent.VK_F6) {
           return false;
         } else if (keyCode == KeyEvent.VK_F7) {
           return false;
         } else if (keyCode == KeyEvent.VK_DELETE || keyCode == KeyEvent.VK_BACK_SPACE) {
-          script.savedCellText = currentCell.get();
-          currentCell.setValue("", tableRow, tableCol);
+          script.savedCellText = cell.get();
+          cell.setValue("", tableRow, tableCol);
           return false;
         }
         Script.log.trace("keycode: %d %s", keyCode, KeyEvent.getKeyText(keyCode));
