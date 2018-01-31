@@ -186,7 +186,7 @@ class ScriptCell {
   String imagename = "";
   Picture picture = null;
 
-  protected void capture(TableCell tCell) {
+  protected void capture(int row, int col) {
     if (isEmpty() || isImage()) {
       asImage();
       imagename = value.replace("@", "").replace("?", "");
@@ -223,7 +223,7 @@ class ScriptCell {
     }
   }
 
-  protected void show(TableCell tCell) {
+  protected void show(int row, int col) {
     if (!isEmpty()) {
       if (isImage() && isValid()) {
         loadPicture();
@@ -512,7 +512,7 @@ class ScriptCell {
     return true;
   }
 
-  private void lineSet(int tableRow, String... items) {
+  protected void lineSet(int tableRow, String... items) {
     int col = 1;
     for (String item : items) {
       cellSet(tableRow, col++, item);

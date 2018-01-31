@@ -14,20 +14,26 @@ import java.awt.event.KeyEvent;
 
 public class PopUpWindow extends JFrame {
 
-  TableCell cell = null;
+  ScriptCell cell = null;
   RSyntaxTextArea cellTextArea = null;
   String cellText = "";
   String resetText = "";
+  Script script = null;
+  int row = -1;
+  int col = -1;
 
-  public void showCell(int row, int col, String[] text) {
-    this.cell = ;
+  public void showCell(Script script, int row, int col, String[] text) {
+    this.script = script;
+    this.row = row;
+    this.col = col;
+    this.cell = script.data.get(row).get(col);
     String editText = text[0];
     resetText = text[1];
     if (SX.isNotSet(text)) {
-      editText = cell.script.evalDataCell(cell).get();
+      editText = cell.get();
     }
     cellTextArea.setText(editText);
-    setLocationRelativeTo(cell.script.getWindow());
+    setLocationRelativeTo(script.getWindow());
     setVisible(true);
   }
 
@@ -46,8 +52,8 @@ public class PopUpWindow extends JFrame {
             if (!checkText(cellText)) {
               cellText = resetText;
             }
-            cell.script.table.setValueAt(cellText, cell.row, cell.col);
-            cell.script.table.setSelection(cell.row, cell.col);
+            script.table.setValueAt(cellText, row, col);
+            script.table.setSelection(row, col);
           }
           return;
         }
