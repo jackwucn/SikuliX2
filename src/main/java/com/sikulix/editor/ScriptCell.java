@@ -51,11 +51,6 @@ class ScriptCell {
     this.tableRow = tableRow;
   }
 
-  private void changeRow(int dataRow, int change) {
-    int newRow = script.data.get(dataRow).get(0).getRow() + change;
-    script.data.get(dataRow).get(0).setRow(newRow);
-  }
-
   private int indentLevel = 0;
   private int indentIfLevel = 0;
   private int indentLoopLevel = 0;
@@ -512,61 +507,13 @@ class ScriptCell {
     return true;
   }
 
-  protected void lineSet(int tableRow, String... items) {
-    int col = 1;
-    for (String item : items) {
-      cellSet(tableRow, col++, item);
-    }
-  }
-
-  protected void cellSet(int tableRow, int col, String item) {
-    List<ScriptCell> line = script.data.get(tableRow);
-    if (col > line.size() - 1) {
-      for (int n = line.size(); n <= col; n++) {
-        line.add(new ScriptCell(script, "", n + 1));
-      }
-    }
-    line.get(col).set(item);
-    if (col > 0 && SX.isSet(item)) {
-      line.get(col).setInitial(item);
-    }
-  }
-
-  protected void lineAdd(int tableRow, int lineCount) {
-    int dataRow;
-    if (tableRow == 0) {
-      tableRow = dataRow = 0;
-    } else if (tableRow > script.data.size() - 1) {
-      tableRow = script.data.size();
-      dataRow = script.allData.size();
-    } else {
-      dataRow = script.data.get(tableRow).get(0).getRow();
-    }
-    for (int n = 0; n < lineCount; n++) {
-      List<ScriptCell> line = new ArrayList<>();
-      if (tableRow == script.data.size()) {
-        script.data.add(line);
-        script.allData.add(line);
-      } else {
-        script.data.add(tableRow, line);
-        script.allData.add(dataRow, line);
-      }
-      line.add(new ScriptCell(script, "", Script.commandCol, dataRow));
-      tableRow++;
-      dataRow++;
-    }
-    for (int n = dataRow; n < script.allData.size(); n++) {
-      changeRow(n, lineCount);
-    }
-  }
-
   protected void lineNew(int[] selectedRows) {
     int numLines = selectedRows.length;
     int firstNewLine = selectedRows[numLines - 1] + 1;
     if (isHeader()) {
       firstNewLine = 0;
     }
-    lineAdd(firstNewLine, numLines);
+    script.lineAdd(firstNewLine, numLines);
     script.table.tableCheckContent();
     select(firstNewLine, Script.commandCol);
   }
@@ -625,7 +572,7 @@ class ScriptCell {
     }
     int lineCount = rows.get(1) - rows.get(0) + 1;
     for (int row = selectedRows[0]; row < script.data.size(); row++) {
-      changeRow(row, -lineCount);
+      script.changeRow(row, -lineCount);
     }
     script.table.tableCheckContent();
     select(selectedRows[0] - 1, Script.numberCol);

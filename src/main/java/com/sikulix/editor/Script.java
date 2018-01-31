@@ -747,7 +747,18 @@ public class Script implements TableModelListener {
     log.trace("checkContent finished (%s)", sLines);
   }
 
-  protected boolean addCommandTemplate(String command, int row, int col, int[] selectedRows) {
+  protected boolean addCommandTemplate(String command) {
+    boolean success = false;
+    int[] selectedRows = table.getSelectedRows();
+    if (SX.isNull(selectedRows)) {
+      return success;
+    }
+    int firstRow = selectedRows[0];
+    int lastRow = selectedRows[selectedRows.length - 1];
+    int[] selectedCols = table.getSelectedColumns();
+    if (SX.isNull(selectedCols)) {
+      return success;
+    }
     command = command.trim();
     if (command.length() == 2 && command.startsWith("$") || command.length() == 3 && command.startsWith("$$")) {
       command = command.substring(0, command.length() - 1) + command.substring(command.length() - 1).toUpperCase();
@@ -765,16 +776,13 @@ public class Script implements TableModelListener {
         commandLine[0] = command + commandLine[0];
       }
     }
-    boolean success = false;
-    int firstRow = selectedRows[0];
-    int lastRow = selectedRows[selectedRows.length - 1];
-    if (SX.isNotNull(selectedRows) && col == numberCol) {
+    if (selectedCols[0] == numberCol) {
       log.trace("addCommandTemplate: should surround with: %s", command);
-      commandCell(firstRow).lineAdd(firstRow--, 1);
-      commandCell(firstRow).lineSet(firstRow, commandLine);
+      lineAdd(firstRow--, 1);
+      lineSet(firstRow, commandLine);
       firstRow = Math.max(0, firstRow);
-      commandCell(lastRow).lineAdd(lastRow++, 1);
-      commandCell(lastRow).lineSet(lastRow, command.startsWith("if") ? "endif" : "endloop");
+      lineAdd(lastRow++, 1);
+      lineSet(lastRow, command.startsWith("if") ? "endif" : "endloop");
       success = true;
     } else if (commandCell(firstRow).isLineEmpty()) {
       if (SX.isNotNull(commandLine)) {
@@ -783,19 +791,21 @@ public class Script implements TableModelListener {
         if (lineEnd.startsWith("result")) {
           commandLine[lineLast] = (lineEnd.contains("-list") ? "$$V" : "$V") + resultsCounter++;
         }
-        commandCell(firstRow).lineSet(firstRow, commandLine);
+        lineSet(firstRow, commandLine);
         if (command.startsWith("if") && !command.contains("ifElse")) {
-          tCell.lineAdd("endif");
+          lineAdd(firstRow + 1, 1);
+          lineSet(firstRow + 1, "endif");
         } else if (command.startsWith("loop")) {
-          tCell.lineAdd("endloop");
+          lineAdd(firstRow + 1, 1);
+          lineSet(firstRow + 1, "endloop");
         } else if (command.startsWith("function")) {
-          tCell.lineAdd("endfunction");
+          lineAdd(firstRow + 1, 1);
+          lineSet(firstRow + 1, "endfunction");
         } else {
         }
       } else {
-        tCell.lineSet(new String[]{command + "?"});
+        lineSet(firstRow, command + "?");
       }
-      tCell = new TableCell(this, tCell.row, 0);
       success = true;
     }
     if (success) {
@@ -803,6 +813,59 @@ public class Script implements TableModelListener {
       table.setLineSelection(firstRow, lastRow);
     }
     return success;
+  }
+
+  protected void changeRow(int dataRow, int change) {
+    int newRow = data.get(dataRow).get(0).getRow() + change;
+    data.get(dataRow).get(0).setRow(newRow);
+  }
+
+  protected void lineAdd(int tableRow, int lineCount) {
+    int dataRow;
+    if (tableRow == 0) {
+      tableRow = dataRow = 0;
+    } else if (tableRow > data.size() - 1) {
+      tableRow = data.size();
+      dataRow = allData.size();
+    } else {
+      dataRow = data.get(tableRow).get(0).getRow();
+    }
+    for (int n = 0; n < lineCount; n++) {
+      List<ScriptCell> line = new ArrayList<>();
+      if (tableRow == data.size()) {
+        data.add(line);
+        allData.add(line);
+      } else {
+        data.add(tableRow, line);
+        allData.add(dataRow, line);
+      }
+      line.add(new ScriptCell(this, "", commandCol, dataRow));
+      tableRow++;
+      dataRow++;
+    }
+    for (int n = dataRow; n < allData.size(); n++) {
+      changeRow(n, lineCount);
+    }
+  }
+
+  protected void cellSet(int row, int col, String item) {
+    List<ScriptCell> line = data.get(row);
+    if (col > line.size() - 1) {
+      for (int n = line.size(); n <= col; n++) {
+        line.add(new ScriptCell(this, "", n + 1));
+      }
+    }
+    line.get(col).set(item);
+    if (col > 0 && SX.isSet(item)) {
+      line.get(col).setInitial(item);
+    }
+  }
+
+  protected void lineSet(int row, String... items) {
+    int col = 1;
+    for (String item : items) {
+      cellSet(row, col++, item);
+    }
   }
 
   protected void editBox(int row, int col) {
@@ -821,7 +884,7 @@ public class Script implements TableModelListener {
     if (shouldEdit) {
       SwingUtilities.invokeLater(new Runnable() {
         public void run() {
-          popUpWindow.showCell(row, col, text);
+          popUpWindow.showCell(getScript(), row, col, text);
         }
       });
     }

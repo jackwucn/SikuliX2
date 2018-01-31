@@ -197,6 +197,7 @@ public class PopUpMenus {
   private class Command extends PopUpMenu {
 
     public Command() {
+      selectedRows = table.getSelectedRows();
       add(createMenuItem(new Global(this)));
       createMenuSeperator();
       add(createMenuItem(new Finding(this)));
@@ -224,7 +225,7 @@ public class PopUpMenus {
     }
 
     public void addCommand(String menuItem) {
-      script.addCommandTemplate(menuItem, row, null);
+      script.addCommandTemplate(menuItem);
     }
   }
 
@@ -240,7 +241,7 @@ public class PopUpMenus {
     }
 
     public void addCommand(String menuItem) {
-      script.addCommandTemplate(menuItem, row, null);
+      script.addCommandTemplate(menuItem);
     }
   }
 
@@ -254,7 +255,7 @@ public class PopUpMenus {
     }
 
     public void addCommand(String menuItem) {
-      script.addCommandTemplate(menuItem, row, null);
+      script.addCommandTemplate(menuItem);
     }
   }
 
@@ -267,7 +268,7 @@ public class PopUpMenus {
     }
 
     public void addCommand(String menuItem) {
-      script.addCommandTemplate(menuItem, row, null);
+      script.addCommandTemplate(menuItem);
     }
   }
 
@@ -299,7 +300,7 @@ public class PopUpMenus {
     }
 
     public void addCommand(String menuItem) {
-      script.addCommandTemplate(menuItem, row, getSelectedRows());
+      script.addCommandTemplate(menuItem);
     }
 
   }
@@ -327,7 +328,7 @@ public class PopUpMenus {
     }
 
     public void addCommand(String menuItem) {
-      script.addCommandTemplate(menuItem, row, null);
+      script.addCommandTemplate(menuItem);
     }
 
   }
@@ -341,7 +342,7 @@ public class PopUpMenus {
     }
 
     public void addCommand(String menuItem) {
-      script.addCommandTemplate(menuItem, row, null);
+      script.addCommandTemplate(menuItem);
     }
 
   }
@@ -382,27 +383,27 @@ public class PopUpMenus {
     }
 
     public void newLines(ActionEvent ae) {
-      getCell().lineNew(selectedRows);
+      getCell().lineNew(getSelectedRows());
     }
 
     public void deleteLines(ActionEvent ae) {
-      getCell().lineDelete(selectedRows);
+      getCell().lineDelete(getSelectedRows());
     }
 
     public void emptyLines(ActionEvent ae) {
-      getCell().lineEmpty(selectedRows);
+      getCell().lineEmpty(getSelectedRows());
     }
 
     public void copyLines(ActionEvent ae) {
-      getCell().lineCopy(selectedRows);
+      getCell().lineCopy(getSelectedRows());
     }
 
     public void insertLines(ActionEvent ae) {
-      getCell().lineInsert(selectedRows);
+      getCell().lineInsert(getSelectedRows());
     }
 
     public void hideUnhide(ActionEvent ae) {
-      getCell().lineHide(selectedRows);
+      getCell().lineHide(getSelectedRows());
     }
 
     public void unhideAll(ActionEvent ae) {
@@ -414,7 +415,7 @@ public class PopUpMenus {
     }
 
     public void runLines(ActionEvent ae) {
-      getCell().lineRun(selectedRows);
+      getCell().lineRun(getSelectedRows());
     }
   }
 

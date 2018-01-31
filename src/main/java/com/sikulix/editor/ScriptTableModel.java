@@ -39,31 +39,26 @@ class ScriptTableModel extends AbstractTableModel {
     return String.format("%d - Item", col);
   }
 
-  public Object getValueAt(int tableRow, int tableCol) {
-    ScriptCell cell = script.evalDataCell(tableRow, tableCol);
-    if (SX.isNull(cell)) {
-      return "";
-    }
-    int dataRow = tableRow;
-    ScriptCell commandCell = script.dataCell(dataRow, Script.commandCol - 1);
+  public Object getValueAt(int row, int tableCol) {
+    int dataCol = Math.max(0, tableCol - 1);
+    ScriptCell commandCell = script.commandCell(row);
     if (tableCol == Script.numberCol) {
       String format = "%6d%s %s";
       String sHidden = "";
       if (commandCell.isFirstHidden()) {
         sHidden = commandCell.getHidden() > 0 ? "+" : "-";
       }
-      return String.format(format, script.data.get(tableRow).get(0).getRow() + 1, sHidden, commandCell.getMarker());
+      return String.format(format, script.data.get(row).get(0).getRow() + 1, sHidden, commandCell.getMarker());
     }
     String indentSpace = "";
     if (tableCol == Script.commandCol) {
       indentSpace = commandCell.getIndentSpace();
     }
-    int lineCol = tableCol - 1;
-    List<ScriptCell> line = data.get(dataRow);
-    if (lineCol > line.size() - 1) {
+    List<ScriptCell> line = data.get(row);
+    if (dataCol > line.size() - 1) {
       return "";
     }
-    return indentSpace + script.dataCell(dataRow, tableCol - 1).get();
+    return indentSpace + line.get(dataCol).get();
   }
 
   public Class getColumnClass(int c) {
@@ -74,34 +69,30 @@ class ScriptTableModel extends AbstractTableModel {
     return true;
   }
 
-  public void setValueAt(Object value, int row, int col) {
+  public void setValueAt(Object value, int row, int tableCol) {
     if (row < 0) {
-      if (col < 0) {
+      if (tableCol < 0) {
         fireTableDataChanged();
         return;
       }
     }
-    if (col == 0) {
+    if (tableCol == 0) {
       return;
     }
+    int dataCol = tableCol - 1;
     String given = ((String) value).trim();
-    ScriptCell cell = script.evalDataCell(row, col);
+    ScriptCell cell = script.data.get(row).get(dataCol);
     if (SX.isNull(cell)) {
-      int dataRow = script.data.get(row).get(0).getRow();
-      if (dataRow == -1) {
-        script.log.error("TableModel.setValueAt: row %d no data", row);
-      } else {
-        script.dataCellSet(dataRow, col, "");
-      }
+      script.cellSet(row, dataCol, "");
     }
-    if (col == 1) {
+    if (tableCol == 1) {
       if (given.isEmpty()) {
         cell.set(given);
         script.checkContent();
-        script.table.setSelection(row, col);
+        script.table.setSelection(row, tableCol);
       } else {
         if (cell.isLineEmpty()) {
-          script.addCommandTemplate(given, new TableCell(script, row, col), null);
+          script.addCommandTemplate(given);
         } else {
           cell.set(given);
           script.checkContent();
@@ -109,7 +100,7 @@ class ScriptTableModel extends AbstractTableModel {
       }
     } else {
       cell.set(given);
-      fireTableCellUpdated(row, col);
+      fireTableCellUpdated(row, tableCol);
     }
   }
 
