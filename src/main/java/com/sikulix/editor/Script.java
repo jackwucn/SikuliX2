@@ -43,6 +43,7 @@ public class Script implements TableModelListener {
   }
 
   JTextField status = new JTextField();
+  boolean lastPopInHeader = false;
 
   private File fScriptFolder = new File(SX.getSXSTORE(), "scripteditor");
   private File fScript = new File(fScriptFolder, "script.txt");
@@ -259,6 +260,7 @@ public class Script implements TableModelListener {
     }
 
     public void mouseReleased(MouseEvent me) {
+      lastPopInHeader = false;
       Point where = me.getPoint();
       int clickCount = me.getClickCount();
       int row = table.rowAtPoint(where);
@@ -273,9 +275,9 @@ public class Script implements TableModelListener {
       }
       if (inHeader() && col == Script.numberCol && button == 1) {
         if (table.getSelectedRows().length > 1) {
-          script.table.setSelection(0, 0);
+          table.setSelection(0, 0);
         } else {
-          script.table.setLineSelection(0, script.data.size() - 1);
+          table.setLineSelection(0, data.size() - 1);
         }
         return;
       }
@@ -287,15 +289,15 @@ public class Script implements TableModelListener {
       if (button == 3) {
         if (inBody()) {
           if (col == 0) {
-            popUpMenus.action(row, col);
+            popUpMenus.action();
           } else if (col == 1) {
-            popUpMenus.command(row, col);
+            popUpMenus.command();
           } else {
-            popUpMenus.notimplemented(row, col);
+            //popUpMenus.notimplemented();
           }
         } else {
           if (col < 2) {
-            popUpMenus.action(row, col);
+            popUpMenus.headerAction();
           }
         }
         return;
@@ -311,16 +313,6 @@ public class Script implements TableModelListener {
 //  public void tableChanged(TableModelEvent e) {
 //      log.trace("tableChanged:");
 //  }
-
-  protected void setValueAt(String text, TableCell cell) {
-    table.getModel().setValueAt(text, cell.row, cell.col);
-    table.setSelection(cell.row, cell.col);
-  }
-
-  private ScriptCell evalDataCell(TableCell tCell) {
-    //TODO evalDataCell
-    return null;
-  }
 
   private int findNext(int row) {
     ScriptCell cell = commandCell(row);
@@ -410,7 +402,9 @@ public class Script implements TableModelListener {
     return row > -1;
   }
 
-  protected void assist(int row, int col) {
+  protected void assist() {
+    int row = table.getSelectedRows()[0];
+    int col = table.getSelectedColumns()[0];
     ScriptCell cell = data.get(row).get(col);
     int[] selectedRows = table.getSelectedRows();
     if (selectedRows.length > 1) {
@@ -811,8 +805,8 @@ public class Script implements TableModelListener {
   }
 
   protected void changeRow(int dataRow, int change) {
-    int newRow = data.get(dataRow).get(0).getRow() + change;
-    data.get(dataRow).get(0).setRow(newRow);
+    int newRow = allData.get(dataRow).get(0).getRow() + change;
+    allData.get(dataRow).get(0).setRow(newRow);
   }
 
   protected void lineAdd(int tableRow, int lineCount) {
@@ -843,6 +837,166 @@ public class Script implements TableModelListener {
     }
   }
 
+  protected void lineSet(int row, String... items) {
+    int col = 1;
+    for (String item : items) {
+      cellSet(row, col++, item);
+    }
+  }
+
+  private List<Integer> getDataLines(int[] selectedRows) {
+    List<Integer> rows = new ArrayList<>();
+    rows.add(data.get(selectedRows[0]).get(0).getRow());
+    int lastLine = data.get(selectedRows[selectedRows.length - 1]).get(0).getRow();
+    if (lineIsFirstCollapsed(lastLine)) {
+      lastLine = allData.size() - 1;
+    }
+    rows.add(lastLine);
+    return rows;
+  }
+
+  private boolean lineIsFirstCollapsed(int row) {
+    return allData.get(row).get(0).isFirstCollapsed();
+  }
+
+  private List<Integer> saveLines(List<Integer> lines) {
+    savedLines.clear();
+    int dataLine = lines.get(0);
+    savedLines.add(allData.remove(dataLine));
+    while (dataLine < lines.get(1)) {
+      savedLines.add(allData.remove(++dataLine));
+    }
+    return lines;
+  }
+
+  boolean isHeader() {
+    return false; //TODO isHeader
+  }
+
+  protected void lineNew() {
+    lineNew(table.getSelectedRows());
+  }
+
+  protected void lineNew(int[] selectedRows) {
+    int numLines = selectedRows.length;
+    int firstNewLine = selectedRows[numLines - 1] + 1;
+    if (lastPopInHeader) {
+      firstNewLine = 0;
+    }
+    lineAdd(firstNewLine, numLines);
+    table.tableCheckContent();
+    select(firstNewLine, Script.commandCol);
+  }
+
+  private List<Integer> copyLines(List<Integer> lines) {
+    savedLines.clear();
+    int currentLine = lines.get(0);
+    savedLines.add(copyLine(allData.get(currentLine)));
+    while (currentLine < lines.get(1)) {
+      savedLines.add(copyLine(allData.get(++currentLine)));
+    }
+    return lines;
+  }
+
+  private List<ScriptCell> copyLine(List<ScriptCell> line) {
+    List<ScriptCell> lineCopy = new ArrayList<>();
+    for (ScriptCell cell : line) {
+      lineCopy.add(cell.copy());
+    }
+    return lineCopy;
+  }
+
+  protected void lineCopy() {
+    lineCopy(table.getSelectedRows());
+  }
+
+  protected void lineCopy(int[] selectedRows) {
+    copyLines(getDataLines(selectedRows));
+  }
+
+  protected void lineDelete() {
+    lineDelete(table.getSelectedRows());
+  }
+
+  protected void lineDelete(int[] selectedRows) {
+    List<Integer> rows = saveLines(getDataLines(selectedRows));
+    for (int delRow : selectedRows) {
+      data.remove(selectedRows[0]);
+    }
+    int lineCount = rows.get(1) - rows.get(0) + 1;
+    for (int row = selectedRows[0]; row < allData.size(); row++) {
+      changeRow(row, -lineCount);
+    }
+    table.tableCheckContent();
+    select(selectedRows[0] - 1, Script.numberCol);
+  }
+
+  protected void lineEmpty() {
+    lineEmpty(table.getSelectedRows());
+  }
+
+  protected void lineEmpty(int[] selectedRows) {
+    List<Integer> lines = saveLines(getDataLines(selectedRows));
+    int dataLine = lines.get(0);
+    for (int n = dataLine; n <= lines.get(1); n++) {
+      lineNew(new int[]{dataLine - 1});
+    }
+    table.tableCheckContent();
+    select(selectedRows[0], Script.commandCol);
+  }
+
+  protected void lineReset() {
+    lineReset(table.getSelectedRows());
+  }
+
+  protected void lineReset(int[] selectedRows) {
+    int currentRow = selectedRows[0];
+    String command = data.get(currentRow).get(0).get();
+    saveLines(getDataLines(selectedRows));
+    //TODO lineNew(new int[]{currentRow - 1}, command);
+    table.tableCheckContent();
+    select(currentRow, Script.commandCol);
+  }
+
+  protected void lineRun() {
+    lineRun(table.getSelectedRows());
+  }
+
+  protected void lineRun(int[] selectedRows) {
+    runScript(selectedRows[0], selectedRows[selectedRows.length - 1]);
+  }
+
+  protected void lineInsert() {
+    lineInsert(table.getSelectedRows());
+  }
+
+  protected void lineInsert(int[] selectedRows) {
+    int numLines = savedLines.size();
+    if (isHeader()) {
+      for (int n = 0; n < numLines; n++) {
+        data.add(n, savedLines.remove(0));
+      }
+      table.tableCheckContent();
+      select(0, 0);
+      return;
+    }
+    int firstNewLine = selectedRows[selectedRows.length - 1] + 1;
+    int currentRow = selectedRows[selectedRows.length - 1];
+    for (int n = 0; n < numLines; n++) {
+      data.add(currentRow + n + 1, savedLines.remove(0));
+    }
+    table.tableCheckContent();
+    table.setSelection(firstNewLine, Script.numberCol);
+  }
+  protected void select(int row, int col) {
+    new Thread(new Runnable() {
+      @Override
+      public void run() {
+        table.setSelection(Math.max(0, row), col);
+      }
+    }).start();
+  }
+
   protected void cellSet(int row, int col, String item) {
     List<ScriptCell> line = data.get(row);
     if (col > line.size() - 1) {
@@ -856,11 +1010,8 @@ public class Script implements TableModelListener {
     }
   }
 
-  protected void lineSet(int row, String... items) {
-    int col = 1;
-    for (String item : items) {
-      cellSet(row, col++, item);
-    }
+  protected void lineHide() {
+    lineHide(table.getSelectedRows());
   }
 
   protected void lineHide(int[] selectedRows) {
@@ -943,6 +1094,31 @@ public class Script implements TableModelListener {
     } else {
       return 1;
     }
+  }
+
+  protected void lineUnhideAll() {
+    data.clear();
+    int lineNumber = 0;
+    for (List<ScriptCell> line : allData) {
+      int hiddenCount = line.get(0).getHidden();
+      if (hiddenCount > 0) {
+        line.get(0).setHidden(-hiddenCount);
+      }
+      data.add(line);
+    }
+    checkContent();
+    table.tableHasChanged();
+    table.setSelection(0, 0);
+  }
+
+  protected void lineHideAll() {
+    String theScript = scriptToString();
+    data.clear();
+    allData.clear();
+    stringToScript(theScript);
+    checkContent();
+    table.tableHasChanged();
+    table.setSelection(0, 0);
   }
 
   protected void editBox(int row, int col) {

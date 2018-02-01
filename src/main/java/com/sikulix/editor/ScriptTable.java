@@ -60,22 +60,22 @@ class ScriptTable extends JTable {
           }
           if (keyCode == KeyEvent.VK_SPACE) {
             //TODO popup in linenumber col
-            script.popUpMenus.action(row, col);
+            script.popUpMenus.action();
             return false;
           }
           if (keyCode == KeyEvent.VK_PLUS) {
-            cell.lineNew(getSelectedRows());
+            script.lineNew(getSelectedRows());
             return false;
           }
           if (keyCode == KeyEvent.VK_MINUS) {
-            cell.lineDelete(getSelectedRows());
+            script.lineDelete(getSelectedRows());
             return false;
           }
           if (keyCode == KeyEvent.VK_BACK_SPACE) {
             if (isCtrl) {
-              cell.lineReset(getSelectedRows());
+              script.lineReset(getSelectedRows());
             } else {
-              cell.lineEmpty(getSelectedRows());
+              script.lineEmpty(getSelectedRows());
             }
             setSelection(row, Script.commandCol);
             return false;
@@ -84,20 +84,20 @@ class ScriptTable extends JTable {
                   keyCode == KeyEvent.VK_BRACELEFT) {
             String token = keyCode == KeyEvent.VK_SLASH ? "/" :
                     (keyCode == KeyEvent.VK_NUMBER_SIGN ? "#" : "{");
-            cell.lineNew(new int[]{row});
+            script.lineNew(new int[]{row});
             //TODO add token
             return false;
           }
           if (keyCode == KeyEvent.VK_E) {
-            cell.lineEmpty(getSelectedRows());
+            script.lineEmpty(getSelectedRows());
             return false;
           }
           if (keyCode == KeyEvent.VK_C) {
-            cell.lineCopy(getSelectedRows());
+            script.lineCopy(getSelectedRows());
             return false;
           }
           if (keyCode == KeyEvent.VK_I) {
-            cell.lineInsert(getSelectedRows());
+            script.lineInsert(getSelectedRows());
             return false;
           }
           if (keyCode == KeyEvent.VK_H) {
@@ -105,18 +105,18 @@ class ScriptTable extends JTable {
             return false;
           }
           if (keyCode == KeyEvent.VK_R) {
-            cell.lineRun(getSelectedRows());
+            script.lineRun(getSelectedRows());
             return false;
           }
         }
         if (isCommand && keyCode == KeyEvent.VK_SPACE && cell.isEmpty()) {
-          script.popUpMenus.command(row, col);
+          script.popUpMenus.command();
           return false;
         } else if (keyCode == KeyEvent.VK_SPACE) {
           if (!isCommand) {
             if (isShift) {
               setSelection(row, 0);
-              script.popUpMenus.action(row, 0);
+              script.popUpMenus.action();
             } else {
               script.editBox(row, dataCol);
             }
@@ -130,7 +130,7 @@ class ScriptTable extends JTable {
           setSelection(row, 0);
           return false;
         } else if (keyCode == KeyEvent.VK_F1) {
-          script.assist(row, col);
+          script.assist();
           return false;
         } else if (keyCode == KeyEvent.VK_F2) {
           Script.log.trace("F2: save script");

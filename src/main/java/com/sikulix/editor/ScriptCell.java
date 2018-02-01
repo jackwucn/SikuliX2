@@ -73,7 +73,7 @@ class ScriptCell {
     this.row = row;
   }
 
-  private ScriptCell copy() {
+  protected ScriptCell copy() {
     ScriptCell cell = new ScriptCell(script, value, col);
     cell.initialValue = this.initialValue;
     return cell;
@@ -354,31 +354,6 @@ class ScriptCell {
     inError = true;
   }
 
-  protected void lineUnhideAll() {
-    script.data.clear();
-    int lineNumber = 0;
-    for (List<ScriptCell> line : script.allData) {
-      int hiddenCount = line.get(0).getHidden();
-      if (hiddenCount > 0) {
-        line.get(0).setHidden(-hiddenCount);
-      }
-      script.data.add(line);
-    }
-    script.checkContent();
-    script.table.tableHasChanged();
-    script.table.setSelection(0, 0);
-  }
-
-  protected void lineHideAll() {
-    String theScript = script.scriptToString();
-    script.data.clear();
-    script.allData.clear();
-    script.stringToScript(theScript);
-    script.checkContent();
-    script.table.tableHasChanged();
-    script.table.setSelection(0, 0);
-  }
-
   private int hiddenCount = 0;
 
   protected void setHidden(int count) {
@@ -397,15 +372,6 @@ class ScriptCell {
     return hiddenCount > 0;
   }
 
-  private void select(int row, int col) {
-    new Thread(new Runnable() {
-      @Override
-      public void run() {
-        script.table.setSelection(Math.max(0, row), col);
-      }
-    }).start();
-  }
-
   protected boolean isLineEmpty() {
     for (ScriptCell cell : script.data.get(row)) {
       if (!cell.isEmpty()) {
@@ -413,119 +379,6 @@ class ScriptCell {
       }
     }
     return true;
-  }
-
-  protected void lineNew(int[] selectedRows) {
-    int numLines = selectedRows.length;
-    int firstNewLine = selectedRows[numLines - 1] + 1;
-    if (isHeader()) {
-      firstNewLine = 0;
-    }
-    script.lineAdd(firstNewLine, numLines);
-    script.table.tableCheckContent();
-    select(firstNewLine, Script.commandCol);
-  }
-
-  private List<Integer> getDataLines(int[] selectedRows) {
-    List<Integer> rows = new ArrayList<>();
-    rows.add(script.data.get(selectedRows[0]).get(0).getRow());
-    int lastLine = script.data.get(selectedRows[selectedRows.length - 1]).get(0).getRow();
-    if (lineIsFirstCollapsed(lastLine)) {
-      lastLine = script.allData.size() - 1;
-    }
-    rows.add(lastLine);
-    return rows;
-  }
-
-  private boolean lineIsFirstCollapsed(int row) {
-    return script.allData.get(row).get(0).isFirstCollapsed();
-  }
-
-  private List<Integer> saveLines(List<Integer> lines) {
-    script.savedLines.clear();
-    int dataLine = lines.get(0);
-    script.savedLines.add(script.allData.remove(dataLine));
-    while (dataLine < lines.get(1)) {
-      script.savedLines.add(script.allData.remove(++dataLine));
-    }
-    return lines;
-  }
-
-  private List<Integer> copyLines(List<Integer> lines) {
-    script.savedLines.clear();
-    int currentLine = lines.get(0);
-    script.savedLines.add(copyLine(script.allData.get(currentLine)));
-    while (currentLine < lines.get(1)) {
-      script.savedLines.add(copyLine(script.allData.get(++currentLine)));
-    }
-    return lines;
-  }
-
-  private List<ScriptCell> copyLine(List<ScriptCell> line) {
-    List<ScriptCell> lineCopy = new ArrayList<>();
-    for (ScriptCell cell : line) {
-      lineCopy.add(cell.copy());
-    }
-    return lineCopy;
-  }
-
-  protected void lineCopy(int[] selectedRows) {
-    copyLines(getDataLines(selectedRows));
-  }
-
-  protected void lineDelete(int[] selectedRows) {
-    List<Integer> rows = saveLines(getDataLines(selectedRows));
-    for (int delRow : selectedRows) {
-      script.data.remove(selectedRows[0]);
-    }
-    int lineCount = rows.get(1) - rows.get(0) + 1;
-    for (int row = selectedRows[0]; row < script.data.size(); row++) {
-      script.changeRow(row, -lineCount);
-    }
-    script.table.tableCheckContent();
-    select(selectedRows[0] - 1, Script.numberCol);
-  }
-
-  protected void lineEmpty(int[] selectedRows) {
-    List<Integer> lines = saveLines(getDataLines(selectedRows));
-    int dataLine = lines.get(0);
-    for (int n = dataLine; n <= lines.get(1); n++) {
-      lineNew(new int[]{dataLine - 1});
-    }
-    script.table.tableCheckContent();
-    select(selectedRows[0], Script.commandCol);
-  }
-
-  protected void lineReset(int[] selectedRows) {
-    int currentRow = selectedRows[0];
-    String command = script.data.get(currentRow).get(0).get();
-    saveLines(getDataLines(selectedRows));
-    //TODO lineNew(new int[]{currentRow - 1}, command);
-    script.table.tableCheckContent();
-    select(currentRow, Script.commandCol);
-  }
-
-  protected void lineRun(int[] selectedRows) {
-    script.runScript(selectedRows[0], selectedRows[selectedRows.length - 1]);
-  }
-
-  protected void lineInsert(int[] selectedRows) {
-    int numLines = script.savedLines.size();
-    if (isHeader()) {
-      for (int n = 0; n < numLines; n++) {
-        script.data.add(n, script.savedLines.remove(0));
-      }
-      script.table.tableCheckContent();
-      select(0, 0);
-      return;
-    }
-    int firstNewLine = selectedRows[selectedRows.length - 1] + 1;
-    int currentRow = selectedRows[selectedRows.length - 1];
-    for (int n = 0; n < numLines; n++) {
-      script.data.add(currentRow + n + 1, script.savedLines.remove(0));
-    }
-    script.table.tableCheckContent();
-    script.table.setSelection(firstNewLine, Script.numberCol);
   }
 
   public String toString() {
