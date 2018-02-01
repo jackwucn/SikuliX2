@@ -813,8 +813,8 @@ public class Script implements TableModelListener {
   }
 
   protected void changeRow(int dataRow, int change) {
-    int newRow = allData.get(dataRow).get(0).getRow() + change;
-    allData.get(dataRow).get(0).setRow(newRow);
+    int newRow = data.get(dataRow).get(0).getRow() + change;
+    data.get(dataRow).get(0).setRow(newRow);
   }
 
   protected void lineAdd(int tableRow, int lineCount) {
@@ -855,9 +855,14 @@ public class Script implements TableModelListener {
   private List<Integer> getDataLines(int[] selectedRows) {
     List<Integer> rows = new ArrayList<>();
     rows.add(data.get(selectedRows[0]).get(0).getRow());
-    int lastLine = data.get(selectedRows[selectedRows.length - 1]).get(0).getRow();
-    if (lineIsFirstCollapsed(lastLine)) {
-      lastLine = allData.size() - 1;
+    int lastLine = selectedRows[selectedRows.length - 1] + 1;
+    if (lastLine > data.size() - 1) {
+      lastLine = data.get(data.size() - 1).get(0).getRow();
+      if (lineIsFirstCollapsed(lastLine)) {
+        lastLine = allData.size() - 1;
+      }
+    } else {
+      lastLine = data.get(lastLine).get(0).getRow() - 1;
     }
     rows.add(lastLine);
     return rows;
@@ -929,10 +934,10 @@ public class Script implements TableModelListener {
   protected void lineDelete(int[] selectedRows) {
     List<Integer> rows = saveLines(getDataLines(selectedRows));
     for (int delRow : selectedRows) {
-      data.remove(selectedRows[0]);
+      List<ScriptCell> line = data.remove(selectedRows[0]);
     }
     int lineCount = rows.get(1) - rows.get(0) + 1;
-    for (int row = selectedRows[0]; row < allData.size(); row++) {
+    for (int row = rows.get(0); row <= rows.get(1); row++) {
       changeRow(row, -lineCount);
     }
     table.tableCheckContent();
