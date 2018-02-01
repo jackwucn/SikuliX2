@@ -25,7 +25,6 @@ public class PopUpMenus {
     int col;
     int x;
     int y;
-    int[] selectedRows = new int[0];
 
     boolean isHeader() {
       return row < 0;
@@ -167,14 +166,6 @@ public class PopUpMenus {
       }
       show(comp, x, y);
     }
-
-    int[] getSelectedRows() {
-      int[] selectedRows = null;
-      if (SX.isNotNull(parent)) {
-        selectedRows = parent.selectedRows;
-      }
-      return selectedRows;
-    }
   }
 
   public PopUpMenus(Script script) {
@@ -197,7 +188,6 @@ public class PopUpMenus {
   private class Command extends PopUpMenu {
 
     public Command() {
-      selectedRows = table.getSelectedRows();
       add(createMenuItem(new Global(this)));
       createMenuSeperator();
       add(createMenuItem(new Finding(this)));
@@ -354,7 +344,6 @@ public class PopUpMenus {
   private class Action extends PopUpMenu {
 
     public Action(int row, int col) {
-      selectedRows = table.getSelectedRows();
       add(createMenuItem(new Global(this)));
       createMenuSeperator();
       add(createMenuItem("NewLines +", this));
@@ -383,27 +372,27 @@ public class PopUpMenus {
     }
 
     public void newLines(ActionEvent ae) {
-      getCell().lineNew(getSelectedRows());
+      getCell().lineNew(table.getSelectedRows());
     }
 
     public void deleteLines(ActionEvent ae) {
-      getCell().lineDelete(getSelectedRows());
+      getCell().lineDelete(table.getSelectedRows());
     }
 
     public void emptyLines(ActionEvent ae) {
-      getCell().lineEmpty(getSelectedRows());
+      getCell().lineEmpty(table.getSelectedRows());
     }
 
     public void copyLines(ActionEvent ae) {
-      getCell().lineCopy(getSelectedRows());
+      getCell().lineCopy(table.getSelectedRows());
     }
 
     public void insertLines(ActionEvent ae) {
-      getCell().lineInsert(getSelectedRows());
+      getCell().lineInsert(table.getSelectedRows());
     }
 
     public void hideUnhide(ActionEvent ae) {
-      getCell().lineHide(getSelectedRows());
+      script.lineHide(table.getSelectedRows());
     }
 
     public void unhideAll(ActionEvent ae) {
@@ -415,7 +404,7 @@ public class PopUpMenus {
     }
 
     public void runLines(ActionEvent ae) {
-      getCell().lineRun(getSelectedRows());
+      getCell().lineRun(table.getSelectedRows());
     }
   }
 

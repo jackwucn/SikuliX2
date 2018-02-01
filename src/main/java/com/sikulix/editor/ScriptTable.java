@@ -101,7 +101,7 @@ class ScriptTable extends JTable {
             return false;
           }
           if (keyCode == KeyEvent.VK_H) {
-            cell.lineHide(getSelectedRows());
+            script.lineHide(getSelectedRows());
             return false;
           }
           if (keyCode == KeyEvent.VK_R) {

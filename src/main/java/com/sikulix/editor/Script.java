@@ -263,11 +263,6 @@ public class Script implements TableModelListener {
       int clickCount = me.getClickCount();
       int row = table.rowAtPoint(where);
       int col = table.columnAtPoint(where);
-      ScriptCell cell = script.data.get(row).get(col - 1);
-      if (inHeader()) {
-        cell.setHeader();
-      }
-      cell.setTableRow(row);
       int button = me.getButton();
       int[] selectedRows = table.getSelectedRows();
       if (inBody()) {
@@ -306,8 +301,8 @@ public class Script implements TableModelListener {
         return;
       }
       if (inBody() && col == 0 && button == 1 && clickCount > 1) {
-        if (cell.isFirstHidden()) {
-          cell.lineHide(new int[]{row});
+        if (lineIsFirstHidden(row)) {
+          lineHide(new int[]{row});
         }
       }
     }
@@ -456,7 +451,7 @@ public class Script implements TableModelListener {
         }
         return;
       } else {
-        cell.lineHide(selectedRows);
+        lineHide(selectedRows);
       }
     }
     String cellText = cell.get();
@@ -865,6 +860,88 @@ public class Script implements TableModelListener {
     int col = 1;
     for (String item : items) {
       cellSet(row, col++, item);
+    }
+  }
+
+  protected void lineHide(int[] selectedRows) {
+    int currentTableRow = selectedRows[0];
+    ScriptCell firstCell = data.get(currentTableRow).get(commandCol - 1);
+    int shouldSelectFirst = currentTableRow;
+    int shouldSelectLast = currentTableRow;
+    boolean shouldHide = false;
+    int selectedCount = selectedRows.length;
+    if (selectedCount == 1) {
+      if (firstCell.isFirstHidden()) {
+        int hCount = firstCell.getHidden();
+        firstCell.setHidden(-hCount);
+        if (hCount > 0) {
+          hCount -= 1;
+          int currentDataLine = data.get(currentTableRow).get(0).getRow() + 1;
+          shouldSelectLast = shouldSelectFirst + hCount;
+          while (hCount > 0) {
+            List<ScriptCell> line = allData.get(currentDataLine);
+            currentTableRow++;
+            line.get(0).setRow(currentDataLine);
+            data.add(currentTableRow, line);
+            hCount--;
+            currentDataLine++;
+            int hiddenCount = line.get(0).getHidden();
+            if (line.get(0).isFirstHidden()) {
+              if (hiddenCount > 0) {
+                currentDataLine += countInnerHidden(hiddenCount, currentDataLine);
+              } else {
+                hCount += (-hiddenCount) - 1;
+                shouldSelectLast += (-hiddenCount) - 1;
+              }
+            }
+          }
+        } else {
+          shouldHide = true;
+          selectedCount = -hCount;
+        }
+      }
+    } else {
+      shouldHide = true;
+    }
+    if (shouldHide) {
+      currentTableRow++;
+      int hiddenLinesCount = 1;
+      while (selectedCount > 1) {
+        List<ScriptCell> line = data.remove(currentTableRow);
+        hiddenLinesCount++;
+        if (line.get(0).isFirstHidden()) {
+          if (line.get(0).getHidden() < 0) {
+            selectedCount += (-line.get(0).getHidden()) - 1;
+            hiddenLinesCount -= (-line.get(0).getHidden()) - 1;
+          }
+        }
+        selectedCount--;
+      }
+      firstCell.setHidden(hiddenLinesCount);
+    }
+    table.tableCheckContent();
+    table.setLineSelection(shouldSelectFirst, shouldSelectLast);
+  }
+
+  private int countInnerHidden(int hiddenCount, int currentDataLine) {
+    hiddenCount--;
+    int hiddenLinesCount = 0;
+    while (hiddenCount > 0) {
+      int count = getLineHiddenCount(currentDataLine);
+      currentDataLine += count;
+      hiddenLinesCount += count;
+      hiddenCount--;
+    }
+    return hiddenLinesCount;
+  }
+
+  private int getLineHiddenCount(int lineNumber) {
+    ScriptCell cell = allData.get(lineNumber).get(0);
+    int hiddenCount = cell.getHidden();
+    if (cell.isFirstHidden() && hiddenCount > 0) {
+      return countInnerHidden(hiddenCount, lineNumber + 1) + 1;
+    } else {
+      return 1;
     }
   }
 
