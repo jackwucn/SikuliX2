@@ -23,10 +23,10 @@ class ScriptTable extends JTable {
 
   @Override
   public boolean editCellAt(int row, int col, EventObject e) {
-    ScriptCell cell = script.data.get(row).get(Math.max(0,col - 1));
+    ScriptCell cell = script.getTableCell(row, col);
     boolean isLineNumber = col == Script.numberCol;
     boolean isCommand = col == Script.commandCol;
-    int dataCol = Math.max(0, col -1);
+    int dataCol = Math.max(0, col - 1);
     int keyCode = 0;
     if (SX.isNotNull(cell)) {
       if (e instanceof KeyEvent) {

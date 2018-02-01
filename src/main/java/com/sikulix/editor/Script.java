@@ -178,15 +178,17 @@ public class Script implements TableModelListener {
       @Override
       public void run() {
         while (true) {
-          int row = table.getSelectedRow();
-          int col = table.getSelectedColumn();
+          int row = table.getSelectedRows()[0];
+          int col = table.getSelectedColumns()[0];
+          String statusText = "";
           try {
             String text = "";
-            ScriptCell dCell = getScript().data.get(row).get(col);
-            if (dCell.isFirstHidden()) {
-              text += " hidden:" + dCell.getHidden();
+            ScriptCell commandCell = getScript().commandCell(row);
+            if (col == 0 && lineIsFirstHidden(row)) {
+              text += " hidden:" + commandCell.getHidden();
             }
             if (col > 0) {
+              ScriptCell dCell = getScript().getTableCell(row, col);
               if (SX.isNotNull(dCell)) {
                 String cellText = dCell.get();
                 if (cellText.startsWith("@")) {
@@ -201,15 +203,12 @@ public class Script implements TableModelListener {
                 } else if (dCell.getInitial().startsWith("{")) {
                   text += " press SPACE to edit script snippet";
                 }
+                statusText = dCell.getStatus();
               } else {
                 text += " empty - start typing to fill";
               }
             }
-            String statusText = "";
-            if (SX.isNotNull(dCell)) {
-              statusText = dCell.getStatus();
-            }
-            String newText = String.format("(%d, %d)%s%s", dCell.getRow() + 1, col, text, " " + statusText);
+            String newText = String.format("(%d, %d)%s%s", commandCell.getRow() + 1, col, text, " " + statusText);
             if (!currentText.equals(newText)) {
               status.setText(newText);
               currentText = newText;
@@ -804,6 +803,15 @@ public class Script implements TableModelListener {
     return success;
   }
 
+  protected ScriptCell getTableCell(int row, int col) {
+    List<ScriptCell> line = data.get(row);
+    col = Math.max(0, col - 1);
+    if (col > line.size() - 1) {
+      return null;
+    }
+    return line.get(col);
+  }
+
   protected void changeRow(int dataRow, int change) {
     int newRow = allData.get(dataRow).get(0).getRow() + change;
     allData.get(dataRow).get(0).setRow(newRow);
@@ -988,6 +996,7 @@ public class Script implements TableModelListener {
     table.tableCheckContent();
     table.setSelection(firstNewLine, Script.numberCol);
   }
+
   protected void select(int row, int col) {
     new Thread(new Runnable() {
       @Override
