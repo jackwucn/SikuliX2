@@ -817,30 +817,29 @@ public class Script implements TableModelListener {
     data.get(dataRow).get(0).setRow(newRow);
   }
 
-  protected void lineAdd(int tableRow, int lineCount) {
-    int dataRow;
-    if (tableRow == 0) {
-      tableRow = dataRow = 0;
-    } else if (tableRow > data.size() - 1) {
-      tableRow = data.size();
-      dataRow = allData.size();
+  protected void lineAdd(int firstTableLine, int lineCount) {
+    int firstDataLine;
+    boolean shouldAppend = false;
+    if (firstTableLine == 0) {
+      firstTableLine = firstDataLine = 0;
+    } else if (firstTableLine > data.size() - 1) {
+      shouldAppend = true;
+      firstDataLine = allData.size();
     } else {
-      dataRow = data.get(tableRow).get(0).getRow();
+      firstDataLine = data.get(firstTableLine).get(0).getRow();
     }
-    for (int n = 0; n < lineCount; n++) {
+    for (int currentLine = 0; currentLine < lineCount; currentLine++) {
       List<ScriptCell> line = new ArrayList<>();
-      if (tableRow == data.size()) {
+      if (shouldAppend) {
         data.add(line);
         allData.add(line);
       } else {
-        data.add(tableRow, line);
-        allData.add(dataRow, line);
+        data.add(firstTableLine + currentLine, line);
+        allData.add(firstDataLine + currentLine, line);
       }
-      line.add(new ScriptCell(this, "", commandCol, dataRow));
-      tableRow++;
-      dataRow++;
+      line.add(new ScriptCell(this, "", commandCol, firstDataLine + currentLine));
     }
-    for (int n = dataRow; n < allData.size(); n++) {
+    for (int n = firstDataLine + lineCount; n < allData.size(); n++) {
       changeRow(n, lineCount);
     }
   }
@@ -857,12 +856,12 @@ public class Script implements TableModelListener {
     rows.add(data.get(selectedRows[0]).get(0).getRow());
     int lastLine = selectedRows[selectedRows.length - 1] + 1;
     if (lastLine > data.size() - 1) {
-      lastLine = data.get(data.size() - 1).get(0).getRow();
+      lastLine = data.get(data.size() - 1).get(0).getRow() + 1;
       if (lineIsFirstCollapsed(lastLine)) {
-        lastLine = allData.size() - 1;
+        lastLine = allData.size();
       }
     } else {
-      lastLine = data.get(lastLine).get(0).getRow() - 1;
+      lastLine = data.get(lastLine).get(0).getRow();
     }
     rows.add(lastLine);
     return rows;
