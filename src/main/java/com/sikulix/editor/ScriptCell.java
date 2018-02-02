@@ -382,6 +382,6 @@ class ScriptCell {
   }
 
   public String toString() {
-    return String.format("Cell: (?,%d) %s i(%d %d %d) h%d", col, value, indentLevel, indentIfLevel, indentLoopLevel, hiddenCount);
+    return String.format("Cell: (%d,%d) %s i(%d %d %d) h%d", row, col, value, indentLevel, indentIfLevel, indentLoopLevel, hiddenCount);
   }
 }

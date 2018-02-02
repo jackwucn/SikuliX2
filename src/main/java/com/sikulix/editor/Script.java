@@ -5,7 +5,6 @@ import com.sikulix.core.SXLog;
 import com.sikulix.run.Runner;
 
 import javax.swing.*;
-import javax.swing.border.LineBorder;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.JTableHeader;
@@ -15,7 +14,6 @@ import java.awt.event.MouseEvent;
 import java.io.File;
 import java.util.*;
 import java.util.List;
-import java.util.function.Predicate;
 
 public class Script implements TableModelListener {
 
@@ -184,7 +182,7 @@ public class Script implements TableModelListener {
           try {
             String text = "";
             ScriptCell commandCell = getScript().commandCell(row);
-            if (col == 0 && lineIsFirstHidden(row)) {
+            if (col == 0 && isLineFirstHidden(row)) {
               text += " hidden:" + commandCell.getHidden();
             }
             if (col > 0) {
@@ -302,7 +300,7 @@ public class Script implements TableModelListener {
         return;
       }
       if (inBody() && col == 0 && button == 1 && clickCount > 1) {
-        if (lineIsFirstHidden(row)) {
+        if (isLineFirstHidden(row)) {
           lineHide(new int[]{row});
         }
       }
@@ -344,7 +342,7 @@ public class Script implements TableModelListener {
       isIf = false;
     }
     while (!(row-- < 0)) {
-      if (lineIsFirstHidden(row)) {
+      if (isLineFirstHidden(row)) {
         continue;
       }
       if (isIf) {
@@ -393,8 +391,16 @@ public class Script implements TableModelListener {
     return data.get(row).get(0);
   }
 
-  boolean lineIsFirstHidden(int row) {
+  boolean isLineFirstHidden(int row) {
     return commandCell(row).isFirstHidden();
+  }
+
+  boolean isLineEmpty(List<ScriptCell> line) {
+    boolean isEmpty = true;
+    if (line.size() > 0) {
+      return line.get(0).isLineEmpty();
+    }
+    return isEmpty;
   }
 
   boolean isRowValid(int row) {
@@ -410,7 +416,7 @@ public class Script implements TableModelListener {
       cell = data.get(selectedRows[0]).get(numberCol);
     }
     if (row < 2) {
-      if (!lineIsFirstHidden(row)) {
+      if (!isLineFirstHidden(row)) {
         int firstRow = row;
         int lastRow = -1;
         if (cell.get().startsWith("loop") || cell.get().startsWith("function")) {
@@ -653,12 +659,15 @@ public class Script implements TableModelListener {
     int currentFunctionIndent = 0;
     boolean hasElse = false;
     for (List<ScriptCell> line : allData) {
-      ScriptCell cell = line.get(0);
       if (line.size() == 0) {
+        log.error("checkContent: line.size() == 0");
+      }
+      ScriptCell cell = line.get(0);
+      String command = cell.get().trim();
+      if (SX.isNotSet(command)) {
         continue;
       }
       cell.reset();
-      String command = cell.get().trim();
       if (SX.isNotNull(ScriptTemplate.commandTemplates.get(command))) {
         if (command.startsWith("if") && !command.contains("ifElse")) {
           currentIfIndent++;
@@ -839,7 +848,7 @@ public class Script implements TableModelListener {
       }
       line.add(new ScriptCell(this, "", commandCol, firstDataLine + currentLine));
     }
-    for (int n = firstDataLine + lineCount; n < allData.size(); n++) {
+    for (int n = firstTableLine + lineCount; n < data.size(); n++) {
       changeRow(n, lineCount);
     }
   }
@@ -856,12 +865,12 @@ public class Script implements TableModelListener {
     rows.add(data.get(selectedRows[0]).get(0).getRow());
     int lastLine = selectedRows[selectedRows.length - 1] + 1;
     if (lastLine > data.size() - 1) {
-      lastLine = data.get(data.size() - 1).get(0).getRow() + 1;
+      lastLine = data.get(data.size() - 1).get(0).getRow();
       if (lineIsFirstCollapsed(lastLine)) {
         lastLine = allData.size();
       }
     } else {
-      lastLine = data.get(lastLine).get(0).getRow();
+      lastLine = data.get(lastLine).get(0).getRow() - 1;
     }
     rows.add(lastLine);
     return rows;
@@ -874,9 +883,11 @@ public class Script implements TableModelListener {
   private List<Integer> saveLines(List<Integer> lines) {
     savedLines.clear();
     int dataLine = lines.get(0);
+    int removeLine = dataLine;
     savedLines.add(allData.remove(dataLine));
     while (dataLine < lines.get(1)) {
-      savedLines.add(allData.remove(++dataLine));
+      savedLines.add(allData.remove(removeLine));
+      dataLine++;
     }
     return lines;
   }
@@ -926,6 +937,21 @@ public class Script implements TableModelListener {
     copyLines(getDataLines(selectedRows));
   }
 
+  private String lineStatus = "";
+
+  private void createLineStatus() {
+    lineStatus = "";
+    int tableLine = 1;
+    for (List<ScriptCell> line : data) {
+      String command = line.get(0).get();
+      int dataLine = line.get(0).getRow();
+      int hiddenCount = line.get(0).getHidden();
+      String sLine = String.format("%4d -> %4d | %10s | H%d\n", tableLine, dataLine, command, hiddenCount);
+      lineStatus += sLine;
+      tableLine++;
+    }
+  }
+
   protected void lineDelete() {
     lineDelete(table.getSelectedRows());
   }
@@ -936,8 +962,9 @@ public class Script implements TableModelListener {
       List<ScriptCell> line = data.remove(selectedRows[0]);
     }
     int lineCount = rows.get(1) - rows.get(0) + 1;
-    for (int row = rows.get(0); row <= rows.get(1); row++) {
-      changeRow(row, -lineCount);
+    int row = selectedRows[0];
+    while (row < data.size()) {
+      changeRow(row++, -lineCount);
     }
     table.tableCheckContent();
     select(selectedRows[0] - 1, Script.numberCol);
@@ -948,10 +975,12 @@ public class Script implements TableModelListener {
   }
 
   protected void lineEmpty(int[] selectedRows) {
-    List<Integer> lines = saveLines(getDataLines(selectedRows));
-    int dataLine = lines.get(0);
-    for (int n = dataLine; n <= lines.get(1); n++) {
-      lineNew(new int[]{dataLine - 1});
+    int lineCount = allData.size();
+    lineDelete(selectedRows);
+    lineCount -= allData.size();
+    int[] newRow = new int[]{selectedRows[0] - 1};
+    for (int n = 0; n < lineCount; n ++) {
+      lineNew(newRow);
     }
     table.tableCheckContent();
     select(selectedRows[0], Script.commandCol);
