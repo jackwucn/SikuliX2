@@ -40,8 +40,11 @@ class ScriptTable extends JTable {
         boolean isCtrl = false;
         boolean isAlt = false;
         boolean isShift = false;
+        boolean isMeta = false;
         int modifier = ((KeyEvent) e).getModifiers();
-        if (modifier == KeyEvent.CTRL_MASK) {
+        if (modifier == KeyEvent.META_MASK) {
+          isMeta = true;
+        } if (modifier == KeyEvent.CTRL_MASK) {
           isCtrl = true;
         }
         if (modifier == KeyEvent.ALT_MASK) {
@@ -49,6 +52,27 @@ class ScriptTable extends JTable {
         }
         if (modifier == KeyEvent.SHIFT_MASK) {
           isShift = true;
+        }
+        if (isMeta) {
+          if (keyCode == KeyEvent.VK_F) {
+            boolean findInteractive = false;
+            if (isLineNumber) {
+              findInteractive = true;
+            } else {
+              String text = cell.get();
+              if (text.startsWith("@") || text.startsWith("$")) {
+                script.log.trace("Action: find text: %s", text);
+              } else {
+                findInteractive = true;
+              }
+            }
+            if (findInteractive) {
+              script.log.trace("Action: find text interactive");
+            }
+          } else {
+            script.log.trace("META_MASK + %s", KeyEvent.getKeyText(keyCode));
+          }
+          return false;
         }
         if (isLineNumber) {
           if (keyCode == KeyEvent.VK_ESCAPE) {
@@ -84,8 +108,14 @@ class ScriptTable extends JTable {
                   keyCode == KeyEvent.VK_BRACELEFT) {
             String token = keyCode == KeyEvent.VK_SLASH ? "/" :
                     (keyCode == KeyEvent.VK_NUMBER_SIGN ? "#" : "{");
-            script.lineNew(new int[]{row});
-            //TODO add token
+            script.lineNew(new int[]{row++});
+            if ("/".equals(token)) {
+              script.lineSet(row, "/continuation");
+            } else if ("#".equals(token)) {
+              script.lineSet(row, "#comment");
+            } else if ("{".equals(token)) {
+              script.lineSet(row, "{script}");
+            }
             return false;
           }
           if (keyCode == KeyEvent.VK_E) {
@@ -123,7 +153,7 @@ class ScriptTable extends JTable {
           }
           return false;
         } else if (keyCode == KeyEvent.VK_BACK_SPACE && cell.isEmpty()) {
-          getModel().setValueAt(script.savedCellText, row, col);
+          cell.setValue(script.savedCellText, row, col);
           setSelection(row, col);
           return false;
         } else if (keyCode == KeyEvent.VK_ESCAPE) {
@@ -159,6 +189,7 @@ class ScriptTable extends JTable {
         } else if (keyCode == KeyEvent.VK_DELETE || keyCode == KeyEvent.VK_BACK_SPACE) {
           script.savedCellText = cell.get();
           cell.setValue("", row, col);
+          setSelection(row, col);
           return false;
         }
         Script.log.trace("keycode: %d %s", keyCode, KeyEvent.getKeyText(keyCode));
