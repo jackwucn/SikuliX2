@@ -270,10 +270,12 @@ public class PopUpMenus {
       add(createMenuItem("Loop l", this));
       add(createMenuItem("LoopFor lf", this));
       add(createMenuItem("LoopWith lw", this));
-      add(createMenuItem("Break br", this));
-      add(createMenuItem("BreakIf bi", this));
-      add(createMenuItem("Continue co", this));
-      add(createMenuItem("ContinueIf ci", this));
+      if (isCommand) {
+        add(createMenuItem("Break br", this));
+        add(createMenuItem("BreakIf bi", this));
+        add(createMenuItem("Continue co", this));
+        add(createMenuItem("ContinueIf ci", this));
+      }
       createMenuSeperator();
       add(createMenuItem("Function $f", this));
     }

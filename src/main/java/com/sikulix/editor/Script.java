@@ -775,11 +775,12 @@ public class Script implements TableModelListener {
     }
     if (selectedCols[0] == numberCol) {
       log.trace("addCommandTemplate: should surround with: %s", command);
-      lineAdd(firstRow--, 1);
+      lineAdd(firstRow, 1);
       lineSet(firstRow, commandLine);
-      firstRow = Math.max(0, firstRow);
-      lineAdd(lastRow++, 1);
-      lineSet(lastRow, command.startsWith("if") ? "endif" : "endloop");
+      lastRow += 2;
+      lineAdd(lastRow, 1);
+      lineSet(lastRow, command.startsWith("if") ? "endif" :
+              (command.startsWith("loop") ? "endloop" : "endfunction"));
       success = true;
     } else if (commandCell(firstRow).isLineEmpty()) {
       if (SX.isNotNull(commandLine)) {
@@ -854,7 +855,7 @@ public class Script implements TableModelListener {
   }
 
   protected void lineSet(int row, String... items) {
-    int col = 1;
+    int col = 0;
     for (String item : items) {
       cellSet(row, col++, item);
     }
@@ -1013,18 +1014,19 @@ public class Script implements TableModelListener {
 
   protected void lineInsert(int[] selectedRows) {
     int numLines = savedLines.size();
-    if (isHeader()) {
-      for (int n = 0; n < numLines; n++) {
-        data.add(n, savedLines.remove(0));
-      }
-      table.tableCheckContent();
-      select(0, 0);
-      return;
-    }
     int firstNewLine = selectedRows[selectedRows.length - 1] + 1;
-    int currentRow = selectedRows[selectedRows.length - 1];
+    if (lastPopInHeader) {
+      firstNewLine = 0;
+    }
+    lineAdd(firstNewLine, numLines);
+    int currentLine = data.get(firstNewLine).get(0).getRow();
     for (int n = 0; n < numLines; n++) {
-      data.add(currentRow + n + 1, savedLines.remove(0));
+      List<ScriptCell> line = allData.get(currentLine + n);
+      List<ScriptCell> newLine = savedLines.get(n);
+      line.get(0).set(newLine.get(0).get());
+      for (int nc = 1; nc < newLine.size(); nc++) {
+        cellSet(line, nc, newLine.get(nc).get());
+      }
     }
     table.tableCheckContent();
     table.setSelection(firstNewLine, Script.numberCol);
@@ -1041,6 +1043,10 @@ public class Script implements TableModelListener {
 
   protected void cellSet(int row, int col, String item) {
     List<ScriptCell> line = data.get(row);
+    cellSet(line, col, item);
+  }
+
+  protected void cellSet(List<ScriptCell> line, int col, String item) {
     if (col > line.size() - 1) {
       for (int n = line.size(); n <= col; n++) {
         line.add(new ScriptCell(this, "", n + 1));
