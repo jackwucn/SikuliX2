@@ -338,6 +338,10 @@ class ScriptCell {
     return hiddenCount > 0;
   }
 
+  protected boolean isFirstNotCollapsed() {
+    return hiddenCount < 0;
+  }
+
   protected boolean isLineEmpty() {
     for (ScriptCell cell : script.data.get(row)) {
       if (!cell.isEmpty()) {

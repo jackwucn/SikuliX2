@@ -92,7 +92,12 @@ class ScriptTable extends JTable {
             return false;
           }
           if (keyCode == KeyEvent.VK_MINUS) {
-            script.lineDelete(getSelectedRows());
+            int firstSelected = getSelectedRows()[0];
+            if(script.isLineFirstNotCollapsed(firstSelected)) {
+              script.lineResetHidden(firstSelected);
+            } else {
+              script.lineDelete(getSelectedRows());
+            }
             return false;
           }
           if (keyCode == KeyEvent.VK_BACK_SPACE) {

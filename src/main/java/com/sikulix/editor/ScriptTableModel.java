@@ -81,6 +81,7 @@ class ScriptTableModel extends AbstractTableModel {
     }
     int dataCol = tableCol - 1;
     String given = ((String) value).trim();
+    List<ScriptCell> line = script.data.get(row);
     ScriptCell cell = script.data.get(row).get(dataCol);
     if (SX.isNull(cell)) {
       script.cellSet(row, dataCol, "");
@@ -91,7 +92,7 @@ class ScriptTableModel extends AbstractTableModel {
         script.checkContent();
         script.table.setSelection(row, tableCol);
       } else {
-        if (cell.isLineEmpty()) {
+        if (script.isLineEmpty(line)) {
           script.addCommandTemplate(given);
         } else {
           cell.set(given);

@@ -183,7 +183,11 @@ public class Script implements TableModelListener {
         String text = "";
         ScriptCell commandCell = getScript().commandTableCell(row);
         if (col == 0 && isLineFirstHidden(row)) {
-          text += " hidden:" + commandCell.getHidden();
+          int hiddenCount = commandCell.getHidden();
+          text += " hidden: " + hiddenCount;
+          if (hiddenCount < 0) {
+            text += " ... press - to reset hidden";
+          }
         }
         if (commandCell.isFunction() && commandCell.getIndent() > 0) {
           statusText = " !!! ERROR: function definition not at indent 0";
@@ -344,8 +348,8 @@ public class Script implements TableModelListener {
       searchText = "function";
       isIf = false;
     }
-    while (!(row-- < 0)) {
-      if (isLineFirstHidden(row)) {
+    while (!(--row < 0)) {
+      if (isLineFirstCollapsed(row)) {
         continue;
       }
       if (isIf) {
@@ -380,8 +384,8 @@ public class Script implements TableModelListener {
   }
 
   private int findIfForEndIf(int row) {
-    int indent = commandTableCell(row).getIfIndent();
-    while (!(row-- < 0)) {
+    int indent = commandTableCell(row).getIfIndent() + 1;
+    while (!(--row < 0)) {
       if (commandTableCell(row).get().startsWith("if") && !commandTableCell(row).get().contains("ifElse")
               && commandTableCell(row).getIfIndent() == indent) {
         break;
@@ -398,12 +402,29 @@ public class Script implements TableModelListener {
     return commandTableCell(row).isFirstHidden();
   }
 
+  protected boolean isLineFirstCollapsed(int row) {
+    return allData.get(row).get(0).isFirstCollapsed();
+  }
+
+  protected boolean isLineFirstNotCollapsed(int row) {
+    return commandTableCell(row).isFirstNotCollapsed();
+  }
+
   boolean isLineEmpty(List<ScriptCell> line) {
-    boolean isEmpty = true;
-    if (line.size() > 0) {
-      return line.get(0).isLineEmpty();
+    if (line.size() == 0) {
+      return true;
+    } else {
+      for (ScriptCell cell : line) {
+        if (SX.isSet(cell.get())) {
+          return false;
+        }
+      }
+      return true;
     }
-    return isEmpty;
+  }
+
+  boolean isLineEmpty(int tableRow) {
+    return isLineEmpty(data.get(tableRow));
   }
 
   boolean isRowValid(int row) {
@@ -413,9 +434,14 @@ public class Script implements TableModelListener {
   protected void assist() {
     int row = table.getSelectedRows()[0];
     int col = table.getSelectedColumns()[0];
-    ScriptCell cell = commandTableCell(row);
-    String command = cell.get();
+    ScriptCell commandCell = commandTableCell(row);
+    String command = commandCell.get();
+    ScriptCell cell = getTableCell(row, col);
+    String cellText = cell.get();
     int[] selectedRows = table.getSelectedRows();
+    log.trace("F1: (%d,%d) %s (%d, %d, %d)",
+            row, col, cellText,
+            commandCell.getIndent(), commandCell.getIfIndent(), commandCell.getLoopIndent());
     if (col < 2) {
       if (!isLineFirstHidden(row)) {
         int firstRow = row;
@@ -460,8 +486,6 @@ public class Script implements TableModelListener {
       }
       return;
     }
-    cell = getTableCell(row, col);
-    String cellText = cell.get();
     if (cell.isImage()) {
       if (cellText.contains("?")) {
         cell.capture(row, col);
@@ -470,9 +494,6 @@ public class Script implements TableModelListener {
       }
       return;
     }
-    log.trace("F1: (%d,%d) %s (%d, %d, %d)",
-            row, col, cellText,
-            cell.getIndent(), cell.getIfIndent(), cell.getLoopIndent());
     if (cellText.startsWith("$")) {
       if (cellText.startsWith("$?")) {
         // set value/block
@@ -793,7 +814,7 @@ public class Script implements TableModelListener {
         lineSet(lastRow, command.startsWith("if") ? "endif" :
                 (command.startsWith("loop") ? "endloop" : "endfunction"));
         success = true;
-    } else if (commandTableCell(firstRow).isLineEmpty()) {
+    } else if (isLineEmpty(firstRow)) {
       if (SX.isNotNull(commandLine)) {
         int lineLast = commandLine.length - 1;
         String lineEnd = commandLine[lineLast];
@@ -878,7 +899,7 @@ public class Script implements TableModelListener {
     int lastLine = selectedRows[selectedRows.length - 1] + 1;
     if (lastLine > data.size() - 1) {
       lastLine = data.get(data.size() - 1).get(0).getRow();
-      if (lineIsFirstCollapsed(lastLine)) {
+      if (isLineFirstCollapsed(lastLine)) {
         lastLine = allData.size();
       }
     } else {
@@ -886,10 +907,6 @@ public class Script implements TableModelListener {
     }
     rows.add(lastLine);
     return rows;
-  }
-
-  private boolean lineIsFirstCollapsed(int row) {
-    return allData.get(row).get(0).isFirstCollapsed();
   }
 
   private List<Integer> saveLines(List<Integer> lines) {
@@ -980,6 +997,16 @@ public class Script implements TableModelListener {
     }
     table.tableCheckContent();
     select(selectedRows[0] - 1, Script.numberCol);
+  }
+
+  protected void lineResetHidden() {
+    lineResetHidden(table.getSelectedRows()[0]);
+  }
+
+  protected void lineResetHidden(int selectedRow) {
+    commandTableCell(selectedRow).setHidden(0);
+    table.tableCheckContent();
+    select(selectedRow, Script.numberCol);
   }
 
   protected void lineEmpty() {

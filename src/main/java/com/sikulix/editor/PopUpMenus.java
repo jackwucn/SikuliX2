@@ -359,12 +359,11 @@ public class PopUpMenus {
         add(createMenuItem("HideAll", this));
       } else {
         add(createMenuItem("HideUnhide h", this));
+        add(createMenuItem("ResetHidden -", this));
       }
       if (!isHeader) {
         add(createMenuItem(new Blocks(this), "Surround"));
       }
-      createMenuSeperator();
-      add(createMenuItem("RunLines r", this));
     }
 
     public void newLines(ActionEvent ae) {
@@ -399,8 +398,8 @@ public class PopUpMenus {
       script.lineHideAll();
     }
 
-    public void runLines(ActionEvent ae) {
-      script.lineRun();
+    public void resetHidden(ActionEvent ae) {
+      script.lineResetHidden();
     }
   }
 
