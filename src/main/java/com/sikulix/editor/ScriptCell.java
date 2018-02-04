@@ -44,17 +44,10 @@ class ScriptCell {
   private int indentLevel = 0;
   private int indentIfLevel = 0;
   private int indentLoopLevel = 0;
-  private int indentFunctionLevel = 0;
 
   private boolean inError = false;
-  private String status = "";
-
-  protected String getStatus() {
-    return status;
-  }
 
   private ScriptCell() {
-
   }
 
   protected ScriptCell(Script script, String value, int col) {
@@ -116,7 +109,7 @@ class ScriptCell {
     value = "";
   }
 
-  protected void setIndent(int level, int ifLevel, int loopLevel, int functionLevel) {
+  protected void setIndent(int level, int ifLevel, int loopLevel) {
     if (level > -1) {
       indentLevel = level;
     }
@@ -125,9 +118,6 @@ class ScriptCell {
     }
     if (loopLevel > -1) {
       indentLoopLevel = loopLevel;
-    }
-    if (functionLevel > -1) {
-      indentFunctionLevel = loopLevel;
     }
   }
 
@@ -143,8 +133,8 @@ class ScriptCell {
     return indentLoopLevel;
   }
 
-  protected int getFunctionIndent() {
-    return indentFunctionLevel;
+  protected boolean isFunction() {
+    return "function".equals(value);
   }
 
   protected ScriptCell asImage() {
@@ -268,30 +258,6 @@ class ScriptCell {
   private boolean existsPicture() {
     File fPicture = new File(script.getScriptPath().getParentFile(), getImageName() + ".png");
     return fPicture.exists();
-  }
-
-  protected ScriptCell asScript() {
-    if (!value.startsWith("{")) {
-      value = "{" + value;
-    }
-    cellType = CellType.SCRIPT;
-    return this;
-  }
-
-  protected boolean isScript() {
-    return CellType.SCRIPT.equals(cellType);
-  }
-
-  protected ScriptCell asVariable() {
-    if (!value.startsWith("$")) {
-      value = "$" + value;
-    }
-    cellType = CellType.VARIABLE;
-    return this;
-  }
-
-  protected boolean isVariable() {
-    return CellType.VARIABLE.equals(cellType);
   }
 
   protected String eval(int row, int col) {

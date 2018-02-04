@@ -41,7 +41,7 @@ class ScriptTableModel extends AbstractTableModel {
 
   public Object getValueAt(int row, int tableCol) {
     int dataCol = Math.max(0, tableCol - 1);
-    ScriptCell commandCell = script.commandCell(row);
+    ScriptCell commandCell = script.commandTableCell(row);
     if (tableCol == Script.numberCol) {
       String format = "%6d%s %s";
       String sHidden = "";

@@ -169,63 +169,62 @@ public class Script implements TableModelListener {
 
     popUpWindow = new PopUpWindow();
 
-    new Thread(new Runnable() {
-      boolean statusPause = false;
-      String currentText = "";
-
-      @Override
-      public void run() {
-        while (true) {
-          int row = table.getSelectedRows()[0];
-          int col = table.getSelectedColumns()[0];
-          String statusText = "";
-          try {
-            String text = "";
-            ScriptCell commandCell = getScript().commandCell(row);
-            if (col == 0 && isLineFirstHidden(row)) {
-              text += " hidden:" + commandCell.getHidden();
-            }
-            if (col > 0) {
-              ScriptCell dCell = getScript().getTableCell(row, col);
-              if (SX.isNotNull(dCell)) {
-                String cellText = dCell.get();
-                if (cellText.startsWith("@")) {
-                  if (!cellText.startsWith("@@")) {
-                    text += " IMAGE:" + cellText;
-                    if (cellText.contains("?")) {
-                      text += " - needs capture - use F1";
-                    } else {
-                      text += " - F1 to show - F5 to find - SPACE to recapture";
-                    }
-                  }
-                } else if (dCell.getInitial().startsWith("{")) {
-                  text += " press SPACE to edit script snippet";
-                }
-                statusText = dCell.getStatus();
-              } else {
-                text += " empty - start typing to fill";
-              }
-            }
-            String newText = String.format("(%d, %d)%s%s", commandCell.getRow() + 1, col, text, " " + statusText);
-            if (!currentText.equals(newText)) {
-              status.setText(newText);
-              currentText = newText;
-            }
-          } catch (Exception ex) {
-            log.trace("STATUS-ERROR: %s", ex.getMessage());
-            statusPause = true;
-          }
-          SX.pause(0.5);
-          if (statusPause) {
-            statusPause = false;
-            SX.pause(1);
-          }
-        }
-      }
-    }).start();
+    new Thread(() -> makeStatusLine()).start();
   }
 
-//  @Override
+  public void makeStatusLine() {
+    boolean statusPause = false;
+    String currentText = "";
+    while (true) {
+      int row = table.getSelectedRows()[0];
+      int col = table.getSelectedColumns()[0];
+      String statusText = "";
+      try {
+        String text = "";
+        ScriptCell commandCell = getScript().commandTableCell(row);
+        if (col == 0 && isLineFirstHidden(row)) {
+          text += " hidden:" + commandCell.getHidden();
+        }
+        if (commandCell.isFunction() && commandCell.getIndent() > 0) {
+          statusText = " !!! ERROR: function definition not at indent 0";
+        }
+        if (col > 0) {
+          ScriptCell dCell = getScript().getTableCell(row, col);
+          if (SX.isNotNull(dCell)) {
+            String cellText = dCell.get();
+            if (cellText.startsWith("@")) {
+              if (!cellText.startsWith("@@")) {
+                text += " IMAGE: " + cellText;
+                if (cellText.contains("?")) {
+                  text += " - needs capture - use F1";
+                } else {
+                  text += " - F1 to show - F5 to find - SPACE to recapture";
+                }
+              }
+            } else if (dCell.getInitial().startsWith("{")) {
+              text += " press SPACE to edit script snippet";
+            }
+          } else {
+            text += " empty - start typing to fill";
+          }
+        }
+        String newText = String.format("(%d, %d)%s%s", commandCell.getRow() + 1, col, text, " " + statusText);
+        if (!currentText.equals(newText)) {
+          status.setText(newText);
+          currentText = newText;
+        }
+      } catch (Exception ex) {
+        log.trace("STATUS-ERROR: %s", ex.getMessage());
+        statusPause = true;
+      }
+      SX.pause(0.5);
+      if (statusPause) {
+        statusPause = false;
+        SX.pause(1);
+      }
+    }
+  }
+  //  @Override
 //  public void valueChanged(ListSelectionEvent e) {
 //    log.trace("valueChanged(ListSelectionEvent)");
 //  }
@@ -312,7 +311,7 @@ public class Script implements TableModelListener {
 //  }
 
   private int findNext(int row) {
-    ScriptCell cell = commandCell(row);
+    ScriptCell cell = commandTableCell(row);
     int indent = cell.getLoopIndent() - 1;
     int lastLine = data.size() - 1;
     String cellText = cell.get();
@@ -321,15 +320,19 @@ public class Script implements TableModelListener {
       searchText = "endfunction";
     }
     while (!(++row > lastLine)) {
-      if (commandCell(row).get().contains(searchText) && indent == commandCell(row).getLoopIndent()) {
-        break;
+      if (commandTableCell(row).get().contains(searchText)) {
+        if (cellText.contains("function")) {
+          break;
+        } else if (indent == commandTableCell(row).getLoopIndent()) {
+          break;
+        }
       }
     }
     return row;
   }
 
   private int findPrevious(int row) {
-    ScriptCell cell = commandCell(row);
+    ScriptCell cell = commandTableCell(row);
     int indent = cell.getIndent();
     String cellText = cell.get();
     String searchText = "if ifNot";
@@ -346,10 +349,10 @@ public class Script implements TableModelListener {
         continue;
       }
       if (isIf) {
-        if (searchText.contains(commandCell(row).get()) && indent == commandCell(row).getIndent()) {
+        if (searchText.contains(commandTableCell(row).get()) && indent == commandTableCell(row).getIndent()) {
           break;
         }
-      } else if (commandCell(row).get().contains(searchText) && indent == commandCell(row).getIndent()) {
+      } else if (commandTableCell(row).get().contains(searchText) && indent == commandTableCell(row).getIndent()) {
         break;
       }
     }
@@ -357,17 +360,17 @@ public class Script implements TableModelListener {
   }
 
   private int findNextForIf(int row, String command) {
-    int indent = commandCell(row).getIfIndent();
+    int indent = commandTableCell(row).getIfIndent();
     int endIfIndent = indent - 1;
     boolean endIfOnly = command.contains("endif");
     int lastLine = data.size() - 1;
     while (!(++row > lastLine)) {
-      if (commandCell(row).get().contains("endif") && (commandCell(row).getIfIndent() == endIfIndent)) {
+      if (commandTableCell(row).get().contains("endif") && (commandTableCell(row).getIfIndent() == endIfIndent)) {
         break;
       }
       if (!endIfOnly) {
-        if (commandCell(row).get().contains("else") || commandCell(row).get().contains("elif")) {
-          if (indent == commandCell(row).getIfIndent()) {
+        if (commandTableCell(row).get().contains("else") || commandTableCell(row).get().contains("elif")) {
+          if (indent == commandTableCell(row).getIfIndent()) {
             break;
           }
         }
@@ -377,22 +380,22 @@ public class Script implements TableModelListener {
   }
 
   private int findIfForEndIf(int row) {
-    int indent = commandCell(row).getIfIndent();
+    int indent = commandTableCell(row).getIfIndent();
     while (!(row-- < 0)) {
-      if (commandCell(row).get().startsWith("if") && !commandCell(row).get().contains("ifElse")
-              && commandCell(row).getIfIndent() == indent) {
+      if (commandTableCell(row).get().startsWith("if") && !commandTableCell(row).get().contains("ifElse")
+              && commandTableCell(row).getIfIndent() == indent) {
         break;
       }
     }
     return row;
   }
 
-  ScriptCell commandCell(int row) {
+  ScriptCell commandTableCell(int row) {
     return data.get(row).get(0);
   }
 
   boolean isLineFirstHidden(int row) {
-    return commandCell(row).isFirstHidden();
+    return commandTableCell(row).isFirstHidden();
   }
 
   boolean isLineEmpty(List<ScriptCell> line) {
@@ -410,32 +413,36 @@ public class Script implements TableModelListener {
   protected void assist() {
     int row = table.getSelectedRows()[0];
     int col = table.getSelectedColumns()[0];
-    ScriptCell cell = data.get(row).get(col);
+    ScriptCell cell = commandTableCell(row);
+    String command = cell.get();
     int[] selectedRows = table.getSelectedRows();
-    if (selectedRows.length > 1) {
-      cell = data.get(selectedRows[0]).get(numberCol);
-    }
-    if (row < 2) {
+    if (col < 2) {
       if (!isLineFirstHidden(row)) {
         int firstRow = row;
         int lastRow = -1;
-        if (cell.get().startsWith("loop") || cell.get().startsWith("function")) {
+        if (command.startsWith("loop") || command.startsWith("function")) {
           lastRow = findNext(firstRow);
-        } else if (cell.get().startsWith("endloop") || cell.get().startsWith("endfunction")) {
+          if (col > 0) {
+            firstRow = -1;
+          }
+        } else if (command.startsWith("endloop") || command.startsWith("endfunction")) {
           lastRow = findPrevious(firstRow);
+          if (col > 0) {
+            firstRow = -1;
+          }
         } else {
           if (col == 0) {
-            if (cell.get().startsWith("if")) {
+            if (command.startsWith("if")) {
               lastRow = findNextForIf(firstRow, "endif");
             }
-            if (cell.get().startsWith("endif")) {
+            if (command.startsWith("endif")) {
               lastRow = findPrevious(firstRow);
             }
           } else {
-            if (cell.get().startsWith("if") || cell.get().startsWith("elif") || cell.get().startsWith("else")) {
+            if (command.startsWith("if") || command.startsWith("elif") || command.startsWith("else")) {
               lastRow = findNextForIf(firstRow, "else");
             }
-            if (cell.get().startsWith("endif")) {
+            if (command.startsWith("endif")) {
               lastRow = findIfForEndIf(firstRow);
             }
             firstRow = -1;
@@ -443,16 +450,17 @@ public class Script implements TableModelListener {
         }
         if (isRowValid(lastRow)) {
           if (isRowValid(firstRow)) {
-            table.setSelection(lastRow, 1);
-          } else {
             table.setLineSelection(firstRow, lastRow);
+          } else {
+            table.setSelection(lastRow, commandCol);
           }
         }
-        return;
       } else {
         lineHide(selectedRows);
       }
+      return;
     }
+    cell = getTableCell(row, col);
     String cellText = cell.get();
     if (cell.isImage()) {
       if (cellText.contains("?")) {
@@ -660,80 +668,83 @@ public class Script implements TableModelListener {
     boolean hasElse = false;
     for (List<ScriptCell> line : allData) {
       if (line.size() == 0) {
-        log.error("checkContent: line.size() == 0");
+        log.trace("checkContent: line.size() == 0");
       }
-      ScriptCell cell = line.get(0);
-      String command = cell.get().trim();
+      ScriptCell commandCell = line.get(0);
+      String command = commandCell.get().trim();
       if (SX.isNotSet(command)) {
         continue;
       }
-      cell.reset();
+      commandCell.reset();
       if (SX.isNotNull(ScriptTemplate.commandTemplates.get(command))) {
         if (command.startsWith("if") && !command.contains("ifElse")) {
           currentIfIndent++;
-          cell.setIndent(currentIndent, currentIfIndent, -1, -1);
+          commandCell.setIndent(currentIndent, currentIfIndent, -1);
           currentIndent++;
         } else if (command.startsWith("elif")) {
           if (currentIfIndent > 0 && !hasElse) {
             currentIndent--;
-            cell.setIndent(currentIndent, currentIfIndent, -1, -1);
+            commandCell.setIndent(currentIndent, currentIfIndent, -1);
             currentIndent++;
           } else {
-            cell.setError();
+            commandCell.setError();
           }
         } else if (command.startsWith("else")) {
           if (currentIfIndent > 0) {
             hasElse = true;
             currentIndent--;
-            cell.setIndent(currentIndent, currentIfIndent, -1, -1);
+            commandCell.setIndent(currentIndent, currentIfIndent, -1);
             currentIndent++;
           } else {
-            cell.setError();
+            commandCell.setError();
           }
         } else if (command.startsWith("endif")) {
           if (currentIfIndent > 0) {
             hasElse = false;
             currentIndent--;
             currentIfIndent--;
-            cell.setIndent(currentIndent, currentIfIndent, -1, -1);
+            commandCell.setIndent(currentIndent, currentIfIndent, -1);
           } else {
-            cell.setError();
+            commandCell.setError();
           }
         } else if (command.startsWith("loop")) {
           currentLoopIndent++;
-          cell.setIndent(currentIndent, -1, currentLoopIndent, -1);
+          commandCell.setIndent(currentIndent, -1, currentLoopIndent);
           currentIndent++;
         } else if (command.startsWith("endloop")) {
           if (currentLoopIndent > 0) {
             currentIndent--;
             currentLoopIndent--;
-            cell.setIndent(currentIndent, -1, currentLoopIndent, -1);
+            commandCell.setIndent(currentIndent, -1, currentLoopIndent);
           } else {
-            cell.setError();
+            commandCell.setError();
           }
         } else if (command.startsWith("function")) {
+          if (currentIndent > 0) {
+            log.trace("checkContent: not at indent 0: %s", commandCell);
+          }
           currentFunctionIndent++;
-          cell.setIndent(currentIndent, -1, -1, currentFunctionIndent);
+          commandCell.setIndent(currentIndent, -1, -1);
           currentIndent++;
         } else if (command.startsWith("endfunction")) {
           if (currentFunctionIndent > 0) {
             currentIndent--;
             currentFunctionIndent--;
-            cell.setIndent(currentIndent, -1, -1, currentFunctionIndent);
+            commandCell.setIndent(currentIndent, -1, -1);
           } else {
-            cell.setError();
+            commandCell.setError();
           }
         } else {
-          cell.setIndent(currentIndent, currentIfIndent, currentLoopIndent, currentFunctionIndent);
+          commandCell.setIndent(currentIndent, currentIfIndent, currentLoopIndent);
         }
-      } else if (cell.get().startsWith("@")) {
+      } else if (commandCell.get().startsWith("@")) {
 
-      } else if (cell.get().startsWith("$")) {
+      } else if (commandCell.get().startsWith("$")) {
 
-      } else if (cell.get().contains("#")) {
+      } else if (commandCell.get().contains("#")) {
 
       } else {
-        log.error("checkContent: %s", cell);
+        log.trace("checkContent: invalid: %s", commandCell);
       }
     }
     table.tableHasChanged();
@@ -775,14 +786,14 @@ public class Script implements TableModelListener {
     }
     if (selectedCols[0] == numberCol) {
       log.trace("addCommandTemplate: should surround with: %s", command);
-      lineAdd(firstRow, 1);
-      lineSet(firstRow, commandLine);
-      lastRow += 2;
-      lineAdd(lastRow, 1);
-      lineSet(lastRow, command.startsWith("if") ? "endif" :
-              (command.startsWith("loop") ? "endloop" : "endfunction"));
-      success = true;
-    } else if (commandCell(firstRow).isLineEmpty()) {
+        lineAdd(firstRow, 1);
+        lineSet(firstRow, commandLine);
+        lastRow += 2;
+        lineAdd(lastRow, 1);
+        lineSet(lastRow, command.startsWith("if") ? "endif" :
+                (command.startsWith("loop") ? "endloop" : "endfunction"));
+        success = true;
+    } else if (commandTableCell(firstRow).isLineEmpty()) {
       if (SX.isNotNull(commandLine)) {
         int lineLast = commandLine.length - 1;
         String lineEnd = commandLine[lineLast];
@@ -980,7 +991,7 @@ public class Script implements TableModelListener {
     lineDelete(selectedRows);
     lineCount -= allData.size();
     int[] newRow = new int[]{selectedRows[0] - 1};
-    for (int n = 0; n < lineCount; n ++) {
+    for (int n = 0; n < lineCount; n++) {
       lineNew(newRow);
     }
     table.tableCheckContent();
