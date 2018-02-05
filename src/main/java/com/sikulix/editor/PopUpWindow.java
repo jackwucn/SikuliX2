@@ -52,8 +52,8 @@ public class PopUpWindow extends JFrame {
             if (!checkText(cellText)) {
               cellText = resetText;
             }
-            script.table.setValueAt(cellText, row, col);
-            script.table.setSelection(row, col);
+            script.table.setValueAt(cellText, row, col + 1);
+            script.table.setSelection(row, col + 1);
           }
           return;
         }

@@ -189,8 +189,17 @@ public class Script implements TableModelListener {
             text += " ... press - to reset hidden";
           }
         }
+        if (col == 0) {
+          text += " ... press SPACE to get options menu";
+        }
         if (commandCell.isFunction() && commandCell.getIndent() > 0) {
           statusText = " !!! ERROR: function definition not at indent 0";
+        }
+        if (col == 1) {
+          if (commandCell.isEmpty()) {
+            text += " ... press SPACE to get commands menu or type a command or command-short-cut";
+          } else
+            text += " ... press SPACE to add a new commandline after this one";
         }
         if (col > 0) {
           ScriptCell dCell = getScript().getTableCell(row, col);
@@ -805,8 +814,9 @@ public class Script implements TableModelListener {
         commandLine[0] = command + commandLine[0];
       }
     }
-    if (selectedCols[0] == numberCol) {
-      log.trace("addCommandTemplate: should surround with: %s", command);
+    if (SX.isNotNull(commandLine)) {
+      if (selectedCols[0] == numberCol) {
+        log.trace("addCommandTemplate: should surround with: %s", command);
         lineAdd(firstRow, 1);
         lineSet(firstRow, commandLine);
         lastRow += 2;
@@ -814,8 +824,7 @@ public class Script implements TableModelListener {
         lineSet(lastRow, command.startsWith("if") ? "endif" :
                 (command.startsWith("loop") ? "endloop" : "endfunction"));
         success = true;
-    } else if (isLineEmpty(firstRow)) {
-      if (SX.isNotNull(commandLine)) {
+      } else if (isLineEmpty(firstRow)) {
         int lineLast = commandLine.length - 1;
         String lineEnd = commandLine[lineLast];
         if (lineEnd.startsWith("result")) {
@@ -833,8 +842,6 @@ public class Script implements TableModelListener {
           lineSet(firstRow + 1, "endfunction");
         } else {
         }
-      } else {
-        lineSet(firstRow, command + "?");
       }
       success = true;
     }
@@ -1079,12 +1086,12 @@ public class Script implements TableModelListener {
     }).start();
   }
 
-  protected void cellSet(int row, int col, String item) {
+  protected ScriptCell cellSet(int row, int col, String item) {
     List<ScriptCell> line = data.get(row);
-    cellSet(line, col, item);
+    return cellSet(line, col, item);
   }
 
-  protected void cellSet(List<ScriptCell> line, int col, String item) {
+  protected ScriptCell cellSet(List<ScriptCell> line, int col, String item) {
     if (col > line.size() - 1) {
       for (int n = line.size(); n <= col; n++) {
         line.add(new ScriptCell(this, "", n + 1));
@@ -1094,6 +1101,7 @@ public class Script implements TableModelListener {
     if (col > 0 && SX.isSet(item)) {
       line.get(col).setInitial(item);
     }
+    return line.get(col);
   }
 
   protected void lineHide() {
@@ -1208,7 +1216,10 @@ public class Script implements TableModelListener {
   }
 
   protected void editBox(int row, int col) {
-    ScriptCell cell = data.get(row).get(col);
+    ScriptCell cell = getTableCell(row, col + 1);
+    if (SX.isNull(cell)) {
+      cell = cellSet(row, col, "");
+    }
     String initialText = cell.getInitial();
     String[] text = new String[]{cell.get(), initialText};
     boolean shouldEdit = false;
@@ -1217,7 +1228,8 @@ public class Script implements TableModelListener {
       text[0] = "//--- enter a valid JavaScript " + token + "\n";
       text[0] += "//--- CTRL-ESC to save - ESC to cancel\n";
       shouldEdit = true;
-    } else if (!text[0].startsWith("$") && !text[0].startsWith("@") && initialText.startsWith("{")) {
+    } else if (!text[0].startsWith("$") && !text[0].startsWith("@")
+            && (initialText.startsWith("{") || cell.isEmpty())) {
       shouldEdit = true;
     }
     if (shouldEdit) {

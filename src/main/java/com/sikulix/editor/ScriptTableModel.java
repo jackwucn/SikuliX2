@@ -87,17 +87,8 @@ class ScriptTableModel extends AbstractTableModel {
       script.cellSet(row, dataCol, "");
     }
     if (tableCol == 1) {
-      if (given.isEmpty()) {
-        cell.set(given);
-        script.checkContent();
-        script.table.setSelection(row, tableCol);
-      } else {
-        if (script.isLineEmpty(line)) {
-          script.addCommandTemplate(given);
-        } else {
-          cell.set(given);
-          script.checkContent();
-        }
+      if (script.isLineEmpty(line)) {
+        script.addCommandTemplate(given);
       }
     } else {
       cell.set(given);

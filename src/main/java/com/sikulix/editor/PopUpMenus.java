@@ -303,7 +303,8 @@ public class PopUpMenus {
       add(createMenuItem("SetIfNot sn", this));
       add(createMenuItem("IfElse ie", this));
       createMenuSeperator();
-      add(createMenuItem("Import im", this));
+      add(createMenuItem("Import", this));
+      add(createMenuItem("RunScript", this));
     }
 
     public void addCommand(String menuItem) {
