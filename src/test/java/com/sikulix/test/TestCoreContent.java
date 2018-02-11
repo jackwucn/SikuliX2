@@ -134,6 +134,7 @@ public class TestCoreContent {
   @Test
   public void test_050_onClassPath() {
     currentTest = new SXTest();
+    currentTest.notOnJava9();
     if (currentTest.shouldNotRun()) {
       return;
     }
