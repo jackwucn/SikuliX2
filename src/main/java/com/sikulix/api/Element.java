@@ -1701,6 +1701,7 @@ public class Element implements Comparable<Element> {
   /**
    * Move the mouse to this element's target
    *
+   * @param args list: what, where
    * @return this
    */
   public Element hover(Object... args) {
@@ -1712,6 +1713,7 @@ public class Element implements Comparable<Element> {
   /**
    * Move the mouse to this element's target and click left
    *
+   * @param args list: what, where
    * @return this
    */
   public Element click(Object... args) {
@@ -1734,6 +1736,7 @@ public class Element implements Comparable<Element> {
   /**
    * Move the mouse to this element's target and double click left
    *
+   * @param args list: what, where
    * @return this
    */
   public Element doubleClick(Object... args) {
@@ -1745,6 +1748,7 @@ public class Element implements Comparable<Element> {
   /**
    * Move the mouse to this element's target and click right
    *
+   * @param args list: what, where
    * @return this
    */
   public Element rightClick(Object... args) {
