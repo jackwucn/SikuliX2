@@ -22,9 +22,10 @@ Travis CI (Ubuntu 12.04-64, Java 8, xvfb)
 
 <hr>
 
-**BE AWARE** 
+**BE AWARE: Java 8 or Java 9 required** 
 
-**Java 9** not yet supported - use at your own risk.
+I am developing on Java 9
+Source code level and byte code level are both 1.8
 
 For use with Java aware scripting and Java programming you might need additional stuff and steps at your own resposibility. Currently you might also fork the project and make your tests in the project context. Issues and pull requests are only accepted here on Github.
 
