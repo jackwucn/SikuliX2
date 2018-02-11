@@ -22,37 +22,27 @@ class ScriptTable extends JTable {
   }
 
   @Override
-  public boolean editCellAt(int row, int col, EventObject e) {
-    ScriptCell cell = script.getTableCell(row, col);
-    boolean isLineNumber = col == Script.numberCol;
-    boolean isCommand = col == Script.commandCol;
-    int dataCol = Math.max(0, col - 1);
+  public boolean editCellAt(int row, int tableCol, EventObject e) {
+    ScriptCell cell = script.getTableCell(row, tableCol);
+    boolean isLineNumber = tableCol == Script.numberCol;
+    boolean isCommand = tableCol == Script.commandCol;
+    boolean isItems = tableCol > Script.commandCol;
+    int dataCol = Math.max(0, tableCol - 1);
     int keyCode = 0;
-    if (SX.isNotNull(cell)) {
-      if (e instanceof KeyEvent) {
+    if (e instanceof KeyEvent) {
+      keyCode = ((KeyEvent) e).getExtendedKeyCode();
+      if (keyCode == 0) {
         keyCode = ((KeyEvent) e).getExtendedKeyCode();
-        if (keyCode == 0) {
-          keyCode = ((KeyEvent) e).getExtendedKeyCode();
-        }
-        if (keyCode == 0 || keyCode == KeyEvent.VK_META) {
-          return false;
-        }
-        boolean isCtrl = false;
-        boolean isAlt = false;
-        boolean isShift = false;
-        boolean isMeta = false;
-        int modifier = ((KeyEvent) e).getModifiers();
-        if (modifier == KeyEvent.META_MASK) {
-          isMeta = true;
-        } if (modifier == KeyEvent.CTRL_MASK) {
-          isCtrl = true;
-        }
-        if (modifier == KeyEvent.ALT_MASK) {
-          isAlt = true;
-        }
-        if (modifier == KeyEvent.SHIFT_MASK) {
-          isShift = true;
-        }
+      }
+      if (keyCode == 0 || keyCode == KeyEvent.VK_META) {
+        return false;
+      }
+      int modifier = ((KeyEvent) e).getModifiers();
+      boolean isCtrl = 0 != (modifier & KeyEvent.CTRL_MASK);
+      boolean isAlt = 0 != (modifier & KeyEvent.ALT_MASK);
+      boolean isShift = 0 != (modifier & KeyEvent.SHIFT_MASK);
+      boolean isMeta = 0 != (modifier & KeyEvent.META_MASK);
+      if (SX.isNotNull(cell)) {
         if (isMeta) {
           if (keyCode == KeyEvent.VK_F) {
             boolean findInteractive = false;
@@ -68,6 +58,13 @@ class ScriptTable extends JTable {
             }
             if (findInteractive) {
               script.log.trace("Action: find text interactive");
+            }
+          } else if (keyCode == KeyEvent.VK_Z) {
+            String action = "none";
+            if (isShift) {
+              script.log.trace("Action: redo last action: %s", action);
+            } else {
+              script.log.trace("Action: undo last action: %s", action);
             }
           } else {
             script.log.trace("META_MASK + %s", KeyEvent.getKeyText(keyCode));
@@ -93,7 +90,7 @@ class ScriptTable extends JTable {
           }
           if (keyCode == KeyEvent.VK_MINUS) {
             int firstSelected = getSelectedRows()[0];
-            if(script.isLineFirstNotCollapsed(firstSelected)) {
+            if (script.isLineFirstNotCollapsed(firstSelected)) {
               script.lineResetHidden(firstSelected);
             } else {
               script.lineDelete(getSelectedRows());
@@ -158,8 +155,15 @@ class ScriptTable extends JTable {
           }
           return false;
         } else if (keyCode == KeyEvent.VK_BACK_SPACE && cell.isEmpty()) {
-          cell.setValue(script.savedCellText, row, col);
-          setSelection(row, col);
+          cell.setValue(script.savedCellText, row, tableCol);
+          setSelection(row, tableCol);
+          return false;
+        } else if (keyCode == KeyEvent.VK_DELETE || keyCode == KeyEvent.VK_BACK_SPACE) {
+          if (isItems) {
+            script.savedCellText = cell.get();
+            cell.setValue("", row, tableCol);
+          }
+          setSelection(row, tableCol);
           return false;
         } else if (keyCode == KeyEvent.VK_ESCAPE) {
           setSelection(row, 0);
@@ -191,20 +195,26 @@ class ScriptTable extends JTable {
           return false;
         } else if (keyCode == KeyEvent.VK_F7) {
           return false;
-        } else if (keyCode == KeyEvent.VK_DELETE || keyCode == KeyEvent.VK_BACK_SPACE) {
-          script.savedCellText = cell.get();
-          cell.setValue("", row, col);
-          setSelection(row, col);
-          return false;
         }
         Script.log.trace("keycode: %d %s", keyCode, KeyEvent.getKeyText(keyCode));
       }
-    }
-    if (!isLineNumber) {
-      if (e instanceof KeyEvent && keyCode == KeyEvent.VK_ESCAPE) {
-        return false;
+      if (!isLineNumber) {
+        if (e instanceof KeyEvent) {
+          if (keyCode == KeyEvent.VK_ESCAPE) {
+            setSelection(row, 0);
+            return false;
+          } else if (keyCode == KeyEvent.VK_SPACE) {
+            if (isShift) {
+              setSelection(row, 0);
+              script.popUpMenus.action();
+            } else {
+              //script.editBox(row, dataCol);
+            }
+            return false;
+          }
+        }
+        return super.editCellAt(row, tableCol, e);
       }
-      return super.editCellAt(row, col, e);
     }
     return false;
   }
@@ -212,6 +222,7 @@ class ScriptTable extends JTable {
   public String getToolTipText(MouseEvent e) {
     return ScriptTemplate.createTip(rowAtPoint(e.getPoint()), columnAtPoint(e.getPoint()));
   }
+
   protected void setSelection(int row, int col) {
     setRowSelectionInterval(row, row);
     setColumnSelectionInterval(col, col);

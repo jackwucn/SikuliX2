@@ -6,9 +6,7 @@ package com.sikulix.editor;
 
 import com.sikulix.core.Content;
 import com.sikulix.core.SX;
-import com.sikulix.run.Runner;
 
-import javax.swing.*;
 import java.io.File;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -104,24 +102,27 @@ public abstract class ScriptTemplate {
     commandTemplates.put("use", new String[]{"", "{element}", "result"});
 
     commandTemplates.put("import", new String[]{"", "scriptname", "parameter..."});
+    commandTemplates.put("runScript", new String[]{"", "scriptname", "parameter...", "result"});
 
     commandTemplates.put("image", new String[]{"", "@?", "similar", "{offset [x,y]}", "result"});
     commandTemplates.put("$I", new String[]{"=@?", "similar", "{offset [x,y]}", "result"});
-    commandTemplates.put("$$I", new String[]{"=imageList", "@@?", "{[image,image,...]}"});
+    commandTemplates.put("@", new String[]{"=@?", "similar", "{offset [x,y]}", "result"});
     commandTemplates.put("imageList", new String[]{"", "@@?", "{[image,image,...]}"});
+    commandTemplates.put("$$I", new String[]{"=imageList", "@@?", "{[image,image,...]}"});
+    commandTemplates.put("@@", new String[]{"=imageList", "@@?", "{[image,image,...]}"});
     commandTemplates.put("variable", new String[]{"", "$?", "{expression}"});
     commandTemplates.put("$", new String[]{"?", "{expression}"});
+    commandTemplates.put("array", new String[]{"", "$$?", "{[item,item,...]}"});
+    commandTemplates.put("$$", new String[]{"=array", "$$?", "{[item,item,...]}"});
     commandTemplates.put("option", new String[]{"", "key", "{value}"});
     commandTemplates.put("$O", new String[]{"=option", "key", "{value}"});
     commandTemplates.put("where", new String[]{"", "$R?", "{[x,y,w,h]}"});
     commandTemplates.put("$R", new String[]{"?", "{[x,y,w,h]}"});
     commandTemplates.put("location", new String[]{"", "$L?", "{[x,y]}"});
     commandTemplates.put("$L", new String[]{"?", "{[x,y]}"});
-    commandTemplates.put("array", new String[]{"", "$$?", "{[item,item,...]}"});
-    commandTemplates.put("$$", new String[]{"=array", "$$?", "{[item,item,...]}"});
     commandTemplates.put("function", new String[]{"", "$F?", "{script}", "parameter..."});
-    commandTemplates.put("$F", new String[]{"?", "{function}"});
     commandTemplates.put("endfunction", new String[]{""});
+    commandTemplates.put("$F", new String[]{"?", "{function}", "parameter..."});
     commandTemplates.put("/", new String[]{"continuation", ""});
     commandTemplates.put("#", new String[]{"comment", ""});
     commandTemplates.put("{", new String[]{"={script}", "result"});
