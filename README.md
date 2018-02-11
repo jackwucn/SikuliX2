@@ -9,8 +9,9 @@ SikuliX Version 2 - Java API
 
 <hr>
 
-Travis CI (Ubuntu 12.04-64, Java 8, xvfb)
-<br>Developing and testing locally on macOS 12 and Windows 10 with Java 8
+Travis CI (Ubuntu 12.04-64, Java 9, xvfb)
+<br>Developing and testing locally with Java 9 on macOS 10.13 and Windows 10
+<br>using [JetBrains IntelliJ IDEA community Edition](https://www.jetbrains.com/idea/)
 <br>Translation project: [Transifex::SikuliX2](https://www.transifex.com/sikulix/sikulix2/dashboard/)
 <br>Documentation project: [ReadTheDocs::SikuliX2](http://sikulix2.readthedocs.org/) based on [GitHub::SikuliX2-Docs](https://github.com/RaiMan/SikuliX2-Docs)
 
@@ -20,14 +21,16 @@ Travis CI (Ubuntu 12.04-64, Java 8, xvfb)
  - if you want to create your own packages containing SikuliX features
  - if you want to contribute.
 
+For use with Java aware scripting and Java programming you might need additional stuff and steps at your own resposibility. 
+
 <hr>
 
 **BE AWARE: Java 8 or Java 9 required** 
 
-I am developing on Java 9
+I am developing on Java 9<br>
 Source code level and byte code level are both 1.8
 
-For use with Java aware scripting and Java programming you might need additional stuff and steps at your own resposibility. Currently you might also fork the project and make your tests in the project context. Issues and pull requests are only accepted here on Github.
+**Issues and pull requests are only accepted here on Github**
 
 <hr>
 
