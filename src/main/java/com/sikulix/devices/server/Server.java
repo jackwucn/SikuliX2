@@ -14,6 +14,8 @@ import java.util.Map;
 
 public class Server extends NanoHTTPD {
 
+  //https://github.com/SeleniumHQ/selenium/wiki/JsonWireProtocol
+
   static SXLog log;
 
   static {

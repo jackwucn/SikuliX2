@@ -8,7 +8,6 @@ import com.sikulix.api.Do;
 import com.sikulix.core.Content;
 import com.sikulix.core.SX;
 import com.sikulix.core.SXLog;
-import com.sikulix.editor.Editor;
 import com.sikulix.run.Runner;
 
 import java.io.File;
