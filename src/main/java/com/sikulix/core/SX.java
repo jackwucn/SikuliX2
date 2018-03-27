@@ -6,7 +6,6 @@ package com.sikulix.core;
 
 //import com.sikulix.scripting.JythonHelper;
 
-import com.sikulix.api.Window;
 import com.sikulix.devices.local.LocalDevice;
 import org.apache.commons.cli.*;
 import org.apache.commons.configuration2.PropertiesConfiguration;
@@ -665,7 +664,7 @@ public class SX {
    */
   public static String getSXJAVAVERSION() {
     if (isNotSet(JAVAVERSION)) {
-      String vJava = System.getProperty("java.runtime.version");
+      String vJava = System.getProperty("java.version");
       String vVM = System.getProperty("java.vm.version");
       String vClass = System.getProperty("java.class.version");
       String vSysArch = System.getProperty("os.arch");
@@ -688,7 +687,7 @@ public class SX {
         terminate(1, "Java version must 8+");
       }
       if (javaVersion > 8) {
-        log.error("Java version 9 - use at your own risk");
+        log.error("Java version > 8 - use at your own risk");
       }
       JAVAVERSIONNUMBER = javaVersion;
     }
