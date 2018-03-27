@@ -22,10 +22,10 @@ script:
  - if [ $TRAVIS_TEST_RESULT -eq 0 ]; then
       mvn deploy -DskipTests=true -P sign,build-extras --settings codesigning/mvnsettings.xml;
    fi
-deploy:
-  provider: pages
-  skip_cleanup: true
-  github_token: $GITHUB_TOKEN
-  local_dir: pages
-  on:
-      branch: master
+#deploy:
+#  provider: pages
+#  skip_cleanup: true
+#  github_token: $GITHUB_TOKEN
+#  local_dir: pages
+#  on:
+#      branch: master
