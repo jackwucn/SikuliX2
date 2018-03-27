@@ -15,9 +15,15 @@ public class SXTest extends SXError {
   public static String imageNameGoogle = "google";
 
   private boolean local = false;
+  private boolean notJava9 = false;
 
   public SXTest onlyLocal() {
     local = true;
+    return this;
+  }
+
+  public SXTest notOnJava9() {
+    notJava9 = true;
     return this;
   }
 
@@ -28,6 +34,10 @@ public class SXTest extends SXError {
     }
     if (local && SX.isTravisCI()) {
       itShouldNotRun = "not on TravisCI";
+      return true;
+    }
+    if (notJava9 && SX.isJava9()) {
+      itShouldNotRun = "not with Java9";
       return true;
     }
     return false;
