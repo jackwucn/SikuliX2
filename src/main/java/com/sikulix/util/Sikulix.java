@@ -8,6 +8,8 @@ import com.sikulix.api.Do;
 import com.sikulix.core.Content;
 import com.sikulix.core.SX;
 import com.sikulix.core.SXLog;
+import com.sikulix.devices.server.Client;
+import com.sikulix.devices.server.Server;
 import com.sikulix.run.Runner;
 
 import java.io.File;
@@ -63,6 +65,11 @@ public class Sikulix {
         return;
       } else if (options.contains("play")) {
 //********** play start
+        Server.start(null);
+        SX.pause(3);
+        Client.get();
+        Client.post("some content");
+        Client.stopServer();
 //********** play end
         return;
       }

@@ -30,7 +30,7 @@ public class Client {
   }
 
   public static JSONObject post(String urlCommand, String body) {
-    log.trace("post(): %s body: %s", urlCommand, body);
+    log.trace("post: %s body: %s", urlCommand, body);
     HttpResponse<JsonNode> jsonResponse = null;
     JSONObject response = null;
     try {
@@ -47,7 +47,7 @@ public class Client {
       responseBody = jsonResponse.getBody().toString();
       response = SXJson.makeObject(responseBody);
     }
-    log.trace("post() response: %s", responseBody);
+    log.trace("post: response: %s", responseBody);
     return response;
   }
 
@@ -56,7 +56,7 @@ public class Client {
   }
 
   public static JSONObject get(String urlCommand) {
-    log.trace("getAll(): %s", urlCommand);
+    log.trace("get: %s", urlCommand);
     HttpResponse<JsonNode> jsonResponse = null;
     JSONObject response = null;
     try {
@@ -64,14 +64,14 @@ public class Client {
               .header("accept", "application/json")
               .asJson();
     } catch (UnirestException e) {
-      log.error("getAll(): %s", e.getMessage());
+      log.error("get: %s", e.getMessage());
     }
     String responseBody = "null";
     if (SX.isNotNull(jsonResponse)) {
       responseBody = jsonResponse.getBody().toString();
       response = SXJson.makeObject(responseBody);
     }
-    log.trace("getAll() response: %s",jsonResponse.getBody().toString());
+    log.trace("get: response: %s",jsonResponse.getBody().toString());
     return response;
   }
 
