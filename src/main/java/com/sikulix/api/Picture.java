@@ -161,7 +161,7 @@ public class Picture extends Element {
       setContent(url);
     } else {
       setContent();
-      setName(getNameFromFileL(new File(fpImg)));
+      setName(getNameFromFile(new File(fpImg)));
     }
   }
 
@@ -207,7 +207,7 @@ public class Picture extends Element {
     return name;
   }
 
-  private String getNameFromFileL(File image) {
+  private String getNameFromFile(File image) {
     String name = getName();
     if (SX.isNotNull(image)) {
       name = image.getName();

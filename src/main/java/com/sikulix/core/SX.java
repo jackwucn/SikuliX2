@@ -710,16 +710,8 @@ public class SX {
 
   static Integer JAVAVERSIONNUMBER = null;
 
-  public static boolean isJava8() {
-    return getSXJAVAVERSIONNUMBER() == 8;
-  }
-
   public static boolean isJava9() {
     return getSXJAVAVERSIONNUMBER() > 8;
-  }
-
-  public static boolean isJava7() {
-    return getSXJAVAVERSIONNUMBER() > 6;
   }
   //</editor-fold>
 

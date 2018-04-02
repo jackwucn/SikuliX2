@@ -587,7 +587,21 @@ public class Do {
   //</editor-fold>
 
   //<editor-fold desc="SX Do Keys">
+  public static boolean write(Object... args) {
+    return Do.on().write(args);
+  }
 
+  //TODO Region.type(), .keyDown/Up
+  public static boolean type(Object... args) {
+    return Do.on().type(args);
+  }
+
+  public static boolean keyDown(Object... args) {
+    return Do.on().write(args);
+  }
+  public static boolean keyUp(Object... args) {
+    return Do.on().write(args);
+  }
   /**
    * getAll the lock state of the given key
    *
@@ -1096,10 +1110,6 @@ public class Do {
     getDefaultElement().showMatches(times);
   }
   //</editor-fold>
-
-  public static boolean write(Object... args) {
-    return Do.on().write(args);
-  }
 
   public static Element element(Object... args) {
     Element elem = Element.create(args);

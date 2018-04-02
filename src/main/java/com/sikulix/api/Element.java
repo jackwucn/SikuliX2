@@ -1523,6 +1523,13 @@ public class Element implements Comparable<Element> {
   }
   //</editor-fold>
 
+  //<editor-fold desc="***** keyboard">
+  public boolean type(Object... args) {
+    return true;
+  }
+  //TODO implement keyboard
+  //</editor-fold>
+
   //<editor-fold desc="***** write, paste">
 
   /**
@@ -1675,10 +1682,6 @@ public class Element implements Comparable<Element> {
     //TODO implement paste(String text)
     return true;
   }
-  //</editor-fold>
-
-  //<editor-fold desc="***** keyboard">
-  //TODO implement keyboard
   //</editor-fold>
 
   //<editor-fold desc="***** mouse">
