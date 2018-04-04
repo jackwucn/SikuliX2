@@ -13,13 +13,10 @@ import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Screen extends Region implements IScreen {
+public class Screen extends Region {
   private static SXLog log = SX.getSXLog("API.SCREEN");
 
-  private static eType eClazz = eType.SCREEN;
-  public eType getType() {
-    return eClazz;
-  }
+  private static Element.eType eClazz = Element.eType.SCREEN;
 
   private int id = -1;
 
@@ -40,15 +37,6 @@ public class Screen extends Region implements IScreen {
   public Screen(int id) {
     initRegion(Do.getDevice().getMonitor(id));
     this.id = id;
-  }
-
-  public Screen(Element elem) {
-    initRegion(elem.getRectangle().x, elem.getRectangle().y,
-            elem.getRectangle().width, elem.getRectangle().height);
-  }
-
-  public Screen getScreen() {
-    return this;
   }
 
   public static Screen getPrimaryScreen() {
