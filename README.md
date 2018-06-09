@@ -1,7 +1,7 @@
-SikuliX Version 2 - Java API
+SikuliX Version 2
 ============
 
-**Version 2.0.0 under developement** 
+**Version 2.0.0 under developement (pre-alpha!)** (not useable yet, massive redesign planned until Oct. 2018)
 
 **[Download](http://sikulix.com) latest ready to use version 1.1.x** [or get the Sources](https://github.com/RaiMan/SikuliX1)
 
@@ -23,52 +23,27 @@ For use with Java aware scripting and Java programming you might need additional
 
 <hr>
 
-**BE AWARE: Java 8 or Java 9 required** 
+**BE AWARE: Java 8+ required** 
 
-I am developing on Java 9<br>
+I am developing on latest Java (currently 10)<br>
 Source code level and byte code level are both 1.8
 
 **Issues and pull requests are only accepted here on Github**
 
 <hr>
 
-**sikulixapi**
+**Redesign goal**
 
-the API to be used in Java and Java aware scripting languages
+Implement the API completely as a REST-API backed by a server running on the target machine.
 
-Snapshots available on OSSRH (should work in Maven and Gradle projects):
+This will allow many more client implementations even in a browser context.
 
-```
-  <repositories>
-    <repository>
-      <id>snapshot</id>
-      <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
-    </repository>
-  </repositories>
-
-  <dependencies>
-    <dependency>
-      <groupId>com.sikulix</groupId>
-      <artifactId>sikulixapi</artifactId>
-      <version>2.0.0-SNAPSHOT</version>
-    </dependency>
-  </dependencies>
-```
-
- - the new public features are in **com.sikulix.api**
- - the current API (up to 1.1.x) in **org.sikuli.script** will be kept for backwards compatibility, but rerouted to **com.sikulix.api/core** as needed
- - new projects using Java should use the API as provided by **com.sikulix.api**
- 
- **Related subprojects** (available on OSSRH/MavenCentral)
- 
- [Sikulix2openCV](https://github.com/RaiMan/Sikulix2opencv) OpenCV Java API and prebuilt libraries<br>
- [Sikulix2tesseract](https://github.com/RaiMan/Sikulix2tesseract) Tess4J Java API and prebuilt libraries<br>
- [Sikulix2TigerVNC](https://github.com/RaiMan/Sikulix2tigervnc) The TigerVNC Java implementation for VNC support
+For backward compatibility the version 1 API will be reimplemented based on this REST-API.
  
 Prerequisites for development and testing
 ---
 
- - a Java JDK 1.8
+ - a Java JDK 1.8+
  - Maven 3+
  - only 64-Bit Systems supported
 
@@ -78,7 +53,3 @@ Prerequisites for development and testing
  - **[PyCharm CE](https://www.jetbrains.com/pycharm/)** for special Jython/Python stuff
  - **[RubyMine](https://www.jetbrains.com/ruby/)** for special JRuby/Ruby stuff (special license for OpenSource projects)
  
-Be aware for development and testing
----
-
- - the so called folder `SikulixAppData`, where SikuliX specific stuff is stored once per machine, for SikuliX2 now is `SikulixAppData/SX2` to allow the parallel usage of SikuliX1 and SikuliX2 on the same machine.
