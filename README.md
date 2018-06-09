@@ -8,7 +8,7 @@ SikuliX Version 2
 <hr>
 
 Travis CI (Ubuntu 12.04-64, Java 9, xvfb)
-<br>Developing and testing locally with Java 9 on macOS 10.13 and Windows 10
+<br>Developing and testing locally with latest Java on macOS 10.13 and Windows 10
 <br>using [JetBrains IntelliJ IDEA community Edition](https://www.jetbrains.com/idea/)
 <br>Translation project: [Transifex::SikuliX2](https://www.transifex.com/sikulix/sikulix2/dashboard/)
 <br>Documentation project: [ReadTheDocs::SikuliX2](http://sikulix2.readthedocs.org/) based on [GitHub::SikuliX2-Docs](https://github.com/RaiMan/SikuliX2-Docs)
