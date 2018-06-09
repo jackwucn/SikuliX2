@@ -3,7 +3,7 @@ SikuliX Version 2 - Java API
 
 **Version 2.0.0 under developement** 
 
-**[Download](http://sikulix.com) latest ready to use version 1.1.2** [or get the Sources](https://github.com/RaiMan/SikuliX-2014)
+**[Download](http://sikulix.com) latest ready to use version 1.1.x** [or get the Sources](https://github.com/RaiMan/SikuliX1)
 
 <hr>
 
