@@ -13,8 +13,6 @@ import com.sikulix.util.Capture;
 import com.sikulix.util.animation.Animator;
 import com.sikulix.util.animation.AnimatorOutQuarticEase;
 import com.sikulix.util.animation.AnimatorTimeBased;
-import org.sikuli.script.Screen;
-
 import java.awt.*;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
@@ -628,10 +626,6 @@ public class LocalDevice extends IDevice {
   @Override
   public Element getContainingMonitor(Element element) {
     return new Element(monitors[getContainingMonitorID(element)]);
-  }
-
-  public Screen getContainingScreen(Element element) {
-    return new Screen(getContainingMonitorID(element));
   }
 
   public GraphicsDevice getGraphicsDevice(int id) {

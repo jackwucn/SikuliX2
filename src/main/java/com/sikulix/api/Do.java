@@ -10,7 +10,6 @@ import com.sikulix.devices.hook.HookDevice;
 import com.sikulix.devices.hotkey.HotkeyCallback;
 import com.sikulix.util.FileChooser;
 import jdk.nashorn.api.scripting.ScriptObjectMirror;
-import org.sikuli.script.Key;
 
 import javax.swing.*;
 import java.awt.*;
@@ -602,60 +601,7 @@ public class Do {
   public static boolean keyUp(Object... args) {
     return Do.on().write(args);
   }
-  /**
-   * getAll the lock state of the given key
-   *
-   * @param key respective key specifier according class Key
-   * @return true/false
-   */
-  public static boolean isLockOn(char key) {
-    return Key.isLockOn(key);
-  }
 
-  /**
-   * @return System dependent key
-   */
-  public static int getHotkeyModifier() {
-    return Key.getHotkeyModifier();
-  }
-
-  /**
-   * @param key       respective key specifier according class Key
-   * @param modifiers respective key specifier according class KeyModifiers
-   * @param listener  a HotKeyListener instance
-   * @return true if ok, false otherwise
-   */
-  public static boolean addHotkey(String key, int modifiers, HotkeyCallback listener) {
-    return Key.addHotkey(key, modifiers, listener);
-  }
-
-  /**
-   * @param key       respective key specifier according class Key
-   * @param modifiers respective key specifier according class KeyModifiers
-   * @param listener  a HotKeyListener instance
-   * @return true if ok, false otherwise
-   */
-  public static boolean addHotkey(char key, int modifiers, HotkeyCallback listener) {
-    return Key.addHotkey(key, modifiers, listener);
-  }
-
-  /**
-   * @param key       respective key specifier according class Key
-   * @param modifiers respective key specifier according class KeyModifiers
-   * @return true if ok, false otherwise
-   */
-  public static boolean removeHotkey(String key, int modifiers) {
-    return Key.removeHotkey(key, modifiers);
-  }
-
-  /**
-   * @param key       respective key specifier according class Key
-   * @param modifiers respective key specifier according class KeyModifiers
-   * @return true if ok, false otherwise
-   */
-  public static boolean removeHotkey(char key, int modifiers) {
-    return Key.removeHotkey(key, modifiers);
-  }
   //</editor-fold>
 
   //<editor-fold desc="SX Do run something">

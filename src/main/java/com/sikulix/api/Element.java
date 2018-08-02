@@ -13,8 +13,6 @@ import org.json.JSONObject;
 import org.opencv.core.*;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
-import org.sikuli.script.IScreen;
-import org.sikuli.script.Region;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -41,8 +39,6 @@ public class Element implements Comparable<Element> {
     Rectangle rBase = null;
     if (base instanceof Element) {
       rBase = ((Element) base).getRectangle();
-    } else if (base instanceof Region) {
-      rBase = ((Region) base).getRect();
     } else if (base instanceof Rectangle) {
       rBase = (Rectangle) base;
     }
@@ -97,22 +93,6 @@ public class Element implements Comparable<Element> {
     this.repeatWaitTime = repeatWaitTime;
   }
 
-  private IScreen scr;
-
-  public IScreen getScreen() {
-    return scr;
-  }
-
-  protected void initScreen(IScreen screen) {
-    if (screen != null) {
-      if (screen.getID() < 0) {
-        setSpecial();
-        scr = screen;
-        return;
-      }
-    }
-    scr = getLocalDevice().getContainingScreen(this);
-  }
   //</editor-fold>
 
   //<editor-fold desc="***** construction, info">
