@@ -13,10 +13,6 @@ import com.sikulix.devices.vnc.VNCDevice;
 import com.sikulix.run.Runner;
 import org.junit.*;
 import org.junit.runners.MethodSorters;
-import org.opencv.core.Mat;
-import org.sikuli.script.Location;
-import org.sikuli.script.Region;
-import org.sikuli.script.Screen;
 
 import java.awt.*;
 import java.io.File;
@@ -733,33 +729,6 @@ public class TestAll {
         }
       }
     }
-  }
-
-  @Test
-  public void test_190_toJSONbasic() {
-    currentTest = "test_190_toJSONbasic";
-    assert prepareDefaultScreen("shot", imageNameDefault);
-    if (isHeadless) {
-      return;
-    }
-    match = Do.find(img);
-    result = end() + match.toString();
-    assert match.isValid();
-    result = "basic toJSON() calls";
-    log.p("String: %s", Do.on());
-    log.p("asJSON: %s", Do.on().toJSON());
-    log.p("String: %s", match);
-    log.p("asJSON: %s", match.toJSON());
-    log.p("String: %s", img);
-    log.p("asJSON: %s", img.toJSON());
-    Region scr = new Region(Do.on());
-    log.p("String: %s", scr);
-    log.p("asJSON: %s", scr.toJSON());
-    log.p("String: %s", scr.getCenter());
-    log.p("asJSON: %s", scr.getCenter().toJSON());
-    log.p("String: %s", scr.getScreen());
-    log.p("asJSON: %s", scr.getScreen().asElement().toJSON());
-    Element eScr = new Element(scr.toJSON());
   }
 
   @Test

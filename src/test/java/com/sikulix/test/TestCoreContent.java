@@ -15,6 +15,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Ignore
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class TestCoreContent {
 
