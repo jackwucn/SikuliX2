@@ -1,23 +1,17 @@
 SikuliX Version 2
 ============
 
-**Version 2.0.0 under developement (pre-alpha!)** (not useable yet, massive redesign planned until Oct. 2018)
+**Version 2.0.0 under developement (pre-alpha!)** (not useable yet, massive redesign planned for 2019 ;-)
 
 **[Read about the latest ready to use version 1.1.x](http://sikulix.com)**
 
 <hr>
 
-Travis CI (Ubuntu 12.04-64, Java 11, xvfb)
-<br>Developing and testing locally with latest Java on macOS 10.13 and Windows 10
-<br>using [JetBrains IntelliJ IDEA community Edition](https://www.jetbrains.com/idea/)
-<br>Documentation project: [ReadTheDocs::SikuliX2](http://sikulix2.readthedocs.org/) based on [GitHub::SikuliX2-Docs](https://github.com/RaiMan/SikuliX2-Docs)
-<br>Translation project: [Transifex::SikuliX2](https://www.transifex.com/sikulix/sikulix2/dashboard/)
-
 **Forking and/or downloading this repo only makes sense:**
 
  - if you want to get a knowledge about the internals of SikuliX
  - if you want to create your own packages containing SikuliX features
- - if you want to contribute.
+ - if you want to contribute (what currently does not really make sense)
 
 For use with Java aware scripting and Java programming you might need additional stuff and steps at your own resposibility. 
 
@@ -28,7 +22,7 @@ For use with Java aware scripting and Java programming you might need additional
 I am developing on latest Java (currently 11)<br>
 Source code level and byte code level are both 1.8
 
-**Issues and pull requests are only accepted here on Github**
+**Issues and pull requests are only accepted here on Github, but currently ignored**
 
 <hr>
 
